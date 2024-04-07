@@ -43,7 +43,9 @@
 #     # 프로그램 종료 전에 LED 매트릭스를 깨끗하게 지웁니다.
 #     canvas.Clear()
 #     matrix.Clear()
+
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 # # TEST2 (색상별 슬라이드)
 
 # import board
@@ -135,8 +137,45 @@
 
 # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# TEST4 (빗줄기)
+# # TEST4 (빗줄기)
 
+# import board
+# import neopixel
+# import time
+
+# pixel_pin = board.D18
+# num_pixels = 288
+# pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
+
+# def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
+#     time.sleep(start_delay)
+#     for i in range(start_pixel, end_pixel + trail_length):
+#         # 특정 LED가 밝아지는 동안 이전 LED는 서서히 어두워짐
+#         for j in range(trail_length):
+#             if i - j >= start_pixel and i - j < end_pixel:
+#                 intensity = max(0, 255 - (255 // trail_length) * j)
+#                 dimmed_color = (int(color[0] * intensity / 255), int(color[1] * intensity / 255), int(color[2] * intensity / 255))
+#                 pixels[i - j] = dimmed_color
+#         if i >= trail_length + start_pixel:
+#             pixels[i - trail_length] = (0, 0, 0)  # 끝부분 LED 끄기
+#         pixels.show()
+#         time.sleep(wait)
+
+# def main():
+#     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+#     trail_length = 8  # 비의 꼬리 길이
+#     while True:
+#         for i, color in enumerate(colors):
+#             # 각 줄기는 서로 다른 시간에 시작
+#             start_delay = i * 0.01  # 각 줄기 시작 간격
+#             raindrop(110, 200, color, trail_length, 0.01, start_delay)
+
+# if __name__ == "__main__":
+#     main()
+
+# -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+#  TEST5 (흰색 5초 간격 깜빡)
 import board
 import neopixel
 import time
@@ -145,28 +184,21 @@ pixel_pin = board.D18
 num_pixels = 288
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
-    time.sleep(start_delay)
-    for i in range(start_pixel, end_pixel + trail_length):
-        # 특정 LED가 밝아지는 동안 이전 LED는 서서히 어두워짐
-        for j in range(trail_length):
-            if i - j >= start_pixel and i - j < end_pixel:
-                intensity = max(0, 255 - (255 // trail_length) * j)
-                dimmed_color = (int(color[0] * intensity / 255), int(color[1] * intensity / 255), int(color[2] * intensity / 255))
-                pixels[i - j] = dimmed_color
-        if i >= trail_length + start_pixel:
-            pixels[i - trail_length] = (0, 0, 0)  # 끝부분 LED 끄기
-        pixels.show()
-        time.sleep(wait)
+def blink_white(wait):
+    # 모든 LED를 흰색으로 켭니다.
+    pixels.fill((255, 255, 255))
+    pixels.show()
+    time.sleep(wait)
+
+    # 모든 LED를 끕니다.
+    pixels.fill((0, 0, 0))
+    pixels.show()
+    time.sleep(wait)
 
 def main():
-    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    trail_length = 8  # 비의 꼬리 길이
     while True:
-        for i, color in enumerate(colors):
-            # 각 줄기는 서로 다른 시간에 시작
-            start_delay = i * 0.01  # 각 줄기 시작 간격
-            raindrop(110, 200, color, trail_length, 0.01, start_delay)
+        blink_white(5)  # 5초 간격으로 흰색 깜빡임
 
 if __name__ == "__main__":
     main()
+
