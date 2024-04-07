@@ -13,7 +13,7 @@ def register_service(service_name, port):
 
     try:
         # mDNS 서버로 업데이트 전송
-        response = dns.query.tcp(update, '224.0.0.251')
+        response = dns.query.udp(update, '224.0.0.251')
         print(response)
     except dns.exception.Timeout:
         print('mDNS update timeout')
