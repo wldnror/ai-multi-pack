@@ -1,43 +1,84 @@
-from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
+# from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 
-# LED 매트릭스 설정
-options = RGBMatrixOptions()
-options.rows = 16  # 패널의 행 수
-options.cols = 16  # 패널의 열 수
-options.chain_length = 4  # 연결된 패널 수
-options.parallel = 1  # 병렬로 연결된 패널 수
-options.hardware_mapping = 'regular'  # 하드웨어에 맞게 설정
+# # LED 매트릭스 설정
+# options = RGBMatrixOptions()
+# options.rows = 16  # 패널의 행 수
+# options.cols = 16  # 패널의 열 수
+# options.chain_length = 4  # 연결된 패널 수
+# options.parallel = 1  # 병렬로 연결된 패널 수
+# options.hardware_mapping = 'regular'  # 하드웨어에 맞게 설정
 
-# RGB 매트릭스 객체 생성
-matrix = RGBMatrix(options=options)
+# # RGB 매트릭스 객체 생성
+# matrix = RGBMatrix(options=options)
 
-# 그래픽스 도구 생성
-canvas = matrix.CreateFrameCanvas()
-font = graphics.Font()
-font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/7x13.bdf")
-textColor = graphics.Color(255, 255, 255)
-pos = canvas.width
+# # 그래픽스 도구 생성
+# canvas = matrix.CreateFrameCanvas()
+# font = graphics.Font()
+# font.LoadFont("/home/pi/rpi-rgb-led-matrix/fonts/7x13.bdf")
+# textColor = graphics.Color(255, 255, 255)
+# pos = canvas.width
 
-# 중앙에 원을 그립니다.
-center_x = canvas.width // 2
-center_y = canvas.height // 2
-radius = min(center_x, center_y) - 2  # 패널 크기에 맞게 반지름 설정
-color = graphics.Color(255, 0, 0)  # 빨간색으로 설정
+# # 중앙에 원을 그립니다.
+# center_x = canvas.width // 2
+# center_y = canvas.height // 2
+# radius = min(center_x, center_y) - 2  # 패널 크기에 맞게 반지름 설정
+# color = graphics.Color(255, 0, 0)  # 빨간색으로 설정
 
-# 캔버스를 검은색으로 초기화
-canvas.Clear()
+# # 캔버스를 검은색으로 초기화
+# canvas.Clear()
 
-# 원 그리기
-graphics.DrawCircle(canvas, center_x, center_y, radius, color)
-# 변경사항을 LED 매트릭스에 적용
-canvas = matrix.SwapOnVSync(canvas)
+# # 원 그리기
+# graphics.DrawCircle(canvas, center_x, center_y, radius, color)
+# # 변경사항을 LED 매트릭스에 적용
+# canvas = matrix.SwapOnVSync(canvas)
 
-try:
-    print("Press CTRL-C to stop.")
+# try:
+#     print("Press CTRL-C to stop.")
+#     while True:
+#         # 실행을 유지합니다. CTRL-C를 누르면 종료됩니다.
+#         pass
+# except KeyboardInterrupt:
+#     # 프로그램 종료 전에 LED 매트릭스를 깨끗하게 지웁니다.
+#     canvas.Clear()
+#     matrix.Clear()
+
+import board
+import neopixel
+import time
+
+# 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
+pixel_pin = board.D18
+
+# LED의 개수 설정
+num_pixels = 144
+
+# NeoPixel 객체 생성
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
+
+# LED 스트립에 색상을 설정하는 함수
+def color_chase(color, wait):
+    for i in range(num_pixels):
+        pixels[i] = color
+        time.sleep(wait)
+        pixels.show()
+    time.sleep(0.5)
+
+# 색상을 RGB 값으로 정의
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+# 메인 함수
+def main():
     while True:
-        # 실행을 유지합니다. CTRL-C를 누르면 종료됩니다.
-        pass
-except KeyboardInterrupt:
-    # 프로그램 종료 전에 LED 매트릭스를 깨끗하게 지웁니다.
-    canvas.Clear()
-    matrix.Clear()
+        # 빨간색을 쫓아가는 효과
+        color_chase(RED, 0.1)
+        # 초록색을 쫓아가는 효과
+        color_chase(GREEN, 0.1)
+        # 파란색을 쫓아가는 효과
+        color_chase(BLUE, 0.1)
+
+# 메인 함수 실행
+if __name__ == "__main__":
+    main()
+
