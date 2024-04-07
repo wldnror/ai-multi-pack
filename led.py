@@ -144,32 +144,31 @@ num_pixels = 288
 # NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-def rain_effect(start_pixel, end_pixel, colors, wait):
-    # 전체 범위를 커버할 수 있도록 반복 횟수를 설정합니다.
-    for i in range(start_pixel, end_pixel + len(colors)):
-        # 각 색상에 대해 LED를 순차적으로 켜고 끕니다.
-        for j, color in enumerate(colors):
-            # 현재 LED 위치를 계산합니다.
-            current_pixel = i - j
-            if start_pixel <= current_pixel < end_pixel:
-                pixels[current_pixel] = color
-                
-            # 이전에 켜진 LED를 끕니다.
-            previous_pixel = current_pixel - len(colors)
-            if start_pixel <= previous_pixel < end_pixel:
-                pixels[previous_pixel] = (0, 0, 0)
+def falling_effect(start_pixel, end_pixel, color, delay, wait):
+    for i in range(start_pixel, end_pixel):
+        # 페이드 인 효과
+        for brightness in range(0, 256, 25):  # 밝기를 점진적으로 증가
+            pixels[i] = (int(color[0] * brightness / 255), int(color[1] * brightness / 255), int(color[2] * brightness / 255))
+            pixels.show()
+            time.sleep(wait)
         
-        pixels.show()
-        time.sleep(wait)
+        time.sleep(delay)  # LED가 완전히 켜진 상태에서 잠시 대기
 
-# 색상 정의
-colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
+        # 페이드 아웃 효과
+        for brightness in range(255, -1, -25):  # 밝기를 점진적으로 감소
+            pixels[i] = (int(color[0] * brightness / 255), int(color[1] * brightness / 255), int(color[2] * brightness / 255))
+            pixels.show()
+            time.sleep(wait)
 
-# 메인 함수
+        pixels[i] = (0, 0, 0)  # LED 완전히 끄기
+
 def main():
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
     while True:
-        rain_effect(99, 200, colors, 0.02)  # 비 내리는 효과 적용
+        for index, color in enumerate(colors):
+            # 각 색상별로 시작 시간에 간격을 둡니다.
+            time.sleep(index * 2)  # 각 색상별 시작 간격
+            falling_effect(99, 200, color, 0.05, 0.01)
 
-# 메인 함수 실행
 if __name__ == "__main__":
     main()
