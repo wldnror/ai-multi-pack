@@ -142,50 +142,37 @@ pixel_pin = board.D18
 num_pixels = 288
 
 # NeoPixel 객체 생성
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-def rain_effect(start_pixel, end_pixel, color, wait):
-    for i in range(start_pixel, end_pixel):
-        # 현재 LED를 바로 켜고
-        pixels[i] = color
-        pixels.show()
+def rain_effect(start_pixel, end_pixel, colors, wait):
+    active_leds = len(colors)  # 동시에 활성화되는 LED의 수
+    for i in range(start_pixel, end_pixel + active_leds):
+        # 동시에 활성화되는 각 LED에 대해
+        for j in range(active_leds):
+            if i - j >= start_pixel and i - j < end_pixel:
+                pixels[i - j] = colors[j]
 
-        # 이전 LED를 서서히 꺼줍니다 (페이드 아웃 효과)
-        if i > start_pixel:
-            for b in range(255, 0, -15):  # 15의 단계로 서서히 꺼집니다.
-                dimmed_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
-                pixels[i - 1] = dimmed_color
-                pixels.show()
-                time.sleep(wait)
-
-        # 첫 번째 LED가 아니라면, 바로 이전 LED를 꺼줍니다.
-        if i > start_pixel:
-            pixels[i - 1] = (0, 0, 0)
-        time.sleep(wait)
-
-    # 마지막 LED 꺼짐 처리
-    for b in range(255, 0, -15):
-        dimmed_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
-        pixels[end_pixel - 1] = dimmed_color
         pixels.show()
         time.sleep(wait)
-    
-    pixels[end_pixel - 1] = (0, 0, 0)
+
+        # 이전 LED 그룹을 꺼줍니다.
+        if i - active_leds >= start_pixel:
+            pixels[i - active_leds] = (0, 0, 0)
+
+    # 마지막으로 활성화된 LED 그룹을 꺼줍니다.
+    for i in range(end_pixel - active_leds + 1, end_pixel + 1):
+        if i < end_pixel:
+            pixels[i] = (0, 0, 0)
     pixels.show()
 
-# 색상 정의
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+# 색상 정의 (5가지 색상으로 확장 가능)
+colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
 
 # 메인 함수
 def main():
-    colors = [RED, GREEN, BLUE]
     while True:
-        for color in colors:
-            rain_effect(99, 200, color, 0.05)  # 각 색상별로 비 내리는 효과 적용
+        rain_effect(99, 200, colors, 0.02)  # 비 내리는 효과 적용
 
 # 메인 함수 실행
 if __name__ == "__main__":
     main()
-
