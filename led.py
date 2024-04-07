@@ -145,27 +145,24 @@ num_pixels = 288
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
 def rain_effect(start_pixel, end_pixel, colors, wait):
-    active_leds = len(colors)  # 동시에 활성화되는 LED의 수
-    for i in range(start_pixel, end_pixel + active_leds):
-        # 동시에 활성화되는 각 LED에 대해
-        for j in range(active_leds):
-            if i - j >= start_pixel and i - j < end_pixel:
-                pixels[i - j] = colors[j]
-
+    # 전체 범위를 커버할 수 있도록 반복 횟수를 설정합니다.
+    for i in range(start_pixel, end_pixel + len(colors)):
+        # 각 색상에 대해 LED를 순차적으로 켜고 끕니다.
+        for j, color in enumerate(colors):
+            # 현재 LED 위치를 계산합니다.
+            current_pixel = i - j
+            if start_pixel <= current_pixel < end_pixel:
+                pixels[current_pixel] = color
+                
+            # 이전에 켜진 LED를 끕니다.
+            previous_pixel = current_pixel - len(colors)
+            if start_pixel <= previous_pixel < end_pixel:
+                pixels[previous_pixel] = (0, 0, 0)
+        
         pixels.show()
         time.sleep(wait)
 
-        # 이전 LED 그룹을 꺼줍니다.
-        if i - active_leds >= start_pixel:
-            pixels[i - active_leds] = (0, 0, 0)
-
-    # 마지막으로 활성화된 LED 그룹을 꺼줍니다.
-    for i in range(end_pixel - active_leds + 1, end_pixel + 1):
-        if i < end_pixel:
-            pixels[i] = (0, 0, 0)
-    pixels.show()
-
-# 색상 정의 (5가지 색상으로 확장 가능)
+# 색상 정의
 colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
 
 # 메인 함수
