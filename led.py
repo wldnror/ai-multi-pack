@@ -182,7 +182,7 @@ import time
 
 pixel_pin = board.D18
 num_pixels = 288
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=1.0, auto_write=False, pixel_order=neopixel.GRB)
 
 def blink_white(wait):
     # 모든 LED를 흰색으로 켭니다.
