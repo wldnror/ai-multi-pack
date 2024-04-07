@@ -50,7 +50,7 @@ import time
 pixel_pin = board.D18
 
 # LED의 개수 설정
-num_pixels = 144x3
+num_pixels = 288
 
 # NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
