@@ -86,83 +86,83 @@
 # if __name__ == "__main__":
 #     main()
 
-# TEST3
-# 두 개의 144 LED 네오픽셀 패널을 제어하는 코드 예시입니다.
-# 이 코드는 각 패널에 대해 간단한 애니메이션을 실행합니다.
-
-import board
-import neopixel
-import time
-
-# 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
-pixel_pin = board.D18
-
-# 각 패널의 LED 개수 설정
-num_pixels_per_panel = 144
-total_pixels = num_pixels_per_panel * 2  # 총 LED 개수
-
-# NeoPixel 객체 생성
-pixels = neopixel.NeoPixel(pixel_pin, total_pixels, brightness=0.2, auto_write=False)
-
-# 패널에 색상을 채우는 함수
-def fill_panel(panel_num, color):
-    start_index = panel_num * num_pixels_per_panel
-    end_index = start_index + num_pixels_per_panel
-    for i in range(start_index, end_index):
-        pixels[i] = color
-    pixels.show()
-
-# 메인 함수
-def main():
-    while True:
-        # 첫 번째 패널을 빨간색으로 채움
-        fill_panel(0, (255, 0, 0))
-        time.sleep(0.3)
-        # 첫 번째 패널을 꺼짐
-        fill_panel(0, (0, 0, 0))
-        
-        # 두 번째 패널을 파란색으로 채움
-        fill_panel(1, (0, 0, 255))
-        time.sleep(0.3)
-        # 두 번째 패널을 꺼짐
-        fill_panel(1, (0, 0, 0))
-
-# 메인 함수 실행
-if __name__ == "__main__":
-    main()
-    
-# # TEST (빗줄기)
+# # TEST3
+# # 두 개의 144 LED 네오픽셀 패널을 제어하는 코드 예시입니다.
+# # 이 코드는 각 패널에 대해 간단한 애니메이션을 실행합니다.
 
 # import board
 # import neopixel
 # import time
 
+# # 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
 # pixel_pin = board.D18
-# num_pixels = 288
-# pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-# def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
-#     time.sleep(start_delay)
-#     for i in range(start_pixel, end_pixel + trail_length):
-#         # 특정 LED가 밝아지는 동안 이전 LED는 서서히 어두워짐
-#         for j in range(trail_length):
-#             if i - j >= start_pixel and i - j < end_pixel:
-#                 intensity = max(0, 255 - (255 // trail_length) * j)
-#                 dimmed_color = (int(color[0] * intensity / 255), int(color[1] * intensity / 255), int(color[2] * intensity / 255))
-#                 pixels[i - j] = dimmed_color
-#         if i >= trail_length + start_pixel:
-#             pixels[i - trail_length] = (0, 0, 0)  # 끝부분 LED 끄기
-#         pixels.show()
-#         time.sleep(wait)
+# # 각 패널의 LED 개수 설정
+# num_pixels_per_panel = 144
+# total_pixels = num_pixels_per_panel * 2  # 총 LED 개수
 
+# # NeoPixel 객체 생성
+# pixels = neopixel.NeoPixel(pixel_pin, total_pixels, brightness=0.2, auto_write=False)
+
+# # 패널에 색상을 채우는 함수
+# def fill_panel(panel_num, color):
+#     start_index = panel_num * num_pixels_per_panel
+#     end_index = start_index + num_pixels_per_panel
+#     for i in range(start_index, end_index):
+#         pixels[i] = color
+#     pixels.show()
+
+# # 메인 함수
 # def main():
-#     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-#     trail_length = 8  # 비의 꼬리 길이
 #     while True:
-#         for i, color in enumerate(colors):
-#             # 각 줄기는 서로 다른 시간에 시작
-#             start_delay = i * 0.01  # 각 줄기 시작 간격
-#             raindrop(99, 200, color, trail_length, 0.01, start_delay)
+#         # 첫 번째 패널을 빨간색으로 채움
+#         fill_panel(0, (255, 0, 0))
+#         time.sleep(0.3)
+#         # 첫 번째 패널을 꺼짐
+#         fill_panel(0, (0, 0, 0))
+        
+#         # 두 번째 패널을 파란색으로 채움
+#         fill_panel(1, (0, 0, 255))
+#         time.sleep(0.3)
+#         # 두 번째 패널을 꺼짐
+#         fill_panel(1, (0, 0, 0))
 
+# # 메인 함수 실행
 # if __name__ == "__main__":
 #     main()
+    
+# TEST (빗줄기)
+
+import board
+import neopixel
+import time
+
+pixel_pin = board.D18
+num_pixels = 288
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
+
+def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
+    time.sleep(start_delay)
+    for i in range(start_pixel, end_pixel + trail_length):
+        # 특정 LED가 밝아지는 동안 이전 LED는 서서히 어두워짐
+        for j in range(trail_length):
+            if i - j >= start_pixel and i - j < end_pixel:
+                intensity = max(0, 255 - (255 // trail_length) * j)
+                dimmed_color = (int(color[0] * intensity / 255), int(color[1] * intensity / 255), int(color[2] * intensity / 255))
+                pixels[i - j] = dimmed_color
+        if i >= trail_length + start_pixel:
+            pixels[i - trail_length] = (0, 0, 0)  # 끝부분 LED 끄기
+        pixels.show()
+        time.sleep(wait)
+
+def main():
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    trail_length = 8  # 비의 꼬리 길이
+    while True:
+        for i, color in enumerate(colors):
+            # 각 줄기는 서로 다른 시간에 시작
+            start_delay = i * 0.01  # 각 줄기 시작 간격
+            raindrop(110, 200, color, trail_length, 0.01, start_delay)
+
+if __name__ == "__main__":
+    main()
