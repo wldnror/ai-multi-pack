@@ -131,5 +131,61 @@
 # if __name__ == "__main__":
 #     main()
 
+import board
+import neopixel
+import time
 
+# 사용할 GPIO 핀 설정 (GPIO 18)
+pixel_pin = board.D18
+
+# LED의 총 개수 설정
+num_pixels = 288
+
+# NeoPixel 객체 생성
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
+
+def rain_effect(start_pixel, end_pixel, color, wait):
+    for i in range(start_pixel, end_pixel):
+        # 현재 LED를 바로 켜고
+        pixels[i] = color
+        pixels.show()
+
+        # 이전 LED를 서서히 꺼줍니다 (페이드 아웃 효과)
+        if i > start_pixel:
+            for b in range(255, 0, -15):  # 15의 단계로 서서히 꺼집니다.
+                dimmed_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
+                pixels[i - 1] = dimmed_color
+                pixels.show()
+                time.sleep(wait)
+
+        # 첫 번째 LED가 아니라면, 바로 이전 LED를 꺼줍니다.
+        if i > start_pixel:
+            pixels[i - 1] = (0, 0, 0)
+        time.sleep(wait)
+
+    # 마지막 LED 꺼짐 처리
+    for b in range(255, 0, -15):
+        dimmed_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
+        pixels[end_pixel - 1] = dimmed_color
+        pixels.show()
+        time.sleep(wait)
+    
+    pixels[end_pixel - 1] = (0, 0, 0)
+    pixels.show()
+
+# 색상 정의
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+
+# 메인 함수
+def main():
+    colors = [RED, GREEN, BLUE]
+    while True:
+        for color in colors:
+            rain_effect(99, 200, color, 0.05)  # 각 색상별로 비 내리는 효과 적용
+
+# 메인 함수 실행
+if __name__ == "__main__":
+    main()
 
