@@ -127,10 +127,6 @@
 #         # 두 번째 패널을 꺼짐
 #         fill_panel(1, (0, 0, 0))
 
-# # 메인 함수 실행
-# if __name__ == "__main__":
-#     main()
-
 import board
 import neopixel
 import time
@@ -144,31 +140,34 @@ num_pixels = 288
 # NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-def falling_effect(start_pixel, end_pixel, color, delay, wait):
-    for i in range(start_pixel, end_pixel):
-        # 페이드 인 효과
-        for brightness in range(0, 256, 25):  # 밝기를 점진적으로 증가
-            pixels[i] = (int(color[0] * brightness / 255), int(color[1] * brightness / 255), int(color[2] * brightness / 255))
-            pixels.show()
-            time.sleep(wait)
-        
-        time.sleep(delay)  # LED가 완전히 켜진 상태에서 잠시 대기
+def create_raindrop(start_pixel, end_pixel, color, wait):
+    # 한 번에 5개의 LED를 조작합니다.
+    for i in range(start_pixel, end_pixel + 5):
+        # 각 LED에 대해 페이드 인 효과를 적용합니다.
+        for j in range(5):
+            if i - j >= start_pixel and i - j < end_pixel:
+                brightness = max(0, 255 - 50 * j)  # 위쪽 LED가 더 밝게
+                dimmed_color = (int(color[0] * brightness / 255), int(color[1] * brightness / 255), int(color[2] * brightness / 255))
+                pixels[i - j] = dimmed_color
+        pixels.show()
+        time.sleep(wait)
 
-        # 페이드 아웃 효과
-        for brightness in range(255, -1, -25):  # 밝기를 점진적으로 감소
-            pixels[i] = (int(color[0] * brightness / 255), int(color[1] * brightness / 255), int(color[2] * brightness / 255))
-            pixels.show()
-            time.sleep(wait)
+        # 마지막 LED가 지나가면 꺼줍니다.
+        if i >= 5:
+            pixels[i - 5] = (0, 0, 0)
 
-        pixels[i] = (0, 0, 0)  # LED 완전히 끄기
-
+# 메인 함수
 def main():
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
+    color_index = 0
+
     while True:
-        for index, color in enumerate(colors):
-            # 각 색상별로 시작 시간에 간격을 둡니다.
-            time.sleep(index * 2)  # 각 색상별 시작 간격
-            falling_effect(99, 200, color, 0.05, 0.01)
+        # 현재 색상으로 비 내리는 효과를 생성합니다.
+        create_raindrop(99, 200, colors[color_index], 0.05)
+
+        # 다음 색상을 선택합니다. 첫 번째 색상이 일정 구간 내려온 후 다음 색상이 시작됩니다.
+        color_index = (color_index + 1) % len(colors)
+        time.sleep(2)  # 다음 색상이 시작하기 전에 잠시 대기합니다.
 
 if __name__ == "__main__":
     main()
