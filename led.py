@@ -117,13 +117,13 @@ def main():
     while True:
         # 첫 번째 패널을 빨간색으로 채움
         fill_panel(0, (255, 0, 0))
-        time.sleep(0.1)
+        time.sleep(0.5)
         # 첫 번째 패널을 꺼짐
         fill_panel(0, (0, 0, 0))
         
         # 두 번째 패널을 파란색으로 채움
         fill_panel(1, (0, 0, 255))
-        time.sleep(0.1)
+        time.sleep(0.5)
         # 두 번째 패널을 꺼짐
         fill_panel(1, (0, 0, 0))
 
