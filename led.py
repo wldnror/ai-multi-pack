@@ -132,7 +132,7 @@ import time
 
 pixel_pin = board.D18
 num_pixels = 288
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.01, auto_write=False, pixel_order=neopixel.GRB)
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
 def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
     time.sleep(start_delay)
@@ -154,7 +154,7 @@ def main():
     while True:
         for i, color in enumerate(colors):
             # 각 줄기는 서로 다른 시간에 시작
-            start_delay = i * 0.1  # 각 줄기 시작 간격
+            start_delay = i * 0.01  # 각 줄기 시작 간격
             raindrop(99, 200, color, trail_length, 0.1, start_delay)
 
 if __name__ == "__main__":
