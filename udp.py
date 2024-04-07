@@ -7,7 +7,7 @@ def get_ip_address(ifname):
     return socket.inet_ntoa(fcntl.ioctl(
         s.fileno(),
         0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
+        struct.pack('256s', ifname.encode('utf-8')[:15])
     )[20:24])
 
 udp_ip = get_ip_address('wlan0')  # wlan0은 라즈베리 파이의 무선 네트워크 인터페이스 이름입니다. 만약 이와 다른 인터페이스를 사용 중이라면 해당 인터페이스 이름을 사용하세요.
@@ -26,3 +26,4 @@ while True:
     if data:
         response = f"My IP address is {udp_ip}"
         sock.sendto(response.encode(), addr)
+
