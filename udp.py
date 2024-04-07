@@ -8,7 +8,7 @@ import dns.zone
 
 def register_service(service_name, port):
     # 서비스 레코드 생성
-    service_record = dns.rdatatype.SRV(
+    service_record = dns.rdatatype.from_text('SRV')(
         port=port,
         target=socket.gethostname() + '.local.')  # 라즈베리 파이의 로컬 호스트 이름
 
