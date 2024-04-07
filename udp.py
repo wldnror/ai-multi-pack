@@ -1,5 +1,5 @@
 import socket
-import dns
+import dns.resolver
 import dns.exception
 import dns.query
 import dns.tsigkeyring
@@ -7,20 +7,15 @@ import dns.update
 import dns.zone
 
 def register_service(service_name, port):
-    # SRV 리소스 레코드 생성
-    service_record = dns.rdtypes.ANY.SRV.SRV(
+    # SRV 레코드 생성
+    service_record = dns.resolver.SRV(
+        service_name,
         port=port,
         target=socket.gethostname() + '.local.')  # 라즈베리 파이의 로컬 호스트 이름
 
-    # 서비스 정보 생성
-    service_info = dns.rrset.RRset(
-        dns.name.from_text(service_name),
-        dns.rdataclass.IN,
-        service_record)
-
     # DNS 업데이트
     update = dns.update.Update('local.')
-    update.add(service_info)
+    update.add(service_name, 60, 'IN', service_record)
 
     try:
         # mDNS 서버로 업데이트 전송
