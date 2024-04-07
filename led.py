@@ -154,7 +154,7 @@ def main():
     while True:
         for i, color in enumerate(colors):
             # 각 줄기는 서로 다른 시간에 시작
-            start_delay = i * 0.5  # 각 줄기 시작 간격
+            start_delay = i * 0.1  # 각 줄기 시작 간격
             raindrop(99, 200, color, trail_length, 0.1, start_delay)
 
 if __name__ == "__main__":
