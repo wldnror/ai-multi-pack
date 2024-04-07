@@ -150,12 +150,12 @@ def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
 
 def main():
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
-    trail_length = 5  # 비의 꼬리 길이
+    trail_length = 8  # 비의 꼬리 길이
     while True:
         for i, color in enumerate(colors):
             # 각 줄기는 서로 다른 시간에 시작
             start_delay = i * 0.01  # 각 줄기 시작 간격
-            raindrop(99, 200, color, trail_length, 0.1, start_delay)
+            raindrop(99, 200, color, trail_length, 0.01, start_delay)
 
 if __name__ == "__main__":
     main()
