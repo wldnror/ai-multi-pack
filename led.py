@@ -146,7 +146,6 @@ num_pixels = 288
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
 
 def color_wipe(start_pixel, end_pixel, color, wait):
-    # 지정된 범위의 LED에만 색을 적용합니다.
     for i in range(start_pixel, end_pixel):
         pixels[i] = color
         pixels.show()
@@ -155,12 +154,14 @@ def color_wipe(start_pixel, end_pixel, color, wait):
 # 색상 정의
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
 
 # 메인 함수
 def main():
+    colors = [RED, GREEN, BLUE]  # 반복할 색상들을 리스트로 정의
     while True:
-        color_wipe(99, 150, RED, 0.01)  # 100번째부터 150번째 LED에 빨간색을 적용
-        color_wipe(150, 200, GREEN, 0.01)  # 151번째부터 200번째 LED에 녹색을 적용
+        for color in colors:
+            color_wipe(99, 200, color, 0.01)  # 각 색상을 순차적으로 적용
 
 # 메인 함수 실행
 if __name__ == "__main__":
