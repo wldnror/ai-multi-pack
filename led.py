@@ -130,48 +130,6 @@
 # # 메인 함수 실행
 # if __name__ == "__main__":
 #     main()
-import board
-import neopixel
-import time
 
-# 사용할 GPIO 핀 설정 (GPIO 18)
-pixel_pin = board.D18
 
-# LED의 총 개수 설정
-num_pixels = 288
 
-# NeoPixel 객체 생성
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
-
-def smooth_transition(start_pixel, end_pixel, color, wait):
-    # 각 LED에 대해 서서히 켜지는 효과 적용
-    for i in range(start_pixel, end_pixel):
-        # 페이드 인 (밝기 증가)
-        for b in range(0, 256, 25):  # 빠른 전환을 위해 단계를 25로 설정
-            adjusted_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
-            pixels[i] = adjusted_color
-            pixels.show()
-            time.sleep(wait)
-        
-        # 페이드 아웃 (밝기 감소)
-        for b in range(255, -1, -25):  # 빠른 전환을 위해 단계를 25로 설정
-            adjusted_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
-            pixels[i] = adjusted_color
-            pixels.show()
-            time.sleep(wait)
-
-# 색상 정의
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-
-# 메인 함수
-def main():
-    colors = [RED, GREEN, BLUE]
-    while True:
-        for color in colors:
-            smooth_transition(99, 200, color, 0.01)
-
-# 메인 함수 실행
-if __name__ == "__main__":
-    main()
