@@ -1,16 +1,6 @@
 import socket
-import fcntl
-import struct
 
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15].encode('utf-8'))
-    )[20:24])
-
-udp_ip = get_ip_address('wlan0')  # 무선 네트워크 인터페이스 이름을 사용하세요.
+udp_ip = "0.0.0.0"  # 모든 인터페이스에서 들어오는 데이터를 수신
 udp_port = 12345
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -18,11 +8,28 @@ sock.bind((udp_ip, udp_port))
 
 print("UDP 서버가 시작되었습니다. 대기 중...")
 
+# 라즈베리 파이의 IP 주소 가져오기
+import subprocess
+import re
+
+def get_ip_address():
+    try:
+        result = subprocess.check_output(["hostname", "-I"]).decode("utf-8")
+        ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', result)
+        if ip_addresses:
+            return ip_addresses[0]
+        else:
+            return None
+    except subprocess.CalledProcessError:
+        return None
+
+raspberry_pi_ip = get_ip_address()
+
 while True:
     data, addr = sock.recvfrom(1024)
     print(f"수신된 메시지: {data.decode()} from {addr}")
 
     # 클라이언트(안드로이드 앱)에게 라즈베리 파이의 IP 주소를 보냄
-    if data:
-        response = f"My IP address is {udp_ip}"
+    if data and raspberry_pi_ip:
+        response = f"My IP address is {raspberry_pi_ip}"
         sock.sendto(response.encode(), addr)
