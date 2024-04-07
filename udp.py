@@ -17,7 +17,7 @@ def get_ip_address(ifname):
 udp_port = 12345
 
 # 라즈베리파이에 연결된 네트워크 인터페이스의 IP 주소 가져오기
-raspberry_pi_ip = get_ip_address("eth0")  # 라즈베리파이의 네트워크 인터페이스에 따라 수정
+raspberry_pi_ip = get_ip_address("wlan0")  # 수정: 실제 네트워크 인터페이스 이름 사용
 
 if raspberry_pi_ip:
     print("라즈베리 파이의 IP 주소:", raspberry_pi_ip)
