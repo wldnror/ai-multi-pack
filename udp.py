@@ -9,7 +9,7 @@ import dns.zone
 def register_service(service_name, port):
     # DNS 업데이트
     update = dns.update.Update('local.')
-    update.add('_my_udp_service._udp', 60, 'IN', f'{port} {socket.gethostname()}.local.')
+    update.add('_my_udp_service._udp', 60, 'SRV', f'0 0 {port} {socket.gethostname()}.local.')
 
     try:
         # mDNS 서버로 업데이트 전송
