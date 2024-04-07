@@ -126,42 +126,36 @@
 #         time.sleep(1)
 #         # 두 번째 패널을 꺼짐
 #         fill_panel(1, (0, 0, 0))
-
 import board
 import neopixel
 import time
 
-# 사용할 GPIO 핀 설정 (GPIO 18)
 pixel_pin = board.D18
-
-# LED의 총 개수 설정
 num_pixels = 288
-
-# NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-def create_raindrop(start_pixel, end_pixel, color, wait, offset):
-    # 각 줄기에 대해 반복합니다.
-    for i in range(start_pixel + offset, end_pixel + 5, 20):  # 각 줄기는 20 LED 간격으로 시작합니다.
-        # 각 LED에 대해 페이드 인 효과를 적용합니다.
-        for j in range(5):
+def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
+    time.sleep(start_delay)
+    for i in range(start_pixel, end_pixel + trail_length):
+        # 특정 LED가 밝아지는 동안 이전 LED는 서서히 어두워짐
+        for j in range(trail_length):
             if i - j >= start_pixel and i - j < end_pixel:
-                brightness = max(0, 255 - 50 * j)  # 위쪽 LED가 더 밝게
-                dimmed_color = (int(color[0] * brightness / 255), int(color[1] * brightness / 255), int(color[2] * brightness / 255))
+                intensity = max(0, 255 - (255 // trail_length) * j)
+                dimmed_color = (int(color[0] * intensity / 255), int(color[1] * intensity / 255), int(color[2] * intensity / 255))
                 pixels[i - j] = dimmed_color
+        if i >= trail_length + start_pixel:
+            pixels[i - trail_length] = (0, 0, 0)  # 끝부분 LED 끄기
         pixels.show()
         time.sleep(wait)
 
-        # 마지막 LED가 지나가면 꺼줍니다.
-        if i >= 5 + offset:
-            pixels[i - 5] = (0, 0, 0)
-
 def main():
     colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
+    trail_length = 5  # 비의 꼬리 길이
     while True:
-        for offset in range(0, 20, 5):  # 각 줄기는 5 LED 간격으로 시작합니다.
-            for color in colors:
-                create_raindrop(99, 200, color, 0.1, offset)
+        for i, color in enumerate(colors):
+            # 각 줄기는 서로 다른 시간에 시작
+            start_delay = i * 0.5  # 각 줄기 시작 간격
+            raindrop(99, 200, color, trail_length, 0.1, start_delay)
 
 if __name__ == "__main__":
     main()
