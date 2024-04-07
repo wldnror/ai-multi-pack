@@ -7,15 +7,9 @@ import dns.update
 import dns.zone
 
 def register_service(service_name, port):
-    # SRV 레코드 생성
-    service_record = dns.resolver.SRV(
-        service_name,
-        port=port,
-        target=socket.gethostname() + '.local.')  # 라즈베리 파이의 로컬 호스트 이름
-
     # DNS 업데이트
     update = dns.update.Update('local.')
-    update.add(service_name, 60, 'IN', service_record)
+    update.add('_my_udp_service._udp', 60, 'IN', f'{port} {socket.gethostname()}.local.')
 
     try:
         # mDNS 서버로 업데이트 전송
