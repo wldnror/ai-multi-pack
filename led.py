@@ -61,7 +61,7 @@ def color_chase(color, wait):
         pixels[i] = color
         time.sleep(wait)
         pixels.show()
-    time.sleep(0.5)
+    time.sleep(0.1)
 
 # 색상을 RGB 값으로 정의
 RED = (255, 0, 0)
