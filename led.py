@@ -160,6 +160,8 @@ def color_wipe(start_pixel, end_pixel, color, wait):
         time.sleep(wait)
 
 # 색상 정의
+BLUE = (255, 0, 0)
+BLUE = (0, 255, 0)
 BLUE = (0, 0, 255)
 
 # 메인 함수
