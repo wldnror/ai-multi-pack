@@ -132,7 +132,7 @@ import time
 
 pixel_pin = board.D18
 num_pixels = 288
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.1, auto_write=False, pixel_order=neopixel.GRB)
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.01, auto_write=False, pixel_order=neopixel.GRB)
 
 def raindrop(start_pixel, end_pixel, color, trail_length, wait, start_delay):
     time.sleep(start_delay)
