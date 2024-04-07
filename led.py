@@ -86,10 +86,53 @@
 # if __name__ == "__main__":
 #     main()
 
-# TEST3
-# 두 개의 144 LED 네오픽셀 패널을 제어하는 코드 예시입니다.
-# 이 코드는 각 패널에 대해 간단한 애니메이션을 실행합니다.
+# # TEST3
+# # 두 개의 144 LED 네오픽셀 패널을 제어하는 코드 예시입니다.
+# # 이 코드는 각 패널에 대해 간단한 애니메이션을 실행합니다.
 
+# import board
+# import neopixel
+# import time
+
+# # 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
+# pixel_pin = board.D18
+
+# # 각 패널의 LED 개수 설정
+# num_pixels_per_panel = 144
+# total_pixels = num_pixels_per_panel * 2  # 총 LED 개수
+
+# # NeoPixel 객체 생성
+# pixels = neopixel.NeoPixel(pixel_pin, total_pixels, brightness=0.2, auto_write=False)
+
+# # 패널에 색상을 채우는 함수
+# def fill_panel(panel_num, color):
+#     start_index = panel_num * num_pixels_per_panel
+#     end_index = start_index + num_pixels_per_panel
+#     for i in range(start_index, end_index):
+#         pixels[i] = color
+#     pixels.show()
+
+# # 메인 함수
+# def main():
+#     while True:
+#         # 첫 번째 패널을 빨간색으로 채움
+#         fill_panel(0, (255, 0, 0))
+#         time.sleep(1)
+#         # 첫 번째 패널을 꺼짐
+#         fill_panel(0, (0, 0, 0))
+        
+#         # 두 번째 패널을 파란색으로 채움
+#         fill_panel(1, (0, 0, 255))
+#         time.sleep(1)
+#         # 두 번째 패널을 꺼짐
+#         fill_panel(1, (0, 0, 0))
+
+# # 메인 함수 실행
+# if __name__ == "__main__":
+#     main()
+
+
+# 먼저 필요한 모듈을 임포트합니다.
 import board
 import neopixel
 import time
@@ -97,35 +140,29 @@ import time
 # 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
 pixel_pin = board.D18
 
-# 각 패널의 LED 개수 설정
-num_pixels_per_panel = 144
-total_pixels = num_pixels_per_panel * 2  # 총 LED 개수
+# LED의 개수 설정
+num_pixels = 288
 
 # NeoPixel 객체 생성
-pixels = neopixel.NeoPixel(pixel_pin, total_pixels, brightness=0.2, auto_write=False)
+pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
 
-# 패널에 색상을 채우는 함수
-def fill_panel(panel_num, color):
-    start_index = panel_num * num_pixels_per_panel
-    end_index = start_index + num_pixels_per_panel
-    for i in range(start_index, end_index):
+# 특정 범위의 LED에 색상을 적용하는 함수
+def color_wipe(start_pixel, end_pixel, color, wait):
+    for i in range(start_pixel, end_pixel):
         pixels[i] = color
-    pixels.show()
+        time.sleep(wait)
+        pixels.show()
+    time.sleep(0.5)
 
 # 메인 함수
 def main():
+    # 초기화: 모든 LED를 꺼둡니다.
+    pixels.fill((0, 0, 0))
+    pixels.show()
+    
+    # 반복해서 100번째부터 200번째 LED까지 파란색으로 켭니다.
     while True:
-        # 첫 번째 패널을 빨간색으로 채움
-        fill_panel(0, (255, 0, 0))
-        time.sleep(1)
-        # 첫 번째 패널을 꺼짐
-        fill_panel(0, (0, 0, 0))
-        
-        # 두 번째 패널을 파란색으로 채움
-        fill_panel(1, (0, 0, 255))
-        time.sleep(1)
-        # 두 번째 패널을 꺼짐
-        fill_panel(1, (0, 0, 0))
+        color_wipe(99, 200, (0, 0, 255), 0.01)  # 시작 인덱스는 0부터 시작하므로 99를 사용합니다.
 
 # 메인 함수 실행
 if __name__ == "__main__":
