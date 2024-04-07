@@ -132,8 +132,6 @@
 #     main()
 
 
-# 수정된 코드: 100번째부터 200번째 LED까지만 파란색으로 점등하는 예시
-
 import board
 import neopixel
 import time
@@ -147,12 +145,7 @@ num_pixels = 288
 # NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
 
-# 특정 범위의 LED에 색상을 적용하는 함수
 def color_wipe(start_pixel, end_pixel, color, wait):
-    # 모든 LED를 끕니다 (초기화).
-    pixels.fill((0, 0, 0))
-    pixels.show()
-
     # 지정된 범위의 LED에만 색을 적용합니다.
     for i in range(start_pixel, end_pixel):
         pixels[i] = color
@@ -160,15 +153,14 @@ def color_wipe(start_pixel, end_pixel, color, wait):
         time.sleep(wait)
 
 # 색상 정의
-BLUE = (255, 0, 0)
-BLUE = (0, 255, 0)
-BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
 
 # 메인 함수
 def main():
-    # 100번째부터 200번째 LED까지만 파란색으로 켜는 효과를 반복합니다.
     while True:
-        color_wipe(99, 200, BLUE, 0.01)  # 100번째 LED는 인덱스 99로 시작합니다.
+        color_wipe(99, 150, RED, 0.01)  # 100번째부터 150번째 LED에 빨간색을 적용
+        color_wipe(150, 200, GREEN, 0.01)  # 151번째부터 200번째 LED에 녹색을 적용
 
 # 메인 함수 실행
 if __name__ == "__main__":
