@@ -1,3 +1,5 @@
+# TEST1
+
 # from rgbmatrix import RGBMatrix, RGBMatrixOptions, graphics
 
 # # LED 매트릭스 설정
@@ -42,6 +44,52 @@
 #     canvas.Clear()
 #     matrix.Clear()
 
+# # TEST2
+
+# import board
+# import neopixel
+# import time
+
+# # 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
+# pixel_pin = board.D18
+
+# # LED의 개수 설정
+# num_pixels = 288
+
+# # NeoPixel 객체 생성
+# pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
+
+# # LED 스트립에 색상을 설정하는 함수
+# def color_chase(color, wait):
+#     for i in range(num_pixels):
+#         pixels[i] = color
+#         time.sleep(wait)
+#         pixels.show()
+#     time.sleep(0.01)
+
+# # 색상을 RGB 값으로 정의
+# RED = (255, 0, 0)
+# GREEN = (0, 255, 0)
+# BLUE = (0, 0, 255)
+
+# # 메인 함수
+# def main():
+#     while True:
+#         # 빨간색을 쫓아가는 효과
+#         color_chase(RED, 0.01)
+#         # 초록색을 쫓아가는 효과
+#         color_chase(GREEN, 0.01)
+#         # 파란색을 쫓아가는 효과
+#         color_chase(BLUE, 0.01)
+
+# # 메인 함수 실행
+# if __name__ == "__main__":
+#     main()
+
+# TEST3
+# 두 개의 144 LED 네오픽셀 패널을 제어하는 코드 예시입니다.
+# 이 코드는 각 패널에 대해 간단한 애니메이션을 실행합니다.
+
 import board
 import neopixel
 import time
@@ -49,36 +97,36 @@ import time
 # 사용할 GPIO 핀 설정 (라즈베리 파이 제로의 경우 GPIO 18)
 pixel_pin = board.D18
 
-# LED의 개수 설정
-num_pixels = 288
+# 각 패널의 LED 개수 설정
+num_pixels_per_panel = 144
+total_pixels = num_pixels_per_panel * 2  # 총 LED 개수
 
 # NeoPixel 객체 생성
-pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
+pixels = neopixel.NeoPixel(pixel_pin, total_pixels, brightness=0.2, auto_write=False)
 
-# LED 스트립에 색상을 설정하는 함수
-def color_chase(color, wait):
-    for i in range(num_pixels):
+# 패널에 색상을 채우는 함수
+def fill_panel(panel_num, color):
+    start_index = panel_num * num_pixels_per_panel
+    end_index = start_index + num_pixels_per_panel
+    for i in range(start_index, end_index):
         pixels[i] = color
-        time.sleep(wait)
-        pixels.show()
-    time.sleep(0.01)
-
-# 색상을 RGB 값으로 정의
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
+    pixels.show()
 
 # 메인 함수
 def main():
     while True:
-        # 빨간색을 쫓아가는 효과
-        color_chase(RED, 0.01)
-        # 초록색을 쫓아가는 효과
-        color_chase(GREEN, 0.01)
-        # 파란색을 쫓아가는 효과
-        color_chase(BLUE, 0.01)
+        # 첫 번째 패널을 빨간색으로 채움
+        fill_panel(0, (255, 0, 0))
+        time.sleep(1)
+        # 첫 번째 패널을 꺼짐
+        fill_panel(0, (0, 0, 0))
+        
+        # 두 번째 패널을 파란색으로 채움
+        fill_panel(1, (0, 0, 255))
+        time.sleep(1)
+        # 두 번째 패널을 꺼짐
+        fill_panel(1, (0, 0, 0))
 
 # 메인 함수 실행
 if __name__ == "__main__":
     main()
-
