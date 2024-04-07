@@ -131,7 +131,6 @@
 # if __name__ == "__main__":
 #     main()
 
-
 import board
 import neopixel
 import time
@@ -145,9 +144,20 @@ num_pixels = 288
 # NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.2, auto_write=False, pixel_order=neopixel.GRB)
 
-def color_wipe(start_pixel, end_pixel, color, wait):
-    for i in range(start_pixel, end_pixel):
-        pixels[i] = color
+def fade_in_out(start_pixel, end_pixel, color, wait):
+    # 페이드 인 (밝기 증가)
+    for b in range(0, 256, 5):  # 0부터 255까지 밝기를 조절 (5단계로 증가)
+        for i in range(start_pixel, end_pixel):
+            adjusted_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
+            pixels[i] = adjusted_color
+        pixels.show()
+        time.sleep(wait)
+    
+    # 페이드 아웃 (밝기 감소)
+    for b in range(255, -1, -5):  # 255부터 0까지 밝기를 조절 (5단계로 감소)
+        for i in range(start_pixel, end_pixel):
+            adjusted_color = (int(color[0] * b / 255), int(color[1] * b / 255), int(color[2] * b / 255))
+            pixels[i] = adjusted_color
         pixels.show()
         time.sleep(wait)
 
@@ -158,10 +168,10 @@ BLUE = (0, 0, 255)
 
 # 메인 함수
 def main():
-    colors = [RED, GREEN, BLUE]  # 반복할 색상들을 리스트로 정의
+    colors = [RED, GREEN, BLUE]
     while True:
         for color in colors:
-            color_wipe(99, 200, color, 0.01)  # 각 색상을 순차적으로 적용
+            fade_in_out(99, 200, color, 0.01)  # 각 색상에 대해 페이드 인/아웃 효과 적용
 
 # 메인 함수 실행
 if __name__ == "__main__":
