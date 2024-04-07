@@ -127,7 +127,10 @@ def main():
         # 두 번째 패널을 꺼짐
         fill_panel(1, (0, 0, 0))
 
-
+# 메인 함수 실행
+if __name__ == "__main__":
+    main()
+    
 # # TEST (빗줄기)
 
 # import board
