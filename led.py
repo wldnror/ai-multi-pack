@@ -61,7 +61,7 @@ def color_chase(color, wait):
         pixels[i] = color
         time.sleep(wait)
         pixels.show()
-    time.sleep(0.1)
+    time.sleep(0.01)
 
 # 색상을 RGB 값으로 정의
 RED = (255, 0, 0)
@@ -72,11 +72,11 @@ BLUE = (0, 0, 255)
 def main():
     while True:
         # 빨간색을 쫓아가는 효과
-        color_chase(RED, 0.1)
+        color_chase(RED, 0.01)
         # 초록색을 쫓아가는 효과
-        color_chase(GREEN, 0.1)
+        color_chase(GREEN, 0.01)
         # 파란색을 쫓아가는 효과
-        color_chase(BLUE, 0.1)
+        color_chase(BLUE, 0.01)
 
 # 메인 함수 실행
 if __name__ == "__main__":
