@@ -140,9 +140,9 @@ num_pixels = 288
 # NeoPixel 객체 생성
 pixels = neopixel.NeoPixel(pixel_pin, num_pixels, brightness=0.5, auto_write=False, pixel_order=neopixel.GRB)
 
-def create_raindrop(start_pixel, end_pixel, color, wait):
-    # 한 번에 5개의 LED를 조작합니다.
-    for i in range(start_pixel, end_pixel + 5):
+def create_raindrop(start_pixel, end_pixel, color, wait, offset):
+    # 각 줄기에 대해 반복합니다.
+    for i in range(start_pixel + offset, end_pixel + 5, 20):  # 각 줄기는 20 LED 간격으로 시작합니다.
         # 각 LED에 대해 페이드 인 효과를 적용합니다.
         for j in range(5):
             if i - j >= start_pixel and i - j < end_pixel:
@@ -153,21 +153,15 @@ def create_raindrop(start_pixel, end_pixel, color, wait):
         time.sleep(wait)
 
         # 마지막 LED가 지나가면 꺼줍니다.
-        if i >= 5:
+        if i >= 5 + offset:
             pixels[i - 5] = (0, 0, 0)
 
-# 메인 함수
 def main():
-    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
-    color_index = 0
-
+    colors = [(255, 0, 0), (0, 255, 0), (0, 0, 255)]
     while True:
-        # 현재 색상으로 비 내리는 효과를 생성합니다.
-        create_raindrop(99, 200, colors[color_index], 0.05)
-
-        # 다음 색상을 선택합니다. 첫 번째 색상이 일정 구간 내려온 후 다음 색상이 시작됩니다.
-        color_index = (color_index + 1) % len(colors)
-        time.sleep(2)  # 다음 색상이 시작하기 전에 잠시 대기합니다.
+        for offset in range(0, 20, 5):  # 각 줄기는 5 LED 간격으로 시작합니다.
+            for color in colors:
+                create_raindrop(99, 200, color, 0.1, offset)
 
 if __name__ == "__main__":
     main()
