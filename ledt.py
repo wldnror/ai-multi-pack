@@ -37,6 +37,7 @@ def control_leds():
     init_mpu6050()
     while True:
         accel_x = read_accelerometer(0x3b)  # X축 가속도 값 읽기
+        print(f"Current X-axis acceleration: {accel_x}")  # 현재 X축 가속도 값 출력
 
         if accel_x > 1500:
             # 우측 기울기: 첫 번째 패널 (빨간색) 활성화
