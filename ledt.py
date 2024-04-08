@@ -85,19 +85,26 @@ def read_accelerometer(axis):
     else:
         return value
 
-def sweep_panel(start_index, end_index, color, reverse=False):
-    indices = range(start_index, end_index) if not reverse else reversed(range(start_index, end_index))
+def clear_leds():
+    for i in range(total_pixels):
+        pixels[i] = (0, 0, 0)
+    pixels.show()
+
+def sweep_panel(start_index, end_index, color, reverse=False, speed=0.05):
+    indices = range(start_index, end_index, 5) if not reverse else range(end_index - 1, start_index - 1, -5)
     
     for i in indices:
-        for j in range(num_pixels_per_panel):
+        clear_leds()  # 새로운 LED 애니메이션 시작 전에 모든 LED를 끕니다.
+        for j in range(5):
             pixel_index = (i + j) % num_pixels_per_panel + start_index
-            pixels[pixel_index] = color if j < 5 and j + i % num_pixels_per_panel < num_pixels_per_panel else (0, 0, 0)
+            if 0 <= pixel_index - start_index < num_pixels_per_panel:
+                pixels[pixel_index] = color
         pixels.show()
         # 각 단계마다 기울기 체크
         current_accel_x = read_accelerometer(0x3b)
         if (current_accel_x > 1500 and reverse) or (current_accel_x < -1500 and not reverse):
             break  # 기울기 변경 시 반복 중단
-        time.sleep(0.1)
+        time.sleep(speed)
 
 def control_leds():
     init_mpu6050()
@@ -110,17 +117,15 @@ def control_leds():
         if accel_x > 1500 and last_state != 'right':
             # 우측 기울기: 파란색 LED 패널 활성화 및 스윕
             last_state = 'right'
-            sweep_panel(num_pixels_per_panel, total_pixels, (0, 0, 255))
+            sweep_panel(num_pixels_per_panel, total_pixels, (0, 0, 255), speed=0.05)
         elif accel_x < -1500 and last_state != 'left':
             # 좌측 기울기: 빨간색 LED 패널 역방향 활성화 및 스윕
             last_state = 'left'
-            sweep_panel(0, num_pixels_per_panel, (255, 0, 0), reverse=True)
+            sweep_panel(0, num_pixels_per_panel, (255, 0, 0), reverse=True, speed=0.05)
         elif accel_x >= -1500 and accel_x <= 1500 and last_state != 'neutral':
             # 기울기 없음: 모든 패널 비활성화 및 상태 초기화
             last_state = 'neutral'
-            for i in range(total_pixels):
-                pixels[i] = (0, 0, 0)
-            pixels.show()
+            clear_leds()
 
         time.sleep(0.1)
 
