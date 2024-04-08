@@ -34,18 +34,34 @@
 #         response = f"My IP address is {raspberry_pi_ip}"
 #         sock.sendto(response.encode(), addr)
 import socket
+import numpy as np
+# 여기에 FFT를 계산하고 LED를 제어하기 위한 추가 모듈을 임포트하세요.
 
-udp_ip = "0.0.0.0"  # 모든 인터페이스에서 들어오는 데이터를 수신
-udp_port = 12345
+tcp_ip = '0.0.0.0'
+tcp_port = 12345
+buffer_size = 4096  # 임의로 설정한 버퍼 크기, 필요에 따라 조정하세요.
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((udp_ip, udp_port))
+# TCP 서버 설정
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.bind((tcp_ip, tcp_port))
+sock.listen(1)
+print("TCP Server listening...")
 
-print("UDP 서버가 시작되었습니다. 대기 중...")
+conn, addr = sock.accept()
+print('Connection address:', addr)
 
 while True:
-    data, addr = sock.recvfrom(1024)
-    print(f"수신된 오디오 데이터 길이: {len(data)} from {addr}")
+    try:
+        data = conn.recv(buffer_size)
+        if not data: break
+        print("Received data...")
 
-    # 여기에서 수신된 오디오 데이터(data)를 처리하는 코드를 추가하면 됩니다.
-    # 예를 들어 오디오 데이터를 재생하거나 저장하는 등의 작업을 수행할 수 있습니다.
+        # 여기에서 데이터를 스펙트럼 분석하고 LED 제어 로직을 구현하세요.
+        # 예: fft_result = np.fft.fft(np.frombuffer(data, dtype=np.int16))
+
+    except ConnectionResetError:
+        print("Connection reset by peer.")
+        break
+
+conn.close()
+sock.close()
