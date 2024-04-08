@@ -91,42 +91,44 @@ def clear_leds():
         pixels[i] = (0, 0, 0)
     pixels.show()
 
-def update_leds(color, start_index, end_index, reverse=False):
-    if reverse:
-        for i in reversed(range(start_index, end_index)):
-            clear_leds()
-            if i >= 5:  # LED 그룹을 거꾸로 채움
-                for j in range(5):
-                    pixels[i - j] = color
-            pixels.show()
-            time.sleep(0.05)
-    else:
-        for i in range(start_index, end_index):
-            clear_leds()
-            if i + 5 <= end_index:  # LED 그룹을 순서대로 채움
-                for j in range(5):
-                    pixels[i + j] = color
-            pixels.show()
-            time.sleep(0.05)
+def sweep_panel(start_index, end_index, color, reverse=False, speed=0.05):
+    indices = range(start_index, end_index, 5) if not reverse else range(end_index - 1, start_index - 1, -5)
+    
+    for i in indices:
+        clear_leds()  # 새로운 LED 애니메이션 시작 전에 모든 LED를 끕니다.
+        for j in range(5):
+            pixel_index = (i + j) % num_pixels_per_panel + start_index
+            if 0 <= pixel_index - start_index < num_pixels_per_panel:
+                pixels[pixel_index] = color
+        pixels.show()
+        # 각 단계마다 기울기 체크
+        current_accel_x = read_accelerometer(0x3b)
+        if (current_accel_x > 1500 and reverse) or (current_accel_x < -1500 and not reverse):
+            break  # 기울기 변경 시 반복 중단
+        time.sleep(speed)
 
 def control_leds():
     init_mpu6050()
     last_state = None
 
     while True:
-        accel_x = read_accelerometer(0x3b)
-        # X축 가속도 값에 따른 상태 변경 감지
+        accel_x = read_accelerometer(0x3b)  # X축 가속도 값 읽기
+        print(f"Current X-axis acceleration: {accel_x}")  # 현재 X축 가속도 값 출력
+
         if accel_x > 1500 and last_state != 'right':
+            # 우측 기울기: 파란색 LED 패널 활성화 및 스윕
             last_state = 'right'
-            update_leds((0, 0, 255), num_pixels_per_panel, total_pixels)
+            sweep_panel(num_pixels_per_panel, total_pixels, (0, 0, 255), speed=0.05)
         elif accel_x < -1500 and last_state != 'left':
+            # 좌측 기울기: 빨간색 LED 패널 역방향 활성화 및 스윕
             last_state = 'left'
-            update_leds((255, 0, 0), 0, num_pixels_per_panel, reverse=True)
-        elif -1500 <= accel_x <= 1500 and last_state != 'neutral':
+            sweep_panel(0, num_pixels_per_panel, (255, 0, 0), reverse=True, speed=0.05)
+        elif accel_x >= -1500 and accel_x <= 1500 and last_state != 'neutral':
+            # 기울기 없음: 모든 패널 비활성화 및 상태 초기화
             last_state = 'neutral'
             clear_leds()
 
-        time.sleep(0.1)  # 기울기 측정 주기 조절
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     control_leds()
