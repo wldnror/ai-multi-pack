@@ -91,44 +91,42 @@ def clear_leds():
         pixels[i] = (0, 0, 0)
     pixels.show()
 
-def sweep_with_tail(start_index, end_index, color, reverse=False, step=8):
-    # 방향 결정
-    if reverse:
-        indices = range(end_index - 1, start_index - 1, -step)
-    else:
-        indices = range(start_index, end_index, step)
+def gradient_sweep(color, start_index, end_index, reverse=False):
+    steps = 5  # 그라데이션 단계
+    for i in range(start_index, end_index, 5):
+        for step in range(steps):
+            # 그라데이션을 위해 점차 색상을 밝게 합니다.
+            for j in range(5):
+                idx = (i + j) % num_pixels_per_panel + (0 if not reverse else num_pixels_per_panel)
+                if 0 <= idx - start_index < num_pixels_per_panel:
+                    intensity = (step + 1) / float(steps)
+                    pixels[idx] = tuple([int(c * intensity) for c in color])
+            pixels.show()
+            time.sleep(0.02)
 
-    for i in indices:
-        for j in range(step):
-            # LED 인덱스 계산
-            pixel_index = (i + j) % num_pixels_per_panel + start_index
-            if 0 <= pixel_index - start_index < num_pixels_per_panel:
-                # 꼬리에 해당하는 LED 밝기 감소
-                brightness_factor = 1.0 - (j / step)  # 꼬리 부분의 밝기 조절
-                adjusted_color = tuple(int(brightness_factor * c) for c in color)
-                pixels[pixel_index] = adjusted_color
+        # 다시 모든 LED를 끕니다.
+        for j in range(5):
+            idx = (i + j) % num_pixels_per_panel + (0 if not reverse else num_pixels_per_panel)
+            if 0 <= idx - start_index < num_pixels_per_panel:
+                pixels[idx] = (0, 0, 0)
         pixels.show()
-        time.sleep(0.05)
-
-        # 기울기 변경 감지
-        current_accel_x = read_accelerometer(0x3b)
-        if (current_accel_x > 1500 and reverse) or (current_accel_x < -1500 and not reverse):
-            break  # 기울기 변경 시 반복 중단
 
 def control_leds():
     init_mpu6050()
     last_state = None
 
     while True:
-        accel_x = read_accelerometer(0x3b)  # X축 가속도 값 읽기
-        print(f"Current X-axis acceleration: {accel_x}")  # 현재 X축 가속도 값 출력
+        accel_x = read_accelerometer(0x3b)
+        print(f"Current X-axis acceleration: {accel_x}")
 
         if accel_x > 1500 and last_state != 'right':
             last_state = 'right'
-            sweep_with_tail(num_pixels_per_panel, total_pixels, (0, 0, 255), step=8)
+            clear_leds()
+            gradient_sweep((0, 0, 255), num_pixels_per_panel, total_pixels)
         elif accel_x < -1500 and last_state != 'left':
             last_state = 'left'
-            sweep_with_tail(0, num_pixels_per_panel, (255, 0, 0), reverse=True, step=8)
+            clear_leds()
+            gradient_sweep((255, 0, 0), 0, num_pixels_per_panel, reverse=True)
         elif accel_x >= -1500 and accel_x <= 1500 and last_state != 'neutral':
             last_state = 'neutral'
             clear_leds()
