@@ -91,37 +91,29 @@ def clear_leds():
         pixels[i] = (0, 0, 0)
     pixels.show()
 
-def fade_in_out(start_index, end_index, color, reverse=False, speed=0.02, step=8):
+def sweep_with_tail(start_index, end_index, color, reverse=False, step=8):
+    # 방향 결정
     if reverse:
         indices = range(end_index - 1, start_index - 1, -step)
     else:
         indices = range(start_index, end_index, step)
 
     for i in indices:
-        # Fade in
-        for brightness in range(1, 11):
-            for j in range(step):
-                pixel_index = (i + j) % num_pixels_per_panel + start_index
-                if 0 <= pixel_index - start_index < num_pixels_per_panel:
-                    adjusted_color = tuple(int(brightness * 0.1 * c) for c in color)
-                    pixels[pixel_index] = adjusted_color
-            pixels.show()
-            time.sleep(speed)
+        for j in range(step):
+            # LED 인덱스 계산
+            pixel_index = (i + j) % num_pixels_per_panel + start_index
+            if 0 <= pixel_index - start_index < num_pixels_per_panel:
+                # 꼬리에 해당하는 LED 밝기 감소
+                brightness_factor = 1.0 - (j / step)  # 꼬리 부분의 밝기 조절
+                adjusted_color = tuple(int(brightness_factor * c) for c in color)
+                pixels[pixel_index] = adjusted_color
+        pixels.show()
+        time.sleep(0.05)
 
-        # Fade out
-        for brightness in reversed(range(1, 11)):
-            for j in range(step):
-                pixel_index = (i + j) % num_pixels_per_panel + start_index
-                if 0 <= pixel_index - start_index < num_pixels_per_panel:
-                    adjusted_color = tuple(int(brightness * 0.1 * c) for c in color)
-                    pixels[pixel_index] = adjusted_color
-            pixels.show()
-            time.sleep(speed)
-
-        # Check for tilt changes
+        # 기울기 변경 감지
         current_accel_x = read_accelerometer(0x3b)
         if (current_accel_x > 1500 and reverse) or (current_accel_x < -1500 and not reverse):
-            break  # If tilt changes, exit the loop
+            break  # 기울기 변경 시 반복 중단
 
 def control_leds():
     init_mpu6050()
@@ -132,15 +124,12 @@ def control_leds():
         print(f"Current X-axis acceleration: {accel_x}")  # 현재 X축 가속도 값 출력
 
         if accel_x > 1500 and last_state != 'right':
-            # 우측 기울기: 파란색 LED 패널 활성화 및 스윕
             last_state = 'right'
-            fade_in_out(num_pixels_per_panel, total_pixels, (0, 0, 255), speed=0.02, step=8)
+            sweep_with_tail(num_pixels_per_panel, total_pixels, (0, 0, 255), step=8)
         elif accel_x < -1500 and last_state != 'left':
-            # 좌측 기울기: 빨간색 LED 패널 역방향 활성화 및 스윕
             last_state = 'left'
-            fade_in_out(0, num_pixels_per_panel, (255, 0, 0), reverse=True, speed=0.02, step=8)
+            sweep_with_tail(0, num_pixels_per_panel, (255, 0, 0), reverse=True, step=8)
         elif accel_x >= -1500 and accel_x <= 1500 and last_state != 'neutral':
-            # 기울기 없음: 모든 패널 비활성화 및 상태 초기화
             last_state = 'neutral'
             clear_leds()
 
