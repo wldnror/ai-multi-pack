@@ -91,25 +91,23 @@ def clear_leds():
         pixels[i] = (0, 0, 0)
     pixels.show()
 
-def gradient_sweep(color, start_index, end_index, reverse=False):
-    steps = 5  # 그라데이션 단계
-    for i in range(start_index, end_index, 5):
-        for step in range(steps):
-            # 그라데이션을 위해 점차 색상을 밝게 합니다.
-            for j in range(5):
-                idx = (i + j) % num_pixels_per_panel + (0 if not reverse else num_pixels_per_panel)
-                if 0 <= idx - start_index < num_pixels_per_panel:
-                    intensity = (step + 1) / float(steps)
-                    pixels[idx] = tuple([int(c * intensity) for c in color])
+def update_leds(color, start_index, end_index, reverse=False):
+    if reverse:
+        for i in reversed(range(start_index, end_index)):
+            clear_leds()
+            if i >= 5:  # LED 그룹을 거꾸로 채움
+                for j in range(5):
+                    pixels[i - j] = color
             pixels.show()
-            time.sleep(0.02)
-
-        # 다시 모든 LED를 끕니다.
-        for j in range(5):
-            idx = (i + j) % num_pixels_per_panel + (0 if not reverse else num_pixels_per_panel)
-            if 0 <= idx - start_index < num_pixels_per_panel:
-                pixels[idx] = (0, 0, 0)
-        pixels.show()
+            time.sleep(0.05)
+    else:
+        for i in range(start_index, end_index):
+            clear_leds()
+            if i + 5 <= end_index:  # LED 그룹을 순서대로 채움
+                for j in range(5):
+                    pixels[i + j] = color
+            pixels.show()
+            time.sleep(0.05)
 
 def control_leds():
     init_mpu6050()
@@ -117,21 +115,18 @@ def control_leds():
 
     while True:
         accel_x = read_accelerometer(0x3b)
-        print(f"Current X-axis acceleration: {accel_x}")
-
+        # X축 가속도 값에 따른 상태 변경 감지
         if accel_x > 1500 and last_state != 'right':
             last_state = 'right'
-            clear_leds()
-            gradient_sweep((0, 0, 255), num_pixels_per_panel, total_pixels)
+            update_leds((0, 0, 255), num_pixels_per_panel, total_pixels)
         elif accel_x < -1500 and last_state != 'left':
             last_state = 'left'
-            clear_leds()
-            gradient_sweep((255, 0, 0), 0, num_pixels_per_panel, reverse=True)
-        elif accel_x >= -1500 and accel_x <= 1500 and last_state != 'neutral':
+            update_leds((255, 0, 0), 0, num_pixels_per_panel, reverse=True)
+        elif -1500 <= accel_x <= 1500 and last_state != 'neutral':
             last_state = 'neutral'
             clear_leds()
 
-        time.sleep(0.1)
+        time.sleep(0.1)  # 기울기 측정 주기 조절
 
 if __name__ == "__main__":
     control_leds()
