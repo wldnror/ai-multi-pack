@@ -38,7 +38,7 @@ def control_leds(fft_results):
 def audio_callback(indata, frames, time, status):
     if status:
         print(status)
-    if any(indata):
+    if np.any(indata):
         # FFT 결과 계산
         fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
         # np.array_split을 사용하여 5개로 분할
