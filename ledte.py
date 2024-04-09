@@ -50,7 +50,7 @@ def audio_callback(indata, frames, time, status):
 
 # 메인 함수
 def main():
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='vc4hdmi'):  # vc4hdmi는 라즈베리파이의 블루투스 입력 장치입니다.
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE):
         print("Streaming started...")
         while True:  # 무한 루프를 통해 스트리밍 유지
             time.sleep(1)
