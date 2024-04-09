@@ -53,7 +53,7 @@ def main():
     with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='default'):
         print("Streaming started...")
         while True:
-    time.sleep(1)
+            time.sleep(1)
 
 
 if __name__ == "__main__":
