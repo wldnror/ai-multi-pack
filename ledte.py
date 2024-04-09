@@ -50,9 +50,9 @@ def audio_callback(indata, frames, time, status):
 
 # 메인 함수
 def main():
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='pulse'):
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='bluez_source.BC_93_07_14_62_EE.a2dp_source'):
         print("Streaming started...")
-        while True:  # 무한 루프를 통해 스트리밍 유지
+        while True:
             time.sleep(1)
 
 if __name__ == "__main__":
