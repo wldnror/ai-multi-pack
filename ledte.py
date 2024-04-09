@@ -39,11 +39,14 @@ def audio_callback(indata, frames, time, status):
     if status:
         print(status)
     if any(indata):
-        # indata의 첫 번째 채널에서 오디오 샘플을 FFT로 변환
+        # FFT 결과 계산
         fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
-        # 5개 대역으로 분할하고 각 대역의 평균값을 계산
-        fft_result = np.average(np.split(fft_result, 5), axis=1)
-        control_leds(fft_result)
+        # np.array_split을 사용하여 5개로 분할
+        fft_result_split = np.array_split(fft_result, 5)
+        # 각 분할된 결과의 평균을 계산
+        fft_result_means = [np.mean(part) for part in fft_result_split]
+        control_leds(fft_result_means)
+
 
 # 메인 함수
 def main():
