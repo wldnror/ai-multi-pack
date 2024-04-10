@@ -47,12 +47,12 @@ def audio_callback(indata, frames, time, status):
         fft_result_means = [np.mean(part) for part in fft_result_split]
         control_leds(fft_result_means)
 
-# 메인 함수
+# 메인 함수 내에서
 def main():
-    # 사용할 오디오 소스의 이름 설정
-    audio_source_name = 'bluez_source.BC_93_07_14_62_EE.a2dp_source'
-    
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='pulse'):
+    # ALSA 디바이스 직접 지정. 'hw:1,0'은 예시이며, 실제 디바이스 번호로 대체해야 합니다.
+    alsa_device = 'hw:1,0'  # 이 값을 실제 시스템의 오디오 입력 디바이스로 설정합니다.
+
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=alsa_device):
         print("Streaming started...")
         while True:
             time.sleep(1)
