@@ -1,4 +1,4 @@
-import board
+import adafruit_blinka.board as board
 import neopixel
 import time
 
