@@ -1,27 +1,31 @@
-import RPi.GPIO as GPIO
+import board
+import neopixel
 import time
 
-# LED가 연결된 GPIO 핀 번호
-LED_PIN = 18
+# 매트릭스 LED 설정
+LED_COUNT = 288      # LED 개수
+LED_PIN = board.D18   # GPIO 핀 번호
+LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
 
-# GPIO 핀 번호 할당 방식 설정
-GPIO.setmode(GPIO.BCM)
+# NeoPixel 객체 초기화
+strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# LED 핀을 출력으로 설정
-GPIO.setup(LED_PIN, GPIO.OUT)
+# 모든 LED를 빨간색으로 켜고 1초 동안 대기
+strip.fill((255, 0, 0))
+strip.show()
+time.sleep(1)
 
-try:
-    # 무한 반복하여 LED를 켜고 끕니다.
-    while True:
-        print("LED 켜기")
-        GPIO.output(LED_PIN, GPIO.HIGH)  # LED를 켭니다.
-        time.sleep(1)  # 1초 동안 대기
+# 모든 LED를 녹색으로 켜고 1초 동안 대기
+strip.fill((0, 255, 0))
+strip.show()
+time.sleep(1)
 
-        print("LED 끄기")
-        GPIO.output(LED_PIN, GPIO.LOW)  # LED를 끕니다.
-        time.sleep(1)  # 1초 동안 대기
+# 모든 LED를 파란색으로 켜고 1초 동안 대기
+strip.fill((0, 0, 255))
+strip.show()
+time.sleep(1)
 
-# 사용자가 Ctrl+C를 눌러 프로그램을 종료할 때까지 계속 실행합니다.
-except KeyboardInterrupt:
-    # GPIO 설정 초기화
-    GPIO.cleanup()
+# 모든 LED를 꺼고 1초 동안 대기
+strip.fill((0, 0, 0))
+strip.show()
+time.sleep(1)
