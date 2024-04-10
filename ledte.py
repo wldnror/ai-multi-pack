@@ -8,7 +8,6 @@ import time
 LED_COUNT = 150      # LED 개수
 LED_PIN = board.D18  # GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
-SAMPLE_RATE = 44100  # 오디오 샘플레이트
 FFT_SIZE = 1024      # FFT 크기, 실제 오디오 데이터의 처리 단위
 
 # NeoPixel 객체 초기화
@@ -22,6 +21,29 @@ COLORS = [
     (0, 255, 0),    # 초록색
     (0, 0, 255)     # 파란색
 ]
+
+# 샘플 속도 확인
+def print_device_info():
+    print("Available audio devices:")
+    for i, dev in enumerate(sd.query_devices()):
+        print(f"  {i}: {dev['name']} (input: {dev['max_input_channels']}, output: {dev['max_output_channels']})")
+        if dev['name'] == 'loopback_device_name':
+            print(f"    Supported sample rates: {dev['supported_samplerates']}")
+
+# 메인 함수 내에서 호출하여 확인
+def main():
+    print_device_info()  # 샘플 속도 확인을 위해 사용 가능한 오디오 장치 정보를 출력합니다.
+    # 선택한 샘플 속도를 설정합니다. 아래의 값을 지원하는 샘플 속도 중 하나로 변경하십시오.
+    SAMPLE_RATE = 44100  # 예시로 44100Hz로 설정합니다.
+    
+    # Loopback 장치를 오디오 입력으로 사용
+    loopback_device = 'hw:3,1'  # 루프백 장치의 이름이나 인덱스를 여기에 지정
+
+    # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
+        print("Streaming started...")
+        while True:
+            time.sleep(1)
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
@@ -46,17 +68,6 @@ def audio_callback(indata, frames, time, status):
         # 각 분할된 결과의 평균을 계산
         fft_result_means = [np.mean(part) for part in fft_result_split]
         control_leds(fft_result_means)
-
-# 메인 함수 내에서
-def main():
-    # Loopback 장치를 오디오 입력으로 사용
-    loopback_device = 'hw:3,1'  # 루프백 장치의 이름이나 인덱스를 여기에 지정
-
-    # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
-        print("Streaming started...")
-        while True:
-            time.sleep(1)
 
 if __name__ == "__main__":
     main()
