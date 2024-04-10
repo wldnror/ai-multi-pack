@@ -36,8 +36,9 @@ def control_leds(fft_results):
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
+    print("Input data:", indata)
     if status:
-        print(status)
+        print("Status:", status)
     if np.any(indata):
         # FFT 결과 계산
         fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
