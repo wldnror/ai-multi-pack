@@ -52,7 +52,7 @@ def main():
     # 사용할 오디오 소스의 이름 설정
     audio_source_name = 'bluez_source.BC_93_07_14_62_EE.a2dp_source'
     
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=audio_source_name):
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='pulse'):
         print("Streaming started...")
         while True:
             time.sleep(1)
