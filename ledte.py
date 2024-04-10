@@ -34,27 +34,28 @@ def control_leds(fft_results):
             strip[i * 30 + j] = color
     strip.show()
 
-# 오디오 콜백 함수는 변경하지 않고 유지
+# 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
     if status:
         print(status)
     if np.any(indata):
+        # FFT 결과 계산
         fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
+        # np.array_split을 사용하여 5개로 분할
         fft_result_split = np.array_split(fft_result, 5)
+        # 각 분할된 결과의 평균을 계산
         fft_result_means = [np.mean(part) for part in fft_result_split]
         control_leds(fft_result_means)
 
 # 메인 함수 내에서
 def main():
-    # 'default' 오디오 장치를 사용하도록 설정
-    default_device = 'default'  # ALSA의 기본 장치를 사용
+    # Loopback 장치를 오디오 입력으로 사용
+    loopback_device = 'loopback-903-12'  # 루프백 장치의 이름이나 인덱스를 여기에 지정
 
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=default_device):
+    # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
         print("Streaming started...")
         while True:
             time.sleep(1)
 
-if __name__ == "__main__":
-    main()
-
-
+if __name__ == "__main
