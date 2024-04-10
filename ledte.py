@@ -34,28 +34,26 @@ def control_leds(fft_results):
             strip[i * 30 + j] = color
     strip.show()
 
-# 오디오 콜백 함수
+# 오디오 콜백 함수는 그대로 유지
 def audio_callback(indata, frames, time, status):
     if status:
         print(status)
     if np.any(indata):
-        # FFT 결과 계산
         fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
-        # np.array_split을 사용하여 5개로 분할
         fft_result_split = np.array_split(fft_result, 5)
-        # 각 분할된 결과의 평균을 계산
         fft_result_means = [np.mean(part) for part in fft_result_split]
         control_leds(fft_result_means)
 
-# 메인 함수 내에서
+# 메인 함수 수정
 def main():
-    # 블루투스 오디오 입력 장치로 변경
-    bluetooth_device = 'bluez_input.BC_93_07_14_62_EE.2'
+    # 'pulse' 장치를 사용하여 오디오 입력을 시도합니다.
+    pulse_device = 'pulse'  # 또는 'default' 장치 사용 가능
 
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=bluetooth_device):
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=pulse_device):
         print("Streaming started...")
         while True:
             time.sleep(1)
 
 if __name__ == "__main__":
     main()
+
