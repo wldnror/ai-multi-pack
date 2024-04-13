@@ -52,7 +52,7 @@ def audio_callback(indata, frames, time, status):
 def main():
     # Loopback 장치를 오디오 입력으로 사용
     # Loopback 장치의 이름을 아래 변수에 할당합니다.
-    loopback_device = 'hw:CARD=Loopback,DEV=0'  # 또는 'hw:CARD=Loopback,DEV=1'
+    loopback_device = 'hw:CARD=Loopback,DEV=1'  # 또는 'hw:CARD=Loopback,DEV=1'
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
     with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
