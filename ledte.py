@@ -8,7 +8,7 @@ import time
 LED_COUNT = 150      # LED 개수
 LED_PIN = board.D18  # GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
-SAMPLE_RATE = 48000  # 오디오 샘플레이트
+SAMPLE_RATE = 44100  # 오디오 샘플레이트
 FFT_SIZE = 1024      # FFT 크기, 실제 오디오 데이터의 처리 단위
 
 # NeoPixel 객체 초기화
@@ -52,8 +52,7 @@ def audio_callback(indata, frames, time, status):
 def main():
     # Loopback 장치를 오디오 입력으로 사용
     # 'aplay -L' 또는 'arecord -L' 명령을 사용하여 확인한 실제 가상 마이크의 ALSA 장치 이름
-    loopback_device = 'hw:2,1'  # 또는 'hw:3,1' 중 적절한 것을 선택
- # 'default'는 PulseAudio를 통해 오디오를 가져옵니다.
+    loopback_device = 'default'  # 'default'는 PulseAudio를 통해 오디오를 가져옵니다.
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
     with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
