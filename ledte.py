@@ -51,8 +51,8 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수 내에서
 def main():
     # Loopback 장치를 오디오 입력으로 사용
-    # Loopback 장치의 이름을 아래 변수에 할당합니다.
-    loopback_device = 'hw:CARD=Loopback,DEV=1'  # 또는 'hw:CARD=Loopback,DEV=1'
+    # 'aplay -L' 또는 'arecord -L' 명령을 사용하여 확인한 실제 가상 마이크의 ALSA 장치 이름
+    loopback_device = 'sysdefault:CARD=Loopback'  # 선택한 Loopback 장치의 이름
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
     with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
