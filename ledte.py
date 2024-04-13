@@ -8,7 +8,7 @@ import time
 LED_COUNT = 150      # LED 개수
 LED_PIN = board.D18  # GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
-SAMPLE_RATE = 44100  # 오디오 샘플레이트 확인 후 이 값을 조정할 필요가 있을 수 있음
+SAMPLE_RATE = 44100  # 오디오 샘플레이트
 FFT_SIZE = 1024      # FFT 크기, 실제 오디오 데이터의 처리 단위
 
 # NeoPixel 객체 초기화
@@ -50,13 +50,11 @@ def audio_callback(indata, frames, time, status):
 
 # 메인 함수 내에서
 def main():
-    # 샘플 레이트 및 채널 수 확인 후 수정
-    device_info = sd.query_devices('hw:3,1', 'input')
-    print("Device info:", device_info)
-    channels = device_info['max_input_channels']  # 장치에서 지원하는 최대 입력 채널 수
+    # Loopback 장치를 오디오 입력으로 사용
+    loopback_device = 'hw:3,1'  # 루프백 장치의 인덱스를 수정
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
-    with sd.InputStream(callback=audio_callback, channels=channels, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
         print("Streaming started...")
         while True:
             time.sleep(1)
