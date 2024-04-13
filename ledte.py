@@ -52,7 +52,7 @@ def audio_callback(indata, frames, time, status):
 def main():
     # Loopback 장치를 오디오 입력으로 사용
     # 'aplay -L' 또는 'arecord -L' 명령을 사용하여 확인한 실제 가상 마이크의 ALSA 장치 이름
-    loopback_device = 'hw:2,0'  # 또는 'hw:3,1' 중 적절한 것을 선택
+    loopback_device = 'hw:2,1'  # 또는 'hw:3,1' 중 적절한 것을 선택
  # 'default'는 PulseAudio를 통해 오디오를 가져옵니다.
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
