@@ -51,7 +51,7 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수 내에서
 def main():
     # Loopback 장치를 오디오 입력으로 사용
-    loopback_device = 'Monitor of Built-in Audio Stereo'  # 루프백 장치의 이름이나 인덱스를 여기에 지정
+    loopback_device = 'hw:3,1'  # 루프백 장치의 인덱스를 수정
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
     with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
