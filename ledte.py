@@ -51,10 +51,11 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수 내에서
 def main():
     # Loopback 장치를 오디오 입력으로 사용
-    loopback_device = 'hw:3,0'  # 루프백 장치의 인덱스를 수정
+    # 'aplay -L' 또는 'arecord -L' 명령을 사용하여 확인한 실제 가상 마이크의 ALSA 장치 이름
+    loopback_device = 'virtual_mic.monitor'  # 예시입니다, 실제 장치 이름을 사용해야 합니다.
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
         print("Streaming started...")
         while True:
             time.sleep(1)
