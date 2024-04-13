@@ -1,7 +1,7 @@
 import numpy as np
 import board
 import neopixel
-import sounddevice as sd
+import alsaaudio
 import time
 
 # LED 스트립 설정
@@ -35,13 +35,12 @@ def control_leds(fft_results):
     strip.show()
 
 # 오디오 콜백 함수
-def audio_callback(indata, frames, time, status):
-    print("Input data:", indata)
+def audio_callback(data, frame_count, time_info, status):
     if status:
         print("Status:", status)
-    if np.any(indata):
+    if data:
         # FFT 결과 계산
-        fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
+        fft_result = np.abs(np.fft.rfft(np.frombuffer(data, dtype=np.int16), n=FFT_SIZE))
         # np.array_split을 사용하여 5개로 분할
         fft_result_split = np.array_split(fft_result, 5)
         # 각 분할된 결과의 평균을 계산
@@ -51,14 +50,22 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수 내에서
 def main():
     # Loopback 장치를 오디오 입력으로 사용
-    # 'aplay -L' 또는 'arecord -L' 명령을 사용하여 확인한 실제 가상 마이크의 ALSA 장치 이름
-    loopback_device = 'hw:CARD=Loopback,DEV=0'  # 선택한 Loopback 장치의 이름
+    # ALSA 장치 이름을 직접 지정
+    loopback_device = 'hw:Loopback,1,0'  # 선택한 Loopback 장치의 이름
 
-    # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=loopback_device):
-        print("Streaming started...")
-        while True:
-            time.sleep(1)
+    # ALSA 장치 열기
+    inp = alsaaudio.PCM(alsaaudio.PCM_CAPTURE, alsaaudio.PCM_NONBLOCK, card=loopback_device)
+    inp.setchannels(1)
+    inp.setrate(SAMPLE_RATE)
+    inp.setformat(alsaaudio.PCM_FORMAT_S16_LE)
+    inp.setperiodsize(FFT_SIZE)
+
+    print("Streaming started...")
+    while True:
+        # 데이터 읽기
+        _, data = inp.read()
+        audio_callback(data, None, None, None)
+        time.sleep(0.1)
 
 if __name__ == "__main__":
     main()
