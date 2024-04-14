@@ -25,14 +25,21 @@ COLORS = [
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    for i in range(5):  # 5개 줄에 대한 처리
-        # fft_results 값을 0에서 255 사이의 값으로 스케일링
-        brightness = int(np.clip(fft_results[i] / FFT_SIZE * 2, 0, 1) * 255)
-        # 각 줄에 해당하는 색상 선택
+    for i in range(5):  # 5개 밴드 처리
+        # FFT 결과를 로그 스케일로 조정하여 더 넓은 동적 범위를 갖도록 함
+        brightness = int(np.clip(10 * np.log10(fft_results[i] + 1), 0, 255))
         color = tuple(brightness * np.array(COLORS[i]) // 255)
-        for j in range(30):  # 각 줄에 30개의 LED
+        for j in range(30):  # 각 밴드에 30개의 LED
             strip[i * 30 + j] = color
     strip.show()
+
+# 오디오 콜백 함수 내에서 FFT 처리 개선
+def audio_callback(indata, frames, time, status):
+    fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
+    fft_result_split = np.array_split(fft_result, 5)
+    fft_result_means = [np.mean(part) for part in fft_result_split]
+    control_leds(fft_result_means)
+)
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
