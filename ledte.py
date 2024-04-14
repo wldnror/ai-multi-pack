@@ -55,7 +55,7 @@ def main():
     loopback_device = 'default'  # 'default'는 PulseAudio를 통해 오디오를 가져옵니다.
 
     # 입력 스트림을 생성하고 콜백 함수로 오디오 데이터 처리
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:2,0'):
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:2,1'):
         print("Streaming started...")
         while True:
             time.sleep(1)
