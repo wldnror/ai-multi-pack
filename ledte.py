@@ -41,20 +41,6 @@ def audio_callback(indata, frames, time, status):
     control_leds(fft_result_means)
 )
 
-# 오디오 콜백 함수
-def audio_callback(indata, frames, time, status):
-    print("Input data:", indata)
-    if status:
-        print("Status:", status)
-    if np.any(indata):
-        # FFT 결과 계산
-        fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
-        # np.array_split을 사용하여 5개로 분할
-        fft_result_split = np.array_split(fft_result, 5)
-        # 각 분할된 결과의 평균을 계산
-        fft_result_means = [np.mean(part) for part in fft_result_split]
-        control_leds(fft_result_means)
-
 # 메인 함수 내에서
 def main():
     # Loopback 장치를 오디오 입력으로 사용
