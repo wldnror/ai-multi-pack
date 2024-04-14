@@ -26,7 +26,8 @@ COLORS = [
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
-    for i in range(5):
+    for i in range(5):  # 5개의 스펙트럼 대역 처리
+        # 로그 스케일 적용 부분 조정
         led_height = int((np.log10(fft_results[i] + 1) / np.log10(max_fft + 1)) * 30)
         for j in range(30):
             if j < led_height:
@@ -39,9 +40,8 @@ def control_leds(fft_results):
 def audio_callback(indata, frames, time, status):
     if status:
         print("Status:", status)
-    # 저주파수 필터 적용
-    indata_filtered = indata * np.hanning(indata.shape[0])
-    fft_result = np.abs(np.fft.rfft(indata_filtered[:, 0], n=FFT_SIZE))
+    # 필터 부분 조정: 저주파수 감소 효과를 줄임
+    fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
     fft_result_split = np.array_split(fft_result, 5)
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
