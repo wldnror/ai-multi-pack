@@ -24,7 +24,7 @@ COLORS = [
 ]
 
 # 스케일링 팩터 정의
-SCALING_FACTORS = [0.6, 0.8, 1.0, 1.2, 1.4]  # 저주파수에서 고주파수로 갈수록 더 민감하게
+SCALING_FACTORS = [0.2, 0.8, 1.0, 1.2, 2.0]  # 저주파수에서 고주파수로 갈수록 더 민감하게
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
