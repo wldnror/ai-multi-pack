@@ -28,13 +28,15 @@ last_brightness = [0] * 5
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    # 스펙트럼의 최대값을 찾아 정규화 진행
-    max_fft = max(fft_results)
+    # 스펙트럼의 최대값을 기준으로 정규화
+    max_fft = max(fft_results) if max(fft_results) > 0 else 1
+    scaled_fft = [x / max_fft for x in fft_results]
+    
     for i in range(5):
-        brightness = int(np.clip((fft_results[i] / max_fft) * 255, 0, 255))
-        # 반응 속도 조절: 새 밝기가 더 낮다면 천천히 감소
-        if brightness < last_brightness[i]:
-            brightness = int(last_brightness[i] * 0.9)  # 이전 밝기의 90%로 감소
+        # 로그 스케일로 밝기 조정
+        brightness = int(np.clip(10 * np.log10(scaled_fft[i] * 100 + 1), 0, 255))
+        # 반응 속도 조절
+        brightness = max(brightness, int(last_brightness[i] * 0.6))  # 지수적 감소
         last_brightness[i] = brightness
         color = tuple(brightness * np.array(COLORS[i]) // 255)
         for j in range(30):
@@ -43,6 +45,8 @@ def control_leds(fft_results):
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
+    if status:
+        print("Status:", status)
     fft_result = np.abs(np.fft.rfft(indata[:, 0], n=FFT_SIZE))
     fft_result_split = np.array_split(fft_result, 5)
     fft_result_means = [np.mean(part) for part in fft_result_split]
