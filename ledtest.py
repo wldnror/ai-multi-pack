@@ -4,7 +4,7 @@ import time
 
 # 매트릭스 LED 설정
 LED_COUNT = 288      # LED 개수
-LED_PIN = board.D18   # GPIO 핀 번호
+LED_PIN = board.D21   # GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
 
 # NeoPixel 객체 초기화
