@@ -9,7 +9,7 @@ LED_COUNT = 150      # LED 개수
 LED_PIN = board.D21  # GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
 SAMPLE_RATE = 48000  # 오디오 샘플레이트
-FFT_SIZE = 13024      # FFT 크기
+FFT_SIZE = 1024      # FFT 크기
 
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
@@ -23,24 +23,17 @@ COLORS = [
     (0, 0, 255)     # 파란색
 ]
 
-# 이전 밝기 상태를 저장할 배열
-last_brightness = [0] * 5
-
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    # 스펙트럼의 최대값을 기준으로 정규화
-    max_fft = max(fft_results) if max(fft_results) > 0 else 1
-    scaled_fft = [x / max_fft for x in fft_results]
-    
-    for i in range(5):
-        # 로그 스케일로 밝기 조정
-        brightness = int(np.clip(10 * np.log10(scaled_fft[i] * 100 + 1), 0, 255))
-        # 반응 속도 조절
-        brightness = max(brightness, int(last_brightness[i] * 0.6))  # 지수적 감소
-        last_brightness[i] = brightness
-        color = tuple(brightness * np.array(COLORS[i]) // 255)
-        for j in range(30):
-            strip[i * 30 + j] = color
+    # 전체 최대값을 찾아 스케일링에 사용
+    max_fft = max(fft_results) if max(fft_results) != 0 else 1
+    for i in range(5):  # 5개의 스펙트럼 대역 처리
+        led_height = int((fft_results[i] / max_fft) * 30)  # 각 줄의 LED 개수 계산
+        for j in range(30):  # 각 대역에 30개의 LED
+            if j < led_height:
+                strip[i * 30 + j] = COLORS[i]
+            else:
+                strip[i * 30 + j] = (0, 0, 0)  # 나머지 LED는 꺼짐
     strip.show()
 
 # 오디오 콜백 함수
