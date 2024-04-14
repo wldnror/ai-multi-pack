@@ -16,22 +16,18 @@ strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_wr
 
 # 각 스펙트럼 대역에 따른 색상 정의
 COLORS = [
-    (255, 0, 0),    # 빨간색
     (255, 165, 0),  # 주황색
     (255, 255, 0),  # 노란색
     (0, 255, 0),    # 초록색
+    (0, 255, 255),  # 청록색
     (0, 0, 255)     # 파란색
 ]
-
-# 스케일링 팩터 정의
-SCALING_FACTORS = [0.2, 0.8, 1.0, 1.2, 2.0]  # 저주파수에서 고주파수로 갈수록 더 민감하게
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     for i in range(5):  # 5개의 스펙트럼 대역 처리
-        led_height = int(((fft_results[i] / max_fft) * SCALING_FACTORS[i]) * 30)
-        led_height = min(led_height, 30)  # 최대 30개의 LED만 켤 수 있음
+        led_height = int((fft_results[i] / max_fft) * 30)
         for j in range(30):
             if j < led_height:
                 strip[i * 30 + j] = COLORS[i]
@@ -44,7 +40,8 @@ def audio_callback(indata, frames, time, status):
     if status:
         print("Status:", status)
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
-    fft_result_split = np.array_split(fft_result, 5)
+    fft_mid_range = fft_result[len(fft_result)//4:len(fft_result)*3//4]  # 중간 주파수 대역만 사용
+    fft_result_split = np.array_split(fft_mid_range, 5)  # 중간 범위를 5개로 나눔
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
