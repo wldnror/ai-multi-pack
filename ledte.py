@@ -9,7 +9,7 @@ LED_COUNT = 150      # LED 개수
 LED_PIN = board.D21  # GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
 SAMPLE_RATE = 48000  # 오디오 샘플레이트
-FFT_SIZE = 1024      # FFT 크기
+FFT_SIZE = 3024      # FFT 크기
 
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
