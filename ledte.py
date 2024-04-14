@@ -23,15 +23,17 @@ COLORS = [
     (0, 0, 255)     # 파란색
 ]
 
+# 스케일링 팩터 정의
+SCALING_FACTORS = [0.6, 0.8, 1.0, 1.2, 1.4]  # 저주파수에서 고주파수로 갈수록 더 민감하게
+
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
-    fft_normalized = [x / max_fft for x in fft_results]
-    led_heights = [int(x * 30) for x in fft_normalized]  # 최대 30 LEDs
-
-    for i in range(5):
+    for i in range(5):  # 5개의 스펙트럼 대역 처리
+        led_height = int(((fft_results[i] / max_fft) * SCALING_FACTORS[i]) * 30)
+        led_height = min(led_height, 30)  # 최대 30개의 LED만 켤 수 있음
         for j in range(30):
-            if j < led_heights[i]:
+            if j < led_height:
                 strip[i * 30 + j] = COLORS[i]
             else:
                 strip[i * 30 + j] = (0, 0, 0)
