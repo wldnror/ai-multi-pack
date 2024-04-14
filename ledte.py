@@ -8,7 +8,7 @@ import time
 LED_COUNT = 150      # LED 개수
 LED_PIN = board.D21# GPIO 핀 번호
 LED_BRIGHTNESS = 0.5 # LED 밝기 (0.0에서 1.0 사이)
-SAMPLE_RATE = 44100  # 오디오 샘플레이트
+SAMPLE_RATE = 48000  # 오디오 샘플레이트
 FFT_SIZE = 1024      # FFT 크기, 실제 오디오 데이터의 처리 단위
 
 # NeoPixel 객체 초기화
