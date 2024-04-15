@@ -5,7 +5,7 @@
 ## 사용 가능 하드웨어
 
 - **라즈베리파이 제로 W**: 블랙박스 기능 실행이 가능하나, 처리 능력이 제한적일 수 있습니다.
-- **추천하는 하드웨어 **: 라즈베리파이 B3~B5.
+- **지원 배터리**: B3~B5 타입.
 
 ## 블랙박스용 추천 카메라
 
@@ -48,8 +48,22 @@ sudo apt-get install python3-smbus i2c-tools
 pip install mpu6050-raspberrypi
 ```
 
-### 블루투스 연결을 위한 설정
+### 블루투스 연결 설정
 
-(이 부분은 원본 메시지에서 내용이
+블루투스 모듈을 통한 무
 
- 불완전하여 추가 설명이 필요합니다. 필요한 내용을 알려주시면 완성해 드리겠습니다.)
+선 통신 설정을 위해 다음 단계를 따르세요:
+
+1. **블루투스 소프트웨어 설치**:
+   ```bash
+   sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev
+   ```
+2. **블루투스 서비스 활성화 및 시작**:
+   ```bash
+   sudo systemctl enable bluetooth.service
+   sudo systemctl start bluetooth.service
+   ```
+3. **블루투스 장치 페어링**:
+   - 라즈베리파이에서 `bluetoothctl` 명령을 사용하여 블루투스 장치를 검색하고 페어링합니다.
+
+이 과정을 통해 라즈베리파이를 블루투스 기능이 있는 다양한 장치와 연결하여 프로젝트의 유연성과 통합성을 높일 수 있습니다.
