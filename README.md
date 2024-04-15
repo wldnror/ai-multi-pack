@@ -28,13 +28,17 @@ pip3 install adafruit-circuitpython-neopixel
 구매 - https://용굴이.shop/product/혁신적인-안전-주행-액세서리-led-화살표-스티어링-미러-라이트-33smd-노란색-차량-방향-지시등/120/category/76/display/1/
 
 MPU-6050 자이로센서및 가속도 기능 탑제된 6축 센서
+
 구매 - https://용굴이.shop/product/고정밀-자이로-가속도-센서-모듈/124/category/1/display/3/
 
 필요 라이브러리
+
 Python-SMBus: Python에서 I2C 통신을 위해 필요한 라이브러리입니다.
+
 MPU6050 Python 라이브러리: MPU-6050 센서 데이터를 쉽게 읽을 수 있게 해주는 라이브러리입니다.
 
 sudo apt-get install python3-smbus i2c-tools
+
 pip install mpu6050-raspberrypi
 
 블루투스 연결을 위한
