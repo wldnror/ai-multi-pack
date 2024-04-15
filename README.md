@@ -14,8 +14,10 @@ gitech BRIO:
 ----------
 LED 144발
 구매 - https://용굴이.shop/product/led-스트립-조명/99/category/76/display/1/
+
 필요한 라이브러리
 Adafruit Blinka 설치: CircuitPython 라이브러리를 라즈베리 파이와 같은 하드웨어에서 사용할 수 있도록 해주는 라이브러리입니다.
+
 Adafruit CircuitPython NeoPixel 라이브러리 설치: NeoPixel LED를 제어하기 위한 라이브러리입니다.
 
 pip3 install Adafruit-Blinka
