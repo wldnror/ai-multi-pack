@@ -22,7 +22,7 @@ class MockSMBus:
     def set_acceleration(self, new_value):
         self.value = new_value  # 새로운 가속도 값 설정
 
-def start_recording(duration=60):
+def start_recording(duration=10):
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("카메라를 시작할 수 없습니다.")
