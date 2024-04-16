@@ -106,8 +106,11 @@ pip install mpu6050-raspberrypi
      ```
 
 ***카메라 관련***
-     ```bashsudo apt-get update
+ ```bash
+
+sudo apt-get update
 sudo apt-get install python3-opencv
+
     ```
 
 
