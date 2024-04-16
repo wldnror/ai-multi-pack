@@ -46,7 +46,6 @@ def audio_callback(indata, frames, time, status):
     control_leds(fft_result_means)
 
 # 메인 함수
-# 메인 함수
 def main():
     # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
     with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
