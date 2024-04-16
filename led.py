@@ -47,12 +47,11 @@ def audio_callback(indata, frames, time, status):
 
 # 메인 함수
 def main():
-    # 오디오 디바이스를 'pulse'로 설정하여 InputStream을 생성
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='pulse'):
+    # 오디오 디바이스 인덱스를 사용하여 InputStream을 생성
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device=6):
         print("Streaming started...")
         while True:
             time.sleep(1)
 
 if __name__ == "__main__":
     main()
-
