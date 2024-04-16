@@ -58,7 +58,7 @@ def audio_callback(indata, frames, time, status):
 
 def main():
     # 루프백 디바이스 'hw:3,1'을 사용하여 InputStream을 생성
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=48000, blocksize=1024, device='hw:3,1'):
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=48000, blocksize=1024, device='hw:3,0'):
         print("Streaming started...")
         while True:
             time.sleep(1)
