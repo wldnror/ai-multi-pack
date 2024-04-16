@@ -24,16 +24,15 @@ class MockSMBus:
 
 # Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
 camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
-
 def start_recording(duration=10):
-    cap = cv2.VideoCapture(camera_device_id)  # 장치 ID를 사용하여 카메라 열기
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("카메라를 시작할 수 없습니다.")
         return
 
-    output_filename = 'output.mp4'  # MP4 형식으로 변경
-    fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 코덱 사용
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 해상도를 4K로 설정
+    output_filename = 'output.mp4'
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 코덱 사용
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 최대 해상도 및 프레임 속도 사용
 
     start_time = time.time()
     try:
@@ -50,6 +49,8 @@ def start_recording(duration=10):
         out.release()
         cv2.destroyAllWindows()
         return output_filename
+
+# 나머지 코드는 이전과 동일합니다.
 
 
 
