@@ -8,40 +8,6 @@ ftp_username = 'webmaster'
 ftp_password = 'adminqwe1@32317J'
 ftp_target_path = '/home/video/'  # 실제 파일 업로드 경로로 변경
 
-def upload_file_to_ftp(file_path):
-    ftp = FTP(ftp_address)
-    ftp.login(ftp_username, ftp_password)
-    with open(file_path, 'rb') as file:
-        ftp.storbinary(f'STOR {ftp_target_path}{file_path}', file)
-    ftp.quit()
-    print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
-
-def start_recording(duration=60):
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("카메라를 시작할 수 없습니다.")
-        return
-
-    output_filename = 'output.avi'
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
-
-    start_time = time.time()
-    while (time.time() - start_time) < duration:
-        ret, frame = cap.read()
-        if ret:
-            out.write(frame)
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-        else:
-            break
-
-    cap.release()
-    out.release()
-    cv2.destroyAllWindows()
-    return output_filename
-
 class MockSMBus:
     def __init__(self, bus_number):
         self.value = 0  # 초기 가속도 값은 0
@@ -55,6 +21,44 @@ class MockSMBus:
 
     def set_acceleration(self, new_value):
         self.value = new_value  # 새로운 가속도 값 설정
+
+def start_recording(duration=60):
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("카메라를 시작할 수 없습니다.")
+        return
+
+    output_filename = 'output.avi'
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    out = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
+
+    start_time = time.time()
+    try:
+        while (time.time() - start_time) < duration:
+            ret, frame = cap.read()
+            if ret:
+                out.write(frame)
+            else:
+                break
+    except Exception as e:
+        print(f"예외 발생: {e}")
+    finally:
+        cap.release()
+        out.release()
+        cv2.destroyAllWindows()
+        return output_filename
+
+def upload_file_to_ftp(file_path):
+    try:
+        ftp = FTP(ftp_address)
+        ftp.login(ftp_username, ftp_password)
+        with open(file_path, 'rb') as file:
+            ftp.storbinary(f'STOR {ftp_target_path}{file_path}', file)
+        print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
+    except Exception as e:
+        print(f"파일 업로드 중 오류 발생: {e}")
+    finally:
+        ftp.quit()
 
 bus = MockSMBus(1)
 device_address = 0x68
@@ -77,8 +81,9 @@ try:
         
         if abs(acceleration) > threshold:
             print("충격 감지! 녹화 시작")
-            start_recording(30)
-            upload_file_to_ftp('output.avi')
+            output_file = start_recording(30)
+            if output_file:
+                upload_file_to_ftp(output_file)
         time.sleep(0.1)
 except KeyboardInterrupt:
     print("테스트 종료.")
