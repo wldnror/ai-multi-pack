@@ -24,13 +24,29 @@
 
 ### 필요한 라이브러리
 
-- **Adafruit Blinka 설치**: CircuitPython 라이브러리를 라즈베리 파이와 같은 하드웨어에서 사용할 수 있도록 해주는 라이브러리입니다.
-- **Adafruit CircuitPython NeoPixel 라이브러리 설치**: NeoPixel LED를 제어하기 위한 라이브러리입니다.
+프로젝트를 실행하기 위해 다음 라이브러리들을 설치하세요:
+
+- **Adafruit Blinka**:
+  - CircuitPython 라이브러리를 라즈베리 파이와 같은 하드웨어에서 사용할 수 있도록 해주는 라이브러리입니다.
+- **Adafruit CircuitPython NeoPixel**:
+  - NeoPixel LED를 제어하기 위한 라이브러리입니다. 이 라이브러리를 사용하면 LED 스트립의 각 LED를 개별적으로 제어할 수 있습니다.
+- **Sounddevice**:
+  - 오디오를 녹음하고 재생할 수 있는 라이브러리입니다. 이 라이브러리는 PortAudio를 기반으로 합니다.
+- **libportaudio2**:
+  - Sounddevice 라이브러리의 의존성인 PortAudio 라이브러리의 리눅스 패키지입니다.
+- **rpi_ws281x**:
+  - 라즈베리 파이에서 WS281x (NeoPixel) LED를 직접 제어할 수 있도록 해주는 라이브러리입니다.
+
+설치 명령어:
 
 ```bash
-pip3 install Adafruit-Blinka
-pip3 install adafruit-circuitpython-neopixel
-```
+sudo pip3 install adafruit-blinka
+sudo pip3 install sounddevice
+sudo apt-get install libportaudio2
+sudo pip3 install rpi_ws281x
+sudo pip3 install adafruit-circuitpython-neopixel
+
+   ```
 
 ### 방향 지시등 LED
 
