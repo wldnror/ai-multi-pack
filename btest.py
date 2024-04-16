@@ -1,6 +1,5 @@
-import smbus
-import time
 import cv2
+import time
 from ftplib import FTP
 import threading
 
@@ -44,10 +43,6 @@ def start_recording(duration=60):
     cv2.destroyAllWindows()
     upload_file_to_ftp(output_filename)  # 녹화가 끝나면 FTP로 파일 업로드
 
-def read_acceleration(axis):
-    # 임시 가속도 데이터 반환
-    return threshold
-
 # 사용자로부터 임시 가속도 값을 입력 받음
 while True:
     try:
@@ -60,7 +55,7 @@ print("임시 가속도 값:", threshold)
 
 # 충격 감지 및 녹화, FTP 업로드 코드
 while True:
-    acceleration = read_acceleration(0x3B)  # 임시 가속도 데이터 읽기
+    acceleration = threshold  # 가상 가속도 값 사용
     if abs(acceleration) > threshold:
         print("충격 감지! 녹화 시작")
         
