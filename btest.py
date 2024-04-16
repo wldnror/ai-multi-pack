@@ -2,6 +2,7 @@ import smbus
 import time
 import cv2
 from ftplib import FTP
+import threading
 
 # FTP 서버 정보 설정
 ftp_address = 'ftp.yourserver.com'
@@ -34,9 +35,6 @@ def start_recording(duration=60):
         ret, frame = cap.read()
         if ret:
             out.write(frame)
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
         else:
             break
 
@@ -44,7 +42,11 @@ def start_recording(duration=60):
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    return output_filename
+    upload_file_to_ftp(output_filename)  # 녹화가 끝나면 FTP로 파일 업로드
+
+def read_acceleration(axis):
+    # 임시 가속도 데이터 반환
+    return threshold
 
 # 사용자로부터 임시 가속도 값을 입력 받음
 while True:
@@ -54,29 +56,17 @@ while True:
     except ValueError:
         print("올바른 숫자를 입력하세요.")
 
-# 사용자로부터 입력 받은 임시 가속도 값 출력
 print("임시 가속도 값:", threshold)
-
-# MPU-6050 설정 (가속도 센서 대신 임시 값 사용)
-def read_acceleration(axis):
-    # 임시 가속도 데이터 반환
-    return threshold
 
 # 충격 감지 및 녹화, FTP 업로드 코드
 while True:
     acceleration = read_acceleration(0x3B)  # 임시 가속도 데이터 읽기
     if abs(acceleration) > threshold:
         print("충격 감지! 녹화 시작")
-
-        # 충격 감지 시점부터 30초 전까지의 영상 녹화
-        start_time = time.time()
-        while (time.time() - start_time) < 30:
-            start_recording(30)
-
-        # FTP로 파일 전송
-        upload_file_to_ftp('output.avi')
         
-        print("녹화 및 업로드 완료!")
+        # 녹화를 백그라운드 스레드로 시작
+        recording_thread = threading.Thread(target=start_recording, args=(30,))
+        recording_thread.start()
 
     # 범위 이탈 처리
     if threshold < 0:
