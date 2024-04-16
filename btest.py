@@ -31,8 +31,8 @@ def start_recording(duration=10):
         print("카메라를 시작할 수 없습니다.")
         return
 
-    output_filename = 'output.avi'
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    output_filename = 'output.mp4'  # MP4 형식으로 변경
+    fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 코덱 사용
     out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 해상도를 4K로 설정
 
     start_time = time.time()
@@ -50,6 +50,7 @@ def start_recording(duration=10):
         out.release()
         cv2.destroyAllWindows()
         return output_filename
+
 
 
 def upload_file_to_ftp(file_path):
