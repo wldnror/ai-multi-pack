@@ -47,11 +47,12 @@ def audio_callback(indata, frames, time, status):
 
 # 메인 함수
 def main():
-    # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
+    # 시스템의 기본 오디오 입력 장치 사용 (루프백된 오디오 모니터)
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='default'):
         print("Streaming started...")
         while True:
             time.sleep(1)
+
 
 if __name__ == "__main__":
     main()
