@@ -48,7 +48,7 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수
 def main():
     # 'default'를 사용하거나 적절한 디지털 오디오 입력 장치 ID로 변경
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='default'):
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='3,1'):
         print("Streaming started...")
         while True:
             time.sleep(1)
