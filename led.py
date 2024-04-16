@@ -48,7 +48,7 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수
 def main():
     # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,0'):
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
         print("Streaming started...")
         while True:
             time.sleep(1)
