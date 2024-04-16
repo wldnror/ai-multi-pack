@@ -46,12 +46,33 @@ def audio_callback(indata, frames, time, status):
     control_leds(fft_result_means)
 
 # 메인 함수
+# def main():
+#     # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
+#     with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
+#         print("Streaming started...")
+#         while True:
+#             time.sleep(1)
+
+# if __name__ == "__main__":
+#     main()
+
 def main():
-    # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
-    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
+    # 루프백 디바이스 'hw:3,1'을 사용하여 InputStream을 생성
+    with sd.InputStream(callback=audio_callback, channels=2, samplerate=44100, blocksize=1024, device='hw:3,1'):
         print("Streaming started...")
         while True:
             time.sleep(1)
 
+def audio_callback(indata, frames, time, status):
+    if status:
+        print("Status:", status)
+    # 오디오 데이터 처리와 FFT
+    fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(len(indata[:, 0])), n=FFT_SIZE))
+    fft_mid_range = fft_result[len(fft_result)//4:len(fft_result)*3//4]
+    fft_result_split = np.array_split(fft_mid_range, 5)
+    fft_result_means = [np.mean(part) for part in fft_result_split]
+    control_leds(fft_result_means)
+
 if __name__ == "__main__":
     main()
+
