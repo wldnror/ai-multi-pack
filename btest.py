@@ -56,7 +56,7 @@ print("임시 가속도 값:", threshold)
 # 충격 감지 및 녹화, FTP 업로드 코드
 while True:
     acceleration = threshold  # 가상 가속도 값 사용
-    if abs(acceleration) > threshold:
+    if abs(acceleration) > abs(threshold):
         print("충격 감지! 녹화 시작")
         
         # 녹화를 백그라운드 스레드로 시작
