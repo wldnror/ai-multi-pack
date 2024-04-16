@@ -64,10 +64,10 @@ while True:
     if abs(acceleration) > threshold:
         print("충격 감지! 녹화 시작")
         
-        # 녹화를 백그라운드 스레드로 시작
+        # 녹화를 백그라운드 스레드로 시작하고 데몬으로 설정
         recording_thread = threading.Thread(target=start_recording, args=(30,))
+        recording_thread.daemon = True
         recording_thread.start()
-        recording_thread.join()  # 녹화 스레드가 종료될 때까지 대기
 
     # 범위 이탈 처리
     if threshold < 0:
