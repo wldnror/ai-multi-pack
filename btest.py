@@ -22,15 +22,18 @@ class MockSMBus:
     def set_acceleration(self, new_value):
         self.value = new_value  # 새로운 가속도 값 설정
 
+# Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
+camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
+
 def start_recording(duration=10):
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(camera_device_id)  # 장치 ID를 사용하여 카메라 열기
     if not cap.isOpened():
         print("카메라를 시작할 수 없습니다.")
         return
 
     output_filename = 'output.avi'
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 해상도를 4K로 설정
 
     start_time = time.time()
     try:
@@ -47,6 +50,7 @@ def start_recording(duration=10):
         out.release()
         cv2.destroyAllWindows()
         return output_filename
+
 
 def upload_file_to_ftp(file_path):
     try:
