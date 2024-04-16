@@ -73,12 +73,15 @@ while True:
         while (time.time() - start_time) < 30:
             start_recording(30)
 
-        # 충격 감지 시점부터 30초 후까지의 영상 녹화
-        start_time = time.time()
-        while (time.time() - start_time) < 30:
-            start_recording(30)
-
         # FTP로 파일 전송
         upload_file_to_ftp('output.avi')
-    time.sleep(0.1)
+        
+        print("녹화 및 업로드 완료!")
 
+    # 범위 이탈 처리
+    if threshold < 0:
+        threshold = 0
+    elif threshold > 32767:
+        threshold = 32767
+
+    time.sleep(0.1)
