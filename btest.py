@@ -1,7 +1,6 @@
-import cv2
 import time
+import cv2
 from ftplib import FTP
-import threading
 
 # FTP 서버 정보 설정
 ftp_address = 'ftp.yourserver.com'
@@ -10,7 +9,6 @@ ftp_password = 'your_password'
 ftp_target_path = '/path/to/upload/'  # FTP 서버 상의 파일 업로드 경로
 
 def upload_file_to_ftp(file_path):
-    # FTP 서버에 파일을 업로드하는 함수
     ftp = FTP(ftp_address)
     ftp.login(ftp_username, ftp_password)
     with open(file_path, 'rb') as file:
@@ -19,7 +17,6 @@ def upload_file_to_ftp(file_path):
     print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
 
 def start_recording(duration=60):
-    # 카메라 초기화 및 녹화 설정
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("카메라를 시작할 수 없습니다.")
@@ -34,34 +31,54 @@ def start_recording(duration=60):
         ret, frame = cap.read()
         if ret:
             out.write(frame)
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
         else:
             break
 
-    # 자원 해제
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    upload_file_to_ftp(output_filename)  # 녹화가 끝나면 FTP로 파일 업로드
+    return output_filename
 
-# 사용자로부터 임시 가속도 값을 입력 받음
-while True:
-    try:
-        threshold = int(input("임시 가속도 값을 입력하세요: "))
-        break
-    except ValueError:
-        print("올바른 숫자를 입력하세요.")
+class MockSMBus:
+    def __init__(self, bus_number):
+        self.value = 0  # 초기 가속도 값은 0
 
-print("임시 가속도 값:", threshold)
+    def write_byte_data(self, addr, reg, value):
+        pass
 
-# 충격 감지 및 녹화, FTP 업로드 코드
-while True:
-    acceleration = threshold  # 가상 가속도 값 사용
-    if abs(acceleration) > abs(threshold):
-        print("충격 감지! 녹화 시작")
+    def read_i2c_block_data(self, addr, reg, length):
+        # 현재 설정된 가속도 값 반환
+        return [self.value >> 8 & 0xFF, self.value & 0xFF]
+
+    def set_acceleration(self, new_value):
+        self.value = new_value  # 새로운 가속도 값 설정
+
+bus = MockSMBus(1)
+device_address = 0x68
+bus.write_byte_data(device_address, 0x6B, 0)
+
+def read_acceleration(axis):
+    data = bus.read_i2c_block_data(device_address, axis, 2)
+    value = data[0] << 8 | data[1]
+    if value > 32767:
+        value -= 65536
+    return value
+
+threshold = 15000  # 임계값 설정
+try:
+    while True:
+        # 사용자 입력을 받아 충격 감지 여부 결정
+        input_value = int(input("가속도 값 입력 (0-65535): "))
+        bus.set_acceleration(input_value)
+        acceleration = read_acceleration(0x3B)
         
-        # 녹화를 백그라운드 스레드로 시작
-        recording_thread = threading.Thread(target=start_recording, args=(30,))
-        recording_thread.start()
-
-    # 녹화가 백그라운드에서 실행 중이더라도 메인 스레드는 계속해서 동작해야 함
-    time.sleep(0.1)
+        if abs(acceleration) > threshold:
+            print("충격 감지! 녹화 시작")
+            start_recording(30)
+            upload_file_to_ftp('output.avi')
+        time.sleep(0.1)
+except KeyboardInterrupt:
+    print("테스트 종료.")
