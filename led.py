@@ -46,24 +46,13 @@ def audio_callback(indata, frames, time, status):
     control_leds(fft_result_means)
 
 # 메인 함수
+# 메인 함수
 def main():
-    # 'default'를 사용하거나 적절한 디지털 오디오 입력 장치 ID로 변경
-    with sd.InputStream(callback=audio_callback, channels=2, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='3,1'):
+    # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
+    with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:3,1'):
         print("Streaming started...")
         while True:
             time.sleep(1)
-
-def audio_callback(indata, frames, time, status):
-    if status:
-        print("Status:", status)
-    # 왼쪽 채널 또는 오른쪽 채널 데이터를 선택
-    mono_input = indata[:, 0]  # 여기서는 왼쪽 채널을 사용
-    fft_result = np.abs(np.fft.rfft(mono_input * np.hanning(len(mono_input)), n=FFT_SIZE))
-    fft_mid_range = fft_result[len(fft_result)//4:len(fft_result)*3//4]
-    fft_result_split = np.array_split(fft_mid_range, 5)
-    fft_result_means = [np.mean(part) for part in fft_result_split]
-    control_leds(fft_result_means)
-
 
 if __name__ == "__main__":
     main()
