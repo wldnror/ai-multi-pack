@@ -47,7 +47,7 @@ def audio_callback(indata, frames, time, status):
     # 저주파수 대역에 중점을 둔 FFT 결과 처리
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
     # 주파수 대역 조정
-    important_freqs = fft_result[:FFT_SIZE//6]
+    important_freqs = fft_result[:FFT_SIZE//15]
     fft_result_split = np.array_split(important_freqs, bands_per_column)  # FFT 결과를 32개의 대역으로 분할
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
