@@ -5,7 +5,7 @@ from ftplib import FTP
 # FTP 서버 정보 설정
 ftp_address = '79webhard.com'  # "ftp://" 접두사 제거
 ftp_username = 'webmaster'
-ftp_password = 'adminqwe1@32317J'
+ftp_password = '#'
 ftp_target_path = '/home/video/'  # 실제 파일 업로드 경로로 변경
 
 class MockSMBus:
