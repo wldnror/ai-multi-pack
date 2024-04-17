@@ -30,9 +30,9 @@ def control_leds(fft_results):
         led_height = int((fft_results[i] / max_fft) * 8)
         for j in range(8):
             if j < led_height:
-                strip[i * 8 + j] = COLORS[i]
+                strip[i * 30 + j] = COLORS[i]
             else:
-                strip[i * 8 + j] = (0, 0, 0)
+                strip[i * 30 + j] = (0, 0, 0)
     strip.show()
 
 # 오디오 콜백 함수
