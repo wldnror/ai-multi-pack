@@ -26,32 +26,35 @@ class MockSMBus:
 camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
 
 def start_recording(duration=10):
-    cap = cv2.VideoCapture(camera_device_id)
-    if not cap.isOpened():
-        cap = cv2.VideoCapture(0)  # 대체 장치로 다시 시도
-        if not cap.isOpened():
+    cap = cv2.VideoCapture(camera_device_id)  # 카메라 장치 열기 시도
+    if not cap.isOpened():  # 주 장치 열기 실패 시
+        cap = cv2.VideoCapture(0)  # 기본 장치로 다시 시도
+        if not cap.isOpened():  # 기본 장치도 실패할 경우
             print("카메라를 시작할 수 없습니다.")
-            return
+            return None
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # 카메라에서 프레임 너비 가져오기
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # 카메라에서 프레임 높이 가져오기
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 비디오 코덱 설정
     output_filename = 'output11.mp4'
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0)
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))  # 비디오 파일 쓰기 객체 생성
 
     start_time = time.time()
     try:
-        while (time.time() - start_time) < duration:
-            ret, frame = cap.read()
+        while (time.time() - start_time) < duration:  # 지정된 녹화 시간 동안 반복
+            ret, frame = cap.read()  # 카메라로부터 프레임 읽기
             if ret:
-                out.write(frame)
+                out.write(frame)  # 프레임이 유효할 경우 파일에 쓰기
             else:
-                break
+                break  # 프레임 읽기 실패 시 반복 중지
     except Exception as e:
-        print(f"예외 발생: {e}")
+        print(f"예외 발생: {e}")  # 예외 발생 시 메시지 출력
     finally:
-        cap.release()
-        out.release()
-        cv2.destroyAllWindows()
-        return output_filename
+        cap.release()  # 카메라 장치 해제
+        out.release()  # 파일 쓰기 객체 해제
+
+    return output_filename  # 녹화된 파일의 이름 반환
 
 
 def upload_file_to_ftp(file_path):
