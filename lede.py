@@ -5,7 +5,7 @@ import sounddevice as sd
 import time
 
 # LED 스트립 설정
-LED_COUNT = 256      # LED 개수 (8x32 매트릭스)
+LED_COUNT = 150      # LED 개수
 LED_PIN = board.D21  # GPIO 핀 번호
 LED_BRIGHTNESS = 0.05 # LED 밝기 (0.0에서 1.0 사이)
 SAMPLE_RATE = 48000  # 오디오 샘플레이트
@@ -26,15 +26,13 @@ COLORS = [
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
-    column_height = LED_COUNT // 32  # 32 열에 맞는 높이
-    for i in range(5):  # 5개의 스펙트럼 대역 처리
-        led_height = int((fft_results[i] / max_fft) * column_height)
-        for col in range(32):  # 모든 열에 대해 반복
-            for row in range(8):  # 모든 행에 대해 반복
-                if row < led_height:
-                    strip[col * 8 + row] = COLORS[i]
-                else:
-                    strip[col * 8 + row] = (0, 0, 0)
+    for i in range(28):  # 5개의 스펙트럼 대역 처리
+        led_height = int((fft_results[i] / max_fft) * 8)
+        for j in range(8):
+            if j < led_height:
+                strip[i * 8 + j] = COLORS[i]
+            else:
+                strip[i * 8 + j] = (0, 0, 0)
     strip.show()
 
 # 오디오 콜백 함수
@@ -47,7 +45,7 @@ def audio_callback(indata, frames, time, status):
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
-# 메인 함수
+#메인 함수
 def main():
     # 오디오 디바이스 설정 확인 후, device 매개변수를 적절히 수정
     with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=FFT_SIZE, device='hw:5,1'):
@@ -57,3 +55,23 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# def main():
+#     # 루프백 디바이스 'hw:3,1'을 사용하여 InputStream을 생성
+#     with sd.InputStream(callback=audio_callback, channels=2, samplerate=48000, blocksize=1024, device='hw:3,0'):
+#         print("Streaming started...")
+#         while True:
+#             time.sleep(1)
+
+# def audio_callback(indata, frames, time, status):
+#     if status:
+#         print("Status:", status)
+#     # 오디오 데이터 처리와 FFT
+#     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(len(indata[:, 0])), n=FFT_SIZE))
+#     fft_mid_range = fft_result[len(fft_result)//4:len(fft_result)*3//4]
+#     fft_result_split = np.array_split(fft_mid_range, 5)
+#     fft_result_means = [np.mean(part) for part in fft_result_split]
+#     control_leds(fft_result_means)
+
+# if __name__ == "__main__":
+#     main()
