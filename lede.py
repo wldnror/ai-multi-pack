@@ -28,9 +28,9 @@ COLORS = [
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     column_height = 8  # 각 열의 높이는 8
-    print("FFT Result Ranges:", fft_results)  # 로그를 추가하여 FFT 결과 범위를 확인
     for i in range(bands_per_column):  # 32개 열 처리
-        led_height = int((fft_results[i] / max_fft) * column_height)
+        # 로그 스케일 적용
+        led_height = int(np.log1p(fft_results[i] / max_fft) * column_height)
         column_index = i * 8
         if i % 2 == 0:  # 짝수 열 (정방향)
             for row in range(column_height):
@@ -44,8 +44,11 @@ def control_leds(fft_results):
 def audio_callback(indata, frames, time, status):
     if status:
         print("Status:", status)
+    # 저주파수 대역에 중점을 둔 FFT 결과 처리
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
-    fft_result_split = np.array_split(fft_result, bands_per_column)  # FFT 결과를 32개의 대역으로 분할
+    # 주파수 대역 조정
+    important_freqs = fft_result[:FFT_SIZE//4]
+    fft_result_split = np.array_split(important_freqs, bands_per_column)  # FFT 결과를 32개의 대역으로 분할
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
