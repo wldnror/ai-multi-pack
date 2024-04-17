@@ -10,6 +10,7 @@ LED_PIN = board.D21   # GPIO 핀 번호
 LED_BRIGHTNESS = 0.05 # LED 밝기 (0.0에서 1.0 사이)
 SAMPLE_RATE = 48000   # 오디오 샘플레이트
 FFT_SIZE = 1024       # FFT 크기
+bands_per_column = 28 # 사용할 열의 수
 
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
@@ -27,7 +28,6 @@ COLORS = [
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     column_height = 8  # 각 열의 높이는 8
-    bands_per_column = 28  # 사용할 열의 수
     for i in range(bands_per_column):  # 28개 대역의 스펙트럼 처리
         if i < len(fft_results):
             led_height = int((fft_results[i] / max_fft) * column_height)
