@@ -1,88 +1,70 @@
-import time
 import cv2
+import torch
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from ftplib import FTP
 
-# FTP 서버 정보 설정
-ftp_address = '79webhard.com'  # "ftp://" 접두사 제거
-ftp_username = 'webmaster'
-ftp_password = 'your_password'
-ftp_target_path = '/home/video/'  # 실제 파일 업로드 경로로 변경
+# YOLOv5 모델 로드
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
-class MockSMBus:
-    def __init__(self, bus_number):
-        self.value = 0  # 초기 가속도 값은 0
+# 카메라 설정
+cap = cv2.VideoCapture('/dev/video0')  # 카메라 디바이스 지정
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    def write_byte_data(self, addr, reg, value):
-        pass
+# 녹화 설정
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
 
-    def read_i2c_block_data(self, addr, reg, length):
-        # 현재 설정된 가속도 값 반환
-        return [self.value >> 8 & 0xFF, self.value & 0xFF]
+# 폰트 설정 (라즈베리파이에 맞는 폰트 파일 경로 설정 필요)
+fontpath = "/usr/share/fonts/truetype/freefont/FreeMono.ttf"  # 폰트 파일 경로
+font = ImageFont.truetype(fontpath, 20)
 
-    def set_acceleration(self, new_value):
-        self.value = new_value  # 새로운 가속도 값 설정
+# 녹화 시간 계산을 위한 변수
+start_time = cv2.getTickCount()
+record_time = 10  # 녹화 시간 (초)
 
-def start_recording(duration=10):
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("카메라를 시작할 수 없습니다.")
-        return
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-    # 카메라 화면을 미리 보여줌
-    while True:
-        ret, frame = cap.read()
-        if ret:
-            cv2.imshow('Camera Preview', frame)
+    # YOLOv5로 추론
+    results = model(frame)
+
+    # Pillow 이미지로 변환하여 텍스트 그리기
+    img_pil = Image.fromarray(frame)
+    draw = ImageDraw.Draw(img_pil)
+
+    # results.xyxy[0]은 탐지된 객체들의 정보를 포함하는 텐서
+    for det in results.xyxy[0]:
+        x1, y1, x2, y2, conf, cls = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4], int(det[5])
+        if cls == 0:  # 'person' 클래스 ID
+            label = "사람"
+        elif cls == 2:  # 'car' 클래스 ID
+            label = "자동차"
         else:
-            break
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+            continue  # 다른 객체는 무시
+        
+        # 레이블 및 바운딩 박스 출력
+        draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=2)
+        draw.text((x1, y1 -30)로 지정한 후 (x1, y1 - 30) 위치에 텍스트를 그립니다. 텍스트에는 레이블과 신뢰도(confidence)를 표시합니다.
 
-    output_filename = 'output.mp4'
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 코덱 사용
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 최대 해상도 및 프레임 속도 사용
+    # NumPy 배열로 다시 변환하여 OpenCV에서 처리 가능하도록 함
+    frame = np.array(img_pil)
 
-    # 한글 폰트 설정
-    fontpath = "/Library/Fonts/Arial Unicode.ttf"  # 폰트 파일 경로
-    font = ImageFont.truetype(fontpath, 20)
+    # 결과 화면에 표시
+    cv2.imshow('YOLOv5 Detection', frame)
+    out.write(frame)  # 프레임을 파일로 저장
 
-    start_time = time.time()
-    try:
-        while (time.time() - start_time) < duration:
-            ret, frame = cap.read()
-            if ret:
-                # Pillow로 이미지 변환
-                img_pil = Image.fromarray(frame)
-                draw = ImageDraw.Draw(img_pil)
-                draw.text((50, 50), "녹화 중", font=font, fill=(255, 255, 255))
-                frame = np.array(img_pil)
-                out.write(frame)
-            else:
-                break
-    except Exception as e:
-        print(f"예외 발생: {e}")
-    finally:
-        cap.release()
-        out.release()
-        cv2.destroyAllWindows()
-        return output_filename
+    # 설정한 녹화 시간이 경과했는지 확인
+    if (cv2.getTickCount() - start_time) / cv2.getTickFrequency() > record_time:
+        break
 
-def upload_file_to_ftp(file_path):
-    try:
-        ftp = FTP(ftp_address)
-        ftp.login(ftp_username, ftp_password)
-        with open(file_path, 'rb') as file:
-            ftp.storbinary(f'STOR {ftp_target_path}{file_path}', file)
-        print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
-    except Exception as e:
-        print(f"파일 업로드 중 오류 발생: {e}")
-    finally:
-        ftp.quit()
+    # 'q' 키를 누르면 루프 탈출
+    if cv2.waitKey(1) == ord('q'):
+        break
 
-# 테스트 실행
-if __name__ == "__main__":
-    output_file = start_recording(10)
-    if output_file:
-        upload_file_to_ftp(output_file)
+# 자원 해제
+cap.release()
+out.release()
+cv2.destroyAllWindows()
