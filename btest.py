@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # YOLOv5 모델 로드
-model = torch.load('yolov5s.pt')
+model = torch.load('/yolov5s.pt')
 
 
 # 카메라 설정
