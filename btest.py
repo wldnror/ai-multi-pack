@@ -2,12 +2,17 @@ import cv2
 import torch
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import os
 
 # 모델 파일 경로 설정
-model_path = '/home/user/yolov5/yolov5s.pt'  # 예시 모델 경로
+model_path = '/home/user/yolov5/yolov5s.pt'  # 모델 파일 경로를 적절히 수정하세요.
 
-# YOLOv5 모델 로드
+# 모델 로드하기 전에 PYTHONPATH 환경 변수 설정
+os.environ['PYTHONPATH'] = '/home/user/yolov5'
+
+# 모델 로드
 model = torch.load(model_path)
+
 
 # 카메라 설정
 cap = cv2.VideoCapture('/dev/video0')  # Logitech BRIO assumed to be at /dev/video0
