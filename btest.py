@@ -31,9 +31,8 @@ def start_recording(duration=10):
         print("카메라를 시작할 수 없습니다.")
         return
 
-    output_filename = 'output.avi'
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 해상도를 4K로 설정
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 코덱 설정
+    out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))  # 파일명, 코덱, fps, 해상도
 
     start_time = time.time()
     try:
