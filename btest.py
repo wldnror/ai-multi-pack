@@ -26,13 +26,18 @@ class MockSMBus:
 camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
 
 def start_recording(duration=10):
-    cap = cv2.VideoCapture(camera_device_id)  # 장치 ID를 사용하여 카메라 열기
+    cap = cv2.VideoCapture(camera_device_id)
     if not cap.isOpened():
-        print("카메라를 시작할 수 없습니다.")
-        return
+        cap = cv2.VideoCapture(0)  # 대체 장치로 다시 시도
+        if not cap.isOpened():
+            print("카메라를 시작할 수 없습니다.")
+            return
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 코덱 설정
-    out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))  # 파일명, 코덱, fps, 해상도
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    output_filename = 'output11.mp4'
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))
 
     start_time = time.time()
     try:
