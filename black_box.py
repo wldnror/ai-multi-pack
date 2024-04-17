@@ -25,7 +25,6 @@ def start_recording(duration=60):
         print("카메라를 시작할 수 없습니다.")
         return
 
-    output_filename = 'output.avi'
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
 
