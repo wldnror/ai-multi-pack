@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # 모델 파일 로드
-model_path = '/home/user/yolov5/yolov5s.pt'  # 예시 모델 경로
+model_path = '/home/user/yolov5/yolov5s.pt', 'yolov5s', pretrained=True)  # 예시 모델 경로
 
 # 카메라 설정
 cap = cv2.VideoCapture('/dev/video0')  # Logitech BRIO assumed to be at /dev/video0
