@@ -47,7 +47,7 @@ while True:
         
         # 레이블 및 바운딩 박스 출력
         draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=2)
-        draw.text((x1, y1 -30)로 지정한 후 (x1, y1 - 30) 위치에 텍스트를 그립니다. 텍스트에는 레이블과 신뢰도(confidence)를 표시합니다.
+        draw.text((x1, y1 -30)로 지정한 후 (x1, y1 - 30) #위치에 텍스트를 그립니다. 텍스트에는 레이블과 신뢰도(confidence)를 표시합니다.
 
     # NumPy 배열로 다시 변환하여 OpenCV에서 처리 가능하도록 함
     frame = np.array(img_pil)
