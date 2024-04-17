@@ -5,7 +5,7 @@ import numpy as np
 import os
 
 # 모델 파일 경로 설정
-model_path = '/home/user/yolov5/yolov5s.pt'  # 모델 파일 경로를 적절히 수정하세요.
+model_path = '/home/user/yolov5/models/yolov5s.pt'  # 모델 파일 경로를 적절히 수정하세요.
 
 # 모델 로드
 model = torch.load(model_path)
