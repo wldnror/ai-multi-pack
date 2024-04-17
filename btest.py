@@ -1,5 +1,7 @@
 import time
 import cv2
+from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 from ftplib import FTP
 
 # FTP 서버 정보 설정
@@ -22,9 +24,6 @@ class MockSMBus:
     def set_acceleration(self, new_value):
         self.value = new_value  # 새로운 가속도 값 설정
 
-# Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
-camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
-
 def start_recording(duration=10):
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -45,11 +44,20 @@ def start_recording(duration=10):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 코덱 사용
     out = cv2.VideoWriter(output_filename, fourcc, 30.0, (4096, 2160))  # 최대 해상도 및 프레임 속도 사용
 
+    # 한글 폰트 설정
+    fontpath = "/Library/Fonts/Arial Unicode.ttf"  # 폰트 파일 경로
+    font = ImageFont.truetype(fontpath, 20)
+
     start_time = time.time()
     try:
         while (time.time() - start_time) < duration:
             ret, frame = cap.read()
             if ret:
+                # Pillow로 이미지 변환
+                img_pil = Image.fromarray(frame)
+                draw = ImageDraw.Draw(img_pil)
+                draw.text((50, 50), "녹화 중", font=font, fill=(255, 255, 255))
+                frame = np.array(img_pil)
                 out.write(frame)
             else:
                 break
@@ -60,7 +68,6 @@ def start_recording(duration=10):
         out.release()
         cv2.destroyAllWindows()
         return output_filename
-
 
 def upload_file_to_ftp(file_path):
     try:
@@ -74,30 +81,8 @@ def upload_file_to_ftp(file_path):
     finally:
         ftp.quit()
 
-bus = MockSMBus(1)
-device_address = 0x68
-bus.write_byte_data(device_address, 0x6B, 0)
-
-def read_acceleration(axis):
-    data = bus.read_i2c_block_data(device_address, axis, 2)
-    value = data[0] << 8 | data[1]
-    if value > 32767:
-        value -= 65536
-    return value
-
-threshold = 15000  # 임계값 설정
-try:
-    while True:
-        # 사용자 입력을 받아 충격 감지 여부 결정
-        input_value = int(input("가속도 값 입력 (0-65535): "))
-        bus.set_acceleration(input_value)
-        acceleration = read_acceleration(0x3B)
-        
-        if abs(acceleration) > threshold:
-            print("충격 감지! 녹화 시작")
-            output_file = start_recording(30)
-            if output_file:
-                upload_file_to_ftp(output_file)
-        time.sleep(0.1)
-except KeyboardInterrupt:
-    print("테스트 종료.")
+# 테스트 실행
+if __name__ == "__main__":
+    output_file = start_recording(10)
+    if output_file:
+        upload_file_to_ftp(output_file)
