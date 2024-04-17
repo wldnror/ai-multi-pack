@@ -1,7 +1,7 @@
-import smbus
-import time
 import cv2
+import time
 from ftplib import FTP
+import threading
 
 # FTP 서버 정보 설정
 ftp_address = 'ftp.yourserver.com'
@@ -18,7 +18,7 @@ def upload_file_to_ftp(file_path):
     ftp.quit()
     print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
 
-def start_recording(duration=60):
+def record_video(output_filename, duration=60):
     # 카메라 초기화 및 녹화 설정
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -26,7 +26,7 @@ def start_recording(duration=60):
         return
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (640, 480))
 
     start_time = time.time()
     while (time.time() - start_time) < duration:
@@ -34,7 +34,7 @@ def start_recording(duration=60):
         if ret:
             out.write(frame)
             cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cv2.waitKey(1) & 0xFF == ord('q'):  # q 키를 누르면 종료
                 break
         else:
             break
@@ -43,37 +43,33 @@ def start_recording(duration=60):
     cap.release()
     out.release()
     cv2.destroyAllWindows()
-    return output_filename
 
-# MPU-6050 설정
-bus = smbus.SMBus(1)
-device_address = 0x68
-bus.write_byte_data(device_address, 0x6B, 0)
-
-def read_acceleration(axis):
-    # 가속도 데이터 읽기
-    data = bus.read_i2c_block_data(device_address, axis, 2)
-    value = data[0] << 8 | data[1]
-    if value > 32767:
-        value -= 65536
-    return value
-
-threshold = 15000  # 임계값 설정
-while True:
-    acceleration = read_acceleration(0x3B)  # X축 데이터 읽기
-    if abs(acceleration) > threshold:
-        print("충격 감지! 녹화 시작")
-
-        # 충격 감지 시점부터 30초 전까지의 영상 녹화
-        start_time = time.time()
-        while (time.time() - start_time) < 30:
-            start_recording(30)
-
-        # 충격 감지 시점부터 30초 후까지의 영상 녹화
-        start_time = time.time()
-        while (time.time() - start_time) < 30:
-            start_recording(30)
-
+def start_recording():
+    global recording_flag
+    output_filename = 'output.mp4'
+    duration = 60
+    record_video(output_filename, duration)
+    if recording_flag:
         # FTP로 파일 전송
-        upload_file_to_ftp('output.avi')
-    time.sleep(0.1)
+        upload_file_to_ftp(output_filename)
+
+def keyboard_listener():
+    global recording_flag
+    while True:
+        key = input("Press 'r' to start recording or 'q' to quit: ")
+        if key == 'r':
+            recording_flag = True
+            print("Recording started.")
+            thread = threading.Thread(target=start_recording)
+            thread.start()
+        elif key == 'q':
+            recording_flag = False
+            print("Quitting...")
+            break
+        else:
+            print("Invalid input. Please press 'r' to start recording or 'q' to quit.")
+
+if __name__ == "__main__":
+    recording_flag = False
+    keyboard_thread = threading.Thread(target=keyboard_listener)
+    keyboard_thread.start()
