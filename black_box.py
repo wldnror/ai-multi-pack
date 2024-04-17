@@ -26,8 +26,8 @@ def start_recording(duration=60):
         return
 
     output_filename = 'output.avi'
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    out = cv2.VideoWriter(output_filename, fourcc, 20.0, (640, 480))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
 
     start_time = time.time()
     while (time.time() - start_time) < duration:
