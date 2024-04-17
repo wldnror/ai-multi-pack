@@ -4,8 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 
 # YOLOv5 모델 로드
-model = torch.load('/yolov5s.pt')
-
+model = torch.load('/home/user/yolov5s.pt')
 
 # 카메라 설정
 cap = cv2.VideoCapture('/dev/video0')  # Logitech BRIO assumed to be at /dev/video0
