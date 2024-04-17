@@ -30,9 +30,13 @@ def control_leds(fft_results):
     column_height = 8  # 각 열의 높이는 8
     for i in range(bands_per_column):  # 32개 열 처리
         led_height = int((fft_results[i] / max_fft) * column_height)
-        for row in range(column_height):
-            color = COLORS[i % len(COLORS)] if row < led_height else (0, 0, 0)
-            strip[i * 8 + (7-row)] = color  # LED 인덱스 조정
+        column_index = i * 8
+        if i % 2 == 0:  # 짝수 열 (정방향)
+            for row in range(column_height):
+                strip[column_index + row] = COLORS[i % len(COLORS)] if row < led_height else (0, 0, 0)
+        else:  # 홀수 열 (역방향)
+            for row in range(column_height):
+                strip[column_index + (7 - row)] = COLORS[i % len(COLORS)] if row < led_height else (0, 0, 0)
     strip.show()
 
 # 오디오 콜백 함수
@@ -47,7 +51,7 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수
 def main():
     try:
-        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=256, device='hw:5,1'):
+        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:5,1'):
             print("Streaming started...")
             while True:
                 time.sleep(1)
