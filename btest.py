@@ -1,75 +1,52 @@
 import cv2
-import time
-from ftplib import FTP
-import threading
+import torch
 
-# FTP 서버 정보 설정
-ftp_address = 'ftp.yourserver.com'
-ftp_username = 'your_username'
-ftp_password = 'your_password'
-ftp_target_path = '/path/to/upload/'  # FTP 서버 상의 파일 업로드 경로
+# YOLOv5 모델 로드
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
-def upload_file_to_ftp(file_path):
-    # FTP 서버에 파일을 업로드하는 함수
-    ftp = FTP(ftp_address)
-    ftp.login(ftp_username, ftp_password)
-    with open(file_path, 'rb') as file:
-        ftp.storbinary(f'STOR {ftp_target_path}{file_path}', file)
-    ftp.quit()
-    print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
+# 웹캠 설정
+cap = cv2.VideoCapture(0)
+# 웹캠의 실제 프레임 해상도 가져오기
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-def record_video(output_filename, duration=60):
-    # 카메라 초기화 및 녹화 설정
-    cap = cv2.VideoCapture(0)
-    if not cap.isOpened():
-        print("카메라를 시작할 수 없습니다.")
-        return
+# 녹화 설정
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 코덱 설정
+out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))  # 파일명, 코덱, fps, 해상도
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (640, 480))
+# 녹화 시간 계산을 위한 변수
+start_time = cv2.getTickCount()
+record_time = 10  # 녹화 시간 (초)
 
-    start_time = time.time()
-    while (time.time() - start_time) < duration:
-        ret, frame = cap.read()
-        if ret:
-            out.write(frame)
-            cv2.imshow('frame', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):  # q 키를 누르면 종료
-                break
-        else:
-            break
+while True:
+    # 웹캠에서 이미지 읽기
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-    # 자원 해제
-    cap.release()
-    out.release()
-    cv2.destroyAllWindows()
+    # YOLOv5로 추론
+    results = model(frame)
 
-def start_recording():
-    global recording_flag
-    output_filename = 'output.mp4'
-    duration = 60
-    record_video(output_filename, duration)
-    if recording_flag:
-        # FTP로 파일 전송
-        upload_file_to_ftp(output_filename)
+    # 사람(0)과 자동차(2)만 필터링
+    results = results.xyxy[0]  # 바운딩 박스 좌표
+    for *xyxy, conf, cls in results:
+        if cls in [0, 2]:  # cls 0은 사람, 2는 자동차
+            label = model.names[int(cls)]  # 클래스 이름
+            cv2.rectangle(frame, (int(xyxy[0]), int(xyxy[1])), (int(xyxy[2]), int(xyxy[3])), (255, 0, 0), 2)
+            cv2.putText(frame, f'{label} {conf:.2f}', (int(xyxy[0]), int(xyxy[1]-10)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 2)
 
-def keyboard_listener():
-    global recording_flag
-    while True:
-        key = input("Press 'r' to start recording or 'q' to quit: ")
-        if key == 'r':
-            recording_flag = True
-            print("Recording started.")
-            thread = threading.Thread(target=start_recording)
-            thread.start()
-        elif key == 'q':
-            recording_flag = False
-            print("Quitting...")
-            break
-        else:
-            print("Invalid input. Please press 'r' to start recording or 'q' to quit.")
+    # 결과 이미지 보여주기
+    cv2.imshow('YOLOv5 Detection', frame)
+    out.write(frame)  # 프레임 저장
 
-if __name__ == "__main__":
-    recording_flag = False
-    keyboard_thread = threading.Thread(target=keyboard_listener)
-    keyboard_thread.start()
+    # 녹화 시간 확인 및 종료
+    if (cv2.getTickCount() - start_time) / cv2.getTickFrequency() > record_time:
+        break
+
+    if cv2.waitKey(1) == ord('q'):  # 'q'를 누르면 종료
+        break
+
+# 자원 해제
+cap.release()
+out.release()  # 비디오 저장 종료
+cv2.destroyAllWindows()
