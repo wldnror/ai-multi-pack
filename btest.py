@@ -1,72 +1,79 @@
+import smbus
+import time
 import cv2
-import torch
-from PIL import Image, ImageDraw, ImageFont
-import numpy as np
-import os
+from ftplib import FTP
 
-# 모델 파일 경로 설정
-model_path = '/home/user/yolov5/yolov5s.pt'  # 모델 파일 경로를 적절히 수정하세요.
+# FTP 서버 정보 설정
+ftp_address = 'ftp.yourserver.com'
+ftp_username = 'your_username'
+ftp_password = 'your_password'
+ftp_target_path = '/path/to/upload/'  # FTP 서버 상의 파일 업로드 경로
 
-# 모델 로드
-model = torch.load(model_path)
+def upload_file_to_ftp(file_path):
+    # FTP 서버에 파일을 업로드하는 함수
+    ftp = FTP(ftp_address)
+    ftp.login(ftp_username, ftp_password)
+    with open(file_path, 'rb') as file:
+        ftp.storbinary(f'STOR {ftp_target_path}{file_path}', file)
+    ftp.quit()
+    print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
 
+def start_recording(duration=60):
+    # 카메라 초기화 및 녹화 설정
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        print("카메라를 시작할 수 없습니다.")
+        return
 
-# 카메라 설정
-cap = cv2.VideoCapture('/dev/video0')  # Logitech BRIO assumed to be at /dev/video0
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
 
-# 녹화 설정
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
-
-# 폰트 설정 (라즈베리파이에 적절한 폰트 파일 경로 설정)
-fontpath = "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf"
-font = ImageFont.truetype(fontpath, 20)
-
-# 녹화 시간 계산을 위한 변수
-start_time = cv2.getTickCount()
-record_time = 10
-
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    # YOLOv5로 추론
-    results = model(frame)
-
-    # Pillow 이미지로 변환하여 텍스트 그리기
-    img_pil = Image.fromarray(frame)
-    draw = ImageDraw.Draw(img_pil)
-
-    # results.xyxy[0]은 탐지된 객체들의 정보를 포함하는 텐서
-    for det in results.xyxy[0]:
-        x1, y1, x2, y2, conf, cls = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4], int(det[5])
-        if cls == 0:  # 'person' 클래스 ID
-            label = "사람"
-        elif cls == 2:  # 'car' 클래스 ID
-            label = "자동차"
+    start_time = time.time()
+    while (time.time() - start_time) < duration:
+        ret, frame = cap.read()
+        if ret:
+            out.write(frame)
+            cv2.imshow('frame', frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
         else:
-            continue  # 다른 객체는 무시
+            break
 
-        # 레이블 및 바운딩 박스 출력
-        draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=2)
-        draw.text((x1, y1 - 30), f'{label} {conf:.2f}', font=font, fill=(255, 255, 255))
+    # 자원 해제
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
+    return output_filename
 
-    # NumPy 배열로 다시 변환하여 OpenCV에서 처리 가능하도록 함
-    frame = np.array(img_pil)
+# MPU-6050 설정
+bus = smbus.SMBus(1)
+device_address = 0x68
+bus.write_byte_data(device_address, 0x6B, 0)
 
-    # 결과 화면에 표시
-    cv2.imshow('YOLOv5 Detection', frame)
-    out.write(frame)
+def read_acceleration(axis):
+    # 가속도 데이터 읽기
+    data = bus.read_i2c_block_data(device_address, axis, 2)
+    value = data[0] << 8 | data[1]
+    if value > 32767:
+        value -= 65536
+    return value
 
-    if (cv2.getTickCount() - start_time) / cv2.getTickFrequency() > record_time:
-        break
+threshold = 15000  # 임계값 설정
+while True:
+    acceleration = read_acceleration(0x3B)  # X축 데이터 읽기
+    if abs(acceleration) > threshold:
+        print("충격 감지! 녹화 시작")
 
-    if cv2.waitKey(1) == ord('q'):
-        break
+        # 충격 감지 시점부터 30초 전까지의 영상 녹화
+        start_time = time.time()
+        while (time.time() - start_time) < 30:
+            start_recording(30)
 
-cap.release()
-out.release()
-cv2.destroyAllWindows()
+        # 충격 감지 시점부터 30초 후까지의 영상 녹화
+        start_time = time.time()
+        while (time.time() - start_time) < 30:
+            start_recording(30)
+
+        # FTP로 파일 전송
+        upload_file_to_ftp('output.avi')
+    time.sleep(0.1)
