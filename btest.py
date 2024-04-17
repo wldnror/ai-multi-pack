@@ -33,11 +33,9 @@ def start_recording(duration=10):
             print("카메라를 시작할 수 없습니다.")
             return
 
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_filename = 'output11.mp4'
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0
 
     start_time = time.time()
     try:
