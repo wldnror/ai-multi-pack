@@ -7,9 +7,6 @@ import os
 # 모델 파일 경로 설정
 model_path = '/home/user/yolov5/yolov5s.pt'  # 모델 파일 경로를 적절히 수정하세요.
 
-# 모델 로드하기 전에 PYTHONPATH 환경 변수 설정
-os.environ['PYTHONPATH'] = '/home/user/yolov5'
-
 # 모델 로드
 model = torch.load(model_path)
 
