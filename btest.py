@@ -35,7 +35,7 @@ def start_recording(duration=10):
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_filename = 'output11.mp4'
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0)
 
     start_time = time.time()
     try:
