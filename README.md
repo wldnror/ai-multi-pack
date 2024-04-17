@@ -110,6 +110,9 @@ pip install mpu6050-raspberrypi
 
 sudo apt-get update
 sudo apt-get install python3-opencv
+sudo pip3 install opencv-python-headless torch torchvision pillow
+sudo pip3 install pandas
+
 
 ```
 
