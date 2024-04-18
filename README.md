@@ -131,7 +131,7 @@ sudo nano /etc/pulse/default.pa
 ```bash
 load-module module-loopback source=alsa_output.platform-bcm2835_audio.stereo-fallback.monitor sink=alsa_output.platform-bcm2835_audio.stereo-fallback
 ```
- - 아래 명령을 순차적으로 실행후 `re boot` 재부팅
+ - 아래 명령을 순차적으로 실행후 `sudo reboot` 재부팅
 ```bash
 pulseaudio -k
 
