@@ -119,4 +119,20 @@ sudo pip3 install pandas
 ```bash
  --break-system-packages
 ```
+
+**루프백 자동화**
+-아래 명령어를 사용하여 설정파일을 엽니다.
+
+```bash
+sudo nano /etc/pulse/default.pa
+
+```
+
+```bash
+load-module module-loopback source=alsa_output.platform-bcm2835_audio.stereo-fallback.monitor sink=alsa_output.platform-bcm2835_audio.stereo-fallback
+```
+
+
+
+
 이 설정을 통해 라즈베리파이는 스마트폰에서 재생되는 음악을 받아 스피커로 출력하면서 동시에 이 오디오 데이터를 분석할 수 있는 입력 신호로 사용합니다. 이 데이터는 FFT를 통해 분석되며, 결과에 따라 연결된 LED 스트립의 색상과 밝기가 실시간으로 변경됩니다, 이로써 음악에 반응하는 시각적 디스플레이를 제공합니다.
