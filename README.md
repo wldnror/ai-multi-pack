@@ -120,14 +120,14 @@ sudo pip3 install pandas
  --break-system-packages
 ```
 
-**루프백 자동화**:
+**루프백 자동화**
  - 아래 명령어를 사용하여 설정파일을 엽니다.
 
 ```bash
 sudo nano /etc/pulse/default.pa
 
 ```
-
+- 파일의 마지막 부분에 다음과 같이 추가합니다:
 ```bash
 load-module module-loopback source=alsa_output.platform-bcm2835_audio.stereo-fallback.monitor sink=alsa_output.platform-bcm2835_audio.stereo-fallback
 ```
