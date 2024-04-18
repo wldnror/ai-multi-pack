@@ -121,25 +121,34 @@ sudo pip3 install pandas
 ```
 
 **루프백 자동화**
- - 아래 명령어를 사용하여 설정파일을 엽니다.
-
+ 1. 사용자 systemd 디렉터리로 이동:
 ```bash
-sudo nano /etc/pulse/default.pa
-
+mkdir -p ~/.config/systemd/user
 ```
-- 파일의 마지막 부분에 다음과 같이 추가합니다:
+ 2. 서비스 파일 생성:
 ```bash
-load-module module-loopback source=alsa_output.platform-bcm2835_audio.stereo-fallback.monitor sink=alsa_output.platform-bcm2835_audio.stereo-fallback
+nano ~/.config/systemd/user/pulseaudio-modules.service
 ```
- - 아래 명령을 순차적으로 실행후 `sudo reboot` 재부팅
+ 3. 다음 내용을 파일에 입력합니다:
 ```bash
-pulseaudio -k
+[Unit]
+Description=Load PulseAudio modules for user
+After=pulseaudio.target
 
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c "pactl load-module module-null-sink sink_name=virtual_mic sink_properties=device.description=Virtual_Microphone; pactl load-module module-loopback source=virtual_mic.monitor"
+
+[Install]
+WantedBy=default.target
 ```
+
+ 4. 사용자 서비스 활성화 및 시작:
 ```bash
-pulseaudio --start
-
+systemctl --user enable pulseaudio-modules.service
+systemctl --user start pulseaudio-modules.service
 ```
+
 
 
 이 설정을 통해 라즈베리파이는 스마트폰에서 재생되는 음악을 받아 스피커로 출력하면서 동시에 이 오디오 데이터를 분석할 수 있는 입력 신호로 사용합니다. 이 데이터는 FFT를 통해 분석되며, 결과에 따라 연결된 LED 스트립의 색상과 밝기가 실시간으로 변경됩니다, 이로써 음악에 반응하는 시각적 디스플레이를 제공합니다.
