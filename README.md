@@ -120,8 +120,8 @@ sudo pip3 install pandas
  --break-system-packages
 ```
 
-**루프백 자동화**
--아래 명령어를 사용하여 설정파일을 엽니다.
+**루프백 자동화**:
+ - 아래 명령어를 사용하여 설정파일을 엽니다.
 
 ```bash
 sudo nano /etc/pulse/default.pa
