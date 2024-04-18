@@ -40,12 +40,11 @@
 설치 명령어:
 
 ```bash
-sudo pip3 install adafruit-blinka
-sudo pip3 install sounddevice
+sudo pip3 install adafruit-blinka --break-system-packages
+sudo pip3 install sounddevice --break-system-packages
 sudo apt-get install libportaudio2
-sudo pip3 install rpi_ws281x
-sudo pip3 install adafruit-circuitpython-neopixel
-
+sudo pip3 install rpi_ws281x --break-system-packages
+sudo pip3 install adafruit-circuitpython-neopixel --break-system-packages
    ```
 
 ### 방향 지시등 LED
@@ -63,7 +62,7 @@ sudo pip3 install adafruit-circuitpython-neopixel
 
 ```bash
 sudo apt-get install python3-smbus i2c-tools
-pip install mpu6050-raspberrypi
+pip install mpu6050-raspberrypi --break-system-packages
 ```
 
 ### 블루투스 연결 설정
