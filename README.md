@@ -106,17 +106,10 @@ pip install mpu6050-raspberrypi --break-system-packages
 
 ***카메라 관련***
  ```bash
-
 sudo apt-get update
 sudo apt-get install python3-opencv
 sudo pip3 install opencv-python-headless torch torchvision pillow
 sudo pip3 install pandas
-
-
-```
-**설치 실패시 뒤에 함**
-```bash
- --break-system-packages
 ```
 
 **루프백 자동화**
@@ -147,6 +140,18 @@ WantedBy=default.target
 systemctl --user enable pulseaudio-modules.service
 systemctl --user start pulseaudio-modules.service
 ```
+
+## 각종 문제 생길시 해결 방안
+
+ - 라이브러리 설치 실패시
+   ```bash
+    --break-system-packages
+   ```
+ - 처음 SSH 연결 이후로 호스트가 변경되어 연결에 에러가 뜰때 (0.0.0.0 은 ip 입력)
+
+   ```bash
+    ssh-keygen -R 0.0.0.0
+   ```   
 
 
 
