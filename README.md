@@ -145,9 +145,9 @@ systemctl --user start pulseaudio-modules.service
 ## 1. udev 룰 생성
 udev 룰 파일을 생성하고 특정 USB 장치가 연결될 때 실행될 스크립트를 지정합니다.
 
-\`\`\`bash
+ ```bash
 sudo nano /etc/udev/rules.d/99-usb-autoreconnect.rules
-\`\`\`
+```
 
 파일 내에 다음과 같은 내용을 추가합니다:
 
@@ -158,21 +158,21 @@ ACTION=="add", ATTRS{idVendor}=="144d", ATTRS{idProduct}=="2b2b", RUN+="/home/pi
 ## 2. udev 룰 리로드
 udev 룰 변경사항을 적용하기 위해 리로드합니다.
 
-\`\`\`bash
+ ```bash
 sudo udevadm control --reload-rules
 sudo udevadm trigger
-\`\`\`
+```
 
 ## 3. Bash 스크립트 작성
 USB 장치를 자동으로 연결 해제하고 재연결하는 스크립트를 생성합니다.
 
-\`\`\`bash
+ ```bash
 sudo nano /home/user/usb_reconnect.sh
-\`\`\`
+```
 
 스크립트 내용:
 
-\`\`\`bash
+ ```bash
 #!/bin/bash
 # USB 장치 경로 찾기 (예: /dev/bus/usb/001/012)
 USB_PATH=$(lsusb -d 144d:2b2b | awk '{print "/dev/bus/usb/" $2 "/" $4}' | sed 's/://')
@@ -189,23 +189,23 @@ echo '1' | sudo tee $USB_PATH/authorized
 
 실행 권한 부여:
 
-\`\`\`bash
+ ```bash
 sudo chmod +x /home/pi/usb_reconnect.sh
-\`\`\`
+```
 
 ## 각종 문제 해결 방안
 
 - 라이브러리 설치 실패 시
 
-  \`\`\`bash
+   ```bash
   --break-system-packages
-  \`\`\`
+  ```
 
 - SSH 첫 연결 이후 호스트 변경으로 인한 연결 에러 시
 
-  \`\`\`bash
+   ```bash
   ssh-keygen -R 0.0.0.0
-  \`\`\`
+ ```
 
 ## 주의사항
 
