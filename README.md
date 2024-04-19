@@ -185,7 +185,7 @@ sleep 5
 
 # USB 장치 다시 연결
 echo '1' | sudo tee $USB_PATH/authorized
-\`\`\`
+```
 
 실행 권한 부여:
 
