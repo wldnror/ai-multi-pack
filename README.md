@@ -109,16 +109,16 @@
      sudo modprobe snd-aloop
      ```
 
-**루프백 자동화**
- 1. 사용자 systemd 디렉터리로 이동:
+## 루프백 자동화
+## 1. 사용자 systemd 디렉터리로 이동:
 ```bash
 mkdir -p ~/.config/systemd/user
 ```
- 2. 서비스 파일 생성:
+## 2. 서비스 파일 생성:
 ```bash
 nano ~/.config/systemd/user/pulseaudio-modules.service
 ```
- 3. 다음 내용을 파일에 입력합니다:
+## 3. 다음 내용을 파일에 입력합니다:
 ```bash
 [Unit]
 Description=Load PulseAudio modules for user
@@ -132,7 +132,7 @@ ExecStart=/bin/sh -c "pactl load-module module-null-sink sink_name=virtual_mic s
 WantedBy=default.target
 ```
 
- 4. 사용자 서비스 활성화 및 시작:
+## 4. 사용자 서비스 활성화 및 시작:
 ```bash
 systemctl --user enable pulseaudio-modules.service
 systemctl --user start pulseaudio-modules.service
