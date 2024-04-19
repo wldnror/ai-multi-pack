@@ -1,12 +1,34 @@
+import os
 import time
 import cv2
 from ftplib import FTP
+import configparser
 
-# FTP 서버 정보 설정
-ftp_address = '79webhard.com'  # "ftp://" 접두사 제거
-ftp_username = 'webmaster'
-ftp_password = '#'
-ftp_target_path = '/home/video/'  # 실제 파일 업로드 경로로 변경
+# FTP 설정 파일 존재 여부 확인 및 초기 설정
+def init_ftp_config():
+    # FTP 설정 정보를 사용자로부터 받아 저장
+    config = configparser.ConfigParser()
+    config['FTP'] = {
+        'ftp_address': input('FTP 주소 입력: '),
+        'ftp_username': input('FTP 사용자 이름 입력: '),
+        'ftp_password': input('FTP 비밀번호 입력: '),
+        'ftp_target_path': input('FTP 대상 경로 입력: ')
+    }
+    with open('ftp_config.ini', 'w') as configfile:
+        config.write(configfile)
+
+def check_config_exists():
+    if not os.path.exists('ftp_config.ini'):
+        print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
+        init_ftp_config()
+    else:
+        print("기존의 FTP 설정을 불러옵니다.")
+
+def read_ftp_config():
+    # 설정 파일에서 FTP 정보를 불러오기
+    config = configparser.ConfigParser()
+    config.read('ftp_config.ini')
+    return config['FTP']
 
 class MockSMBus:
     def __init__(self, bus_number):
@@ -58,11 +80,12 @@ def start_recording(duration=10):
 
 
 def upload_file_to_ftp(file_path):
+    ftp_info = read_ftp_config()
     try:
-        ftp = FTP(ftp_address)
-        ftp.login(ftp_username, ftp_password)
+        ftp = FTP(ftp_info['ftp_address'])
+        ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
         with open(file_path, 'rb') as file:
-            ftp.storbinary(f'STOR {ftp_target_path}{file_path}', file)
+            ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}{file_path}", file)
         print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
     except Exception as e:
         print(f"파일 업로드 중 오류 발생: {e}")
@@ -81,6 +104,7 @@ def read_acceleration(axis):
     return value
 
 threshold = 15000  # 임계값 설정
+check_config_exists()  # 프로그램 시작 시 설정 파일 확인
 try:
     while True:
         # 사용자 입력을 받아 충격 감지 여부 결정
