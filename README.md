@@ -184,7 +184,7 @@ echo '1' | sudo tee $USB_PATH/authorized
 ```bash
 sudo chmod +x /home/pi/usb_reconnect.sh
 ```
-
+# AI 블랙박스 기능
 **카메라 관련 라이브러리 설치**
  ```bash
 sudo apt-get update
