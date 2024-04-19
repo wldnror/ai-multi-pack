@@ -37,37 +37,39 @@
 
 - **Adafruit Blinka**:
   - CircuitPython 라이브러리를 라즈베리 파이와 같은 하드웨어에서 사용할 수 있도록 해주는 라이브러리입니다.
+   ```bash
+      sudo pip3 install adafruit-blinka --break-system-packages
+   ```
 - **Adafruit CircuitPython NeoPixel**:
   - NeoPixel LED를 제어하기 위한 라이브러리입니다. 이 라이브러리를 사용하면 LED 스트립의 각 LED를 개별적으로 제어할 수 있습니다.
+   ```bash
+   sudo pip3 install adafruit-circuitpython-neopixel --break-system-packages
+   ```
 - **Sounddevice**:
   - 오디오를 녹음하고 재생할 수 있는 라이브러리입니다. 이 라이브러리는 PortAudio를 기반으로 합니다.
+   ```bash
+      sudo pip3 install sounddevice --break-system-packages
+   ```
 - **libportaudio2**:
   - Sounddevice 라이브러리의 의존성인 PortAudio 라이브러리의 리눅스 패키지입니다.
+   ```bash
+      sudo apt-get install libportaudio2
+   ```
 - **rpi_ws281x**:
   - 라즈베리 파이에서 WS281x (NeoPixel) LED를 직접 제어할 수 있도록 해주는 라이브러리입니다.
-
-설치 명령어:
-
-```bash
-sudo pip3 install adafruit-blinka --break-system-packages
-sudo pip3 install sounddevice --break-system-packages
-sudo apt-get install libportaudio2
-sudo pip3 install rpi_ws281x --break-system-packages
-sudo pip3 install adafruit-circuitpython-neopixel --break-system-packages
+   ```bash
+      sudo pip3 install rpi_ws281x --break-system-packages
    ```
-
 - **Python-SMBus**:
   - Python에서 I2C 통신을 위해 필요한 라이브러리입니다.
+   ```bash
+      sudo apt-get install python3-smbus i2c-tools
+   ```
 - **MPU6050 Python 라이브러리**
   - MPU-6050 센서 데이터를 쉽게 읽을 수 있게 해주는 라이브러리입니다.
-
-설치 명령어:
-
-```bash
-sudo apt-get install python3-smbus i2c-tools
-pip install mpu6050-raspberrypi --break-system-packages
-```
-
+   ```bash
+      pip install mpu6050-raspberrypi --break-system-packages
+   ```
 ### 블루투스 연결 설정
 
 블루투스를 이용해 스마트폰과 라즈베리파이를 연결하고, 스마트폰에서 재생되는 음악을 라즈베리파이에 연결된 스피커를 통해 출력하며, 이 음악 신호를 입력 신호로 변환하여 FFT(고속 푸리에 변환)를 통해 스펙트럼 분석을 수행하는 과정을 설명합니다.
