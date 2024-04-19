@@ -203,9 +203,9 @@ sudo chmod +x /home/pi/usb_reconnect.sh
 
 - SSH 첫 연결 이후 호스트 변경으로 인한 연결 에러 시
 
- ```bash
+  ```bash
   ssh-keygen -R 0.0.0.0
- ```
+  ```
 
 ## 주의사항
 
