@@ -104,14 +104,6 @@ pip install mpu6050-raspberrypi --break-system-packages
      sudo modprobe snd-aloop
      ```
 
-***카메라 관련***
- ```bash
-sudo apt-get update
-sudo apt-get install python3-opencv
-sudo pip3 install opencv-python-headless torch torchvision pillow
-sudo pip3 install pandas
-```
-
 **루프백 자동화**
  1. 사용자 systemd 디렉터리로 이동:
 ```bash
@@ -193,6 +185,13 @@ echo '1' | sudo tee $USB_PATH/authorized
 sudo chmod +x /home/pi/usb_reconnect.sh
 ```
 
+**카메라 관련 라이브러리 설치**
+ ```bash
+sudo apt-get update
+sudo apt-get install python3-opencv
+sudo pip3 install opencv-python-headless torch torchvision pillow
+sudo pip3 install pandas
+```
 ## 각종 문제 해결 방안
 
 - 라이브러리 설치 실패 시
