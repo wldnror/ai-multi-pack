@@ -139,7 +139,7 @@ systemctl --user start pulseaudio-modules.service
 ```
 # 루프백 자동화 이후 오디오 문제 해결
 
-## 1. udev 룰 생성
+### 1. udev 룰 생성
 udev 룰 파일을 생성하고 특정 USB 장치가 연결될 때 실행될 스크립트를 지정합니다.
 
 ```bash
@@ -152,7 +152,7 @@ sudo nano /etc/udev/rules.d/99-usb-autoreconnect.rules
 ACTION=="add", ATTRS{idVendor}=="144d", ATTRS{idProduct}=="2b2b", RUN+="/home/user/usb_reconnect.sh"
 ```
 
-## 2. udev 룰 리로드
+### 2. udev 룰 리로드
 udev 룰 변경사항을 적용하기 위해 리로드합니다.
 
 ```bash
@@ -160,7 +160,7 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 ```
 
-## 3. Bash 스크립트 작성
+### 3. Bash 스크립트 작성
 USB 장치를 자동으로 연결 해제하고 재연결하는 스크립트를 생성합니다.
 
 ```bash
