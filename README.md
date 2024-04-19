@@ -140,17 +140,80 @@ WantedBy=default.target
 systemctl --user enable pulseaudio-modules.service
 systemctl --user start pulseaudio-modules.service
 ```
+# 루프백 자동화 이후 오디오 문제 해결
 
-## 각종 문제 생길시 해결 방안
+## 1. udev 룰 생성
+udev 룰 파일을 생성하고 특정 USB 장치가 연결될 때 실행될 스크립트를 지정합니다.
 
- - 라이브러리 설치 실패시
-   ```bash
-    --break-system-packages
-   ```
- - 처음 SSH 연결 이후로 호스트가 변경되어 연결에 에러가 뜰때 (0.0.0.0 은 ip 입력)
+\`\`\`bash
+sudo nano /etc/udev/rules.d/99-usb-autoreconnect.rules
+\`\`\`
 
-   ```bash
-    ssh-keygen -R 0.0.0.0
-   ```   
+파일 내에 다음과 같은 내용을 추가합니다:
+
+\`\`\`plaintext
+ACTION=="add", ATTRS{idVendor}=="144d", ATTRS{idProduct}=="2b2b", RUN+="/home/pi/usb_reconnect.sh"
+\`\`\`
+
+## 2. udev 룰 리로드
+udev 룰 변경사항을 적용하기 위해 리로드합니다.
+
+\`\`\`bash
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+\`\`\`
+
+## 3. Bash 스크립트 작성
+USB 장치를 자동으로 연결 해제하고 재연결하는 스크립트를 생성합니다.
+
+\`\`\`bash
+sudo nano /home/user/usb_reconnect.sh
+\`\`\`
+
+스크립트 내용:
+
+\`\`\`bash
+#!/bin/bash
+# USB 장치 경로 찾기 (예: /dev/bus/usb/001/012)
+USB_PATH=$(lsusb -d 144d:2b2b | awk '{print "/dev/bus/usb/" $2 "/" $4}' | sed 's/://')
+
+# USB 장치 연결 해제
+echo '0' | sudo tee $USB_PATH/authorized
+
+# 5초 대기
+sleep 5
+
+# USB 장치 다시 연결
+echo '1' | sudo tee $USB_PATH/authorized
+\`\`\`
+
+실행 권한 부여:
+
+\`\`\`bash
+sudo chmod +x /home/pi/usb_reconnect.sh
+\`\`\`
+
+## 각종 문제 해결 방안
+
+- 라이브러리 설치 실패 시
+
+  \`\`\`bash
+  --break-system-packages
+  \`\`\`
+
+- SSH 첫 연결 이후 호스트 변경으로 인한 연결 에러 시
+
+  \`\`\`bash
+  ssh-keygen -R 0.0.0.0
+  \`\`\`
+
+## 주의사항
+
+- 이 스크립트는 USB 장치의 연결을 한 번만 해제하고 다시 연결합니다. 연속적으로 반복하려면 스크립트를 수정할 필요가 있습니다.
+- 스크립트 실행 시 sudo 권한이 필요할 수 있으며, 라즈베리파이에서 비밀번호 없이 sudo를 사용할 수 있도록 설정하는 것이 좋습니다.
+- USB 장치의 경로(/dev/bus/usb/001/012)는 장치에 따라 달라질 수 있으므로 정확한 경로를 찾는 것이 중요합니다.
+- 이 방법을 통해 라즈베리파이에서 USB 장치의 연결을 관리하고 원하는 작업을 자동화할 수 있습니다.
+
+
 
 이 설정을 통해 라즈베리파이는 스마트폰에서 재생되는 음악을 받아 스피커로 출력하면서 동시에 이 오디오 데이터를 분석할 수 있는 입력 신호로 사용합니다. 이 데이터는 FFT를 통해 분석되며, 결과에 따라 연결된 LED 스트립의 색상과 밝기가 실시간으로 변경됩니다, 이로써 음악에 반응하는 시각적 디스플레이를 제공합니다.
