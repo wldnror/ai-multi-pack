@@ -149,6 +149,51 @@ WantedBy=default.target
 systemctl --user enable pulseaudio-modules.service
 systemctl --user start pulseaudio-modules.service
 ```
+
+### 5. 연결된 블루투스 스피커는 usb스피커로 자동 조정
+
+#### 5-1 블루투스 연결 감지
+- 아래 파일을 만들다
+  ```bash
+  sudo nano /etc/systemd/system/bluetooth-audio-switch.service
+  ```
+- 아래 내용을 입력합니다.
+  ```bash
+  [Unit]
+Description=Switch audio to USB speaker on Bluetooth connect
+After=bluetooth.service
+BindsTo=bluetooth.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/bluetooth-audio-switch
+
+[Install]
+WantedBy=multi-user.target
+
+  ```
+#### 5-2 오디오 라우팅 변경 스크립트
+- 아래 파일을 만들다
+  ```bash
+  sudo nano /usr/local/bin/bluetooth-audio-switch
+  ```
+
+- 아래 내용을 입력합니다.
+
+```bash
+#!/bin/bash
+
+# 블루투스 장치 연결 상태 체크
+connected=$(bluetoothctl info | grep 'Connected: yes')
+
+if [ -n "$connected" ]; then
+    # USB 스피커로 오디오 출력 설정
+    pactl set-default-sink alsa_output.usb-your_usb_speaker_device_name
+else
+    # 기본 오디오 장치로 설정 (3.5mm 잭)
+    pactl set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
+fi
+```
 # 루프백 자동화 이후 오디오 문제 해결
 
 ### 1. udev 룰 생성
