@@ -187,7 +187,7 @@ echo '1' | sudo tee $USB_PATH/authorized
 실행 권한 부여:
 
 ```bash
-sudo chmod +x /home/pi/usb_reconnect.sh
+sudo chmod +x /home/user/usb_reconnect.sh
 ```
 # AI 블랙박스 기능
 **카메라 관련 라이브러리 설치**
