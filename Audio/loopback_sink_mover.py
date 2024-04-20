@@ -1,31 +1,26 @@
 import pulsectl
 
-pulse = pulsectl.Pulse('audio-bluetooth-handler')
+pulse = pulsectl.Pulse('audio-stream-manager')
 
-def move_bluetooth_audio():
+def move_all_loopback_streams(sink_description):
     try:
-        # 모든 싱크 리스트와 스트림 리스트 가져오기
+        # 모든 싱크와 스트림 리스트 가져오기
         sinks = pulse.sink_list()
         sink_inputs = pulse.sink_input_list()
+        
+        # 원하는 싱크 찾기
+        target_sink = next((sink for sink in sinks if sink_description in sink.description), None)
+        if not target_sink:
+            print(f"Sink with description '{sink_description}' not found.")
+            return
 
-        # USB 스피커와 기본 오디오 싱크 식별
-        usb_sink = next((sink for sink in sinks if 'usb' in sink.description.lower()), None)
-        default_sink = next((sink for sink in sinks if 'analog-stereo' in sink.description.lower()), None)
-
-        # 블루투스로 연결된 스트림 찾기
-        bluetooth_streams = [stream for stream in sink_inputs if 'bluetooth' in stream.name.lower()]
-
-        for stream in bluetooth_streams:
-            if usb_sink:
-                # USB 스피커가 있으면 거기로 이동
-                pulse.sink_input_move(stream.index, usb_sink.index)
-                print(f"Moved Bluetooth stream {stream.name} to USB speaker {usb_sink.description}")
-            elif default_sink:
-                # USB 스피커가 없으면 기본 오디오로 이동
-                pulse.sink_input_move(stream.index, default_sink.index)
-                print(f"Moved Bluetooth stream {stream.name} to default audio {default_sink.description}")
+        # 이름이 'loopback'으로 시작하는 모든 스트림 찾아서 이동
+        for stream in sink_inputs:
+            if stream.name.startswith('loopback'):
+                pulse.sink_input_move(stream.index, target_sink.index)
+                print(f"Moved stream {stream.name} to sink {target_sink.description}")
 
     finally:
         pulse.close()
 
-move_bluetooth_audio()
+move_all_loopback_streams('Built-in Audio Analog Stereo')
