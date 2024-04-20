@@ -70,64 +70,21 @@
    ```bash
    pip install mpu6050-raspberrypi --break-system-packages
    ```
-## 블루투스 연결 설정
+# 블루투스 연결 설정
 
 블루투스를 이용해 스마트폰과 라즈베리파이를 연결하고, 스마트폰에서 재생되는 음악을 라즈베리파이에 연결된 스피커를 통해 출력하며, 이 음악 신호를 입력 신호로 변환하여 FFT(고속 푸리에 변환)를 통해 스펙트럼 분석을 수행하는 과정을 설명합니다.
 
-1. **블루투스 소프트웨어 설치**:
-   ```bash
-   sudo apt-get install bluetooth bluez libbluetooth-dev libudev-dev
-   ```
-2. **블루투스 서비스 활성화 및 시작**:
-   ```bash
-   sudo systemctl enable bluetooth.service
-   sudo systemctl start bluetooth.service
-   ```
-3. **블루투스 장치 페어링**:
-   - 라즈베리파이에서 `bluetoothctl` 명령을 사용하여 블루투스 장치를 검색하고 페어링합니다.
-
-### 오디오 루프백 수동 설정 (테스트용 입니다. 재부팅되면 초기화됩니다 아래 자동화 기능을 사용하세요)
-
-스마트폰에서 재생되는 음악을 라즈베리파이를 통해 스피커로 전송한 후, 이를 루프백 장치를 통해 다시 입력 신호로 취급하여 실시간으로 스펙트럼 분석을 수행합니다.
-
-1. **pavucontrol 설치**:
-   ```bash
-   sudo apt-get install pavucontrol
-   ```
-   - 설치 후 `pavucontrol`을 실행하여 오디오 스트림이 올바르게 루프백 디바이스로 라우팅되는지 확인합니다.
-
-2. **Loopback 모듈 로드**:
-   ```bash
-   pactl load-module module-loopback
-   ```
-   - `snd-aloop` 모듈 상태 확인:
-     ```bash
-     lsmod | grep snd_aloop
-     ```
-   - 모듈이 로드되지 않았다면, 다음 명령어로 모듈을 로드합니다:
-     ```bash
-     sudo modprobe snd-aloop
-     ```
-
 ## 루프백 자동화
-### 1. default.pa 설정 변경
-기본적으로 default.pa 파일을 통해 항상 3.5mm 잭을 기본 출력으로 설정할 수 있습니다:
-- ```bash
-  sudo nano /etc/pulse/default.pa
-  ```
-  ```bash
-  set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
-  ```
 
 ### 1. 사용자 systemd 디렉터리로 이동:
 ```bash
 mkdir -p ~/.config/systemd/user
 ```
-### 2. 서비스 파일 생성:
+### 1-2. 서비스 파일 생성:
 ```bash
 nano ~/.config/systemd/user/pulseaudio-modules.service
 ```
-### 3. 다음 내용을 파일에 입력합니다:
+### 1-3. 다음 내용을 파일에 입력합니다:
 ```bash
 [Unit]
 Description=Load PulseAudio modules for user
@@ -144,12 +101,24 @@ ExecStartPost=/bin/pactl set-default-sink alsa_output.platform-bcm2835_audio.ste
 WantedBy=default.target
 ```
 
-### 4. 사용자 서비스 활성화 및 시작:
+### 1-4. 사용자 서비스 활성화 및 시작:
 ```bash
 systemctl --user enable pulseaudio-modules.service
 systemctl --user start pulseaudio-modules.service
 ```
 
+### 2. 모듈로드
+
+### 2-1
+ - 터미널을 열고 rc.local 파일을 편집기로 엽니다. 대부분의 라즈베리파이 시스템에서는 nano 편집기를 사용할 수 있습니다:
+   ```bash
+   sudo nano /etc/rc.local
+   ```
+### 2-2
+ - 파일을 열면, "exit 0" 이라는 줄 전에 다음과 같은 내용을 추가합니다:
+   ```bash
+   modprobe snd-aloop
+   ```
 ### 5. 연결된 블루투스 스피커는 usb스피커로 자동 조정
 
 #### 5-1 블루투스 연결 감지
@@ -214,58 +183,6 @@ sudo systemctl enable bluetooth-audio-switch.service
 sudo systemctl start bluetooth-audio-switch.service
 ```
 
-# 루프백 자동화 이후 오디오 문제 해결
-
-### 1. udev 룰 생성
-udev 룰 파일을 생성하고 특정 USB 장치가 연결될 때 실행될 스크립트를 지정합니다.
-
-```bash
-sudo nano /etc/udev/rules.d/99-usb-autoreconnect.rules
-```
-
-파일 내에 다음과 같은 내용을 추가합니다:
-
-```bash
-ACTION=="add", ATTRS{idVendor}=="144d", ATTRS{idProduct}=="2b2b", RUN+="/home/user/usb_reconnect.sh"
-```
-
-### 2. udev 룰 리로드
-udev 룰 변경사항을 적용하기 위해 리로드합니다.
-
-```bash
-sudo udevadm control --reload-rules
-sudo udevadm trigger
-```
-
-### 3. Bash 스크립트 작성
-USB 장치를 자동으로 연결 해제하고 재연결하는 스크립트를 생성합니다.
-
-```bash
-sudo nano /home/user/usb_reconnect.sh
-```
-
-스크립트 내용:
-
-```bash
-#!/bin/bash
-# USB 장치 경로 찾기 (예: /dev/bus/usb/001/012)
-USB_PATH=$(lsusb -d 144d:2b2b | awk '{print "/dev/bus/usb/" $2 "/" $4}' | sed 's/://')
-
-# USB 장치 연결 해제
-echo '0' | sudo tee $USB_PATH/authorized
-
-# 5초 대기
-sleep 5
-
-# USB 장치 다시 연결
-echo '1' | sudo tee $USB_PATH/authorized
-```
-
-실행 권한 부여:
-
-```bash
-sudo chmod +x /home/user/usb_reconnect.sh
-```
 # AI 블랙박스 기능
 **카메라 관련 라이브러리 설치**
  ```bash
