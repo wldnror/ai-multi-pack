@@ -26,12 +26,10 @@ def is_device_connected(device_address):
 
 def connect_bluetooth_device(device_address):
     # 블루투스 장치 연결 시도 전에 연결 상태 확인
-    if is_device_connected(device_address):
-        print(f"Device {device_address} is already connected.")
-        return
-    max_retries = 5  # 최대 재시도 횟수
-    retries = 0
-    while retries < max_retries:
+    while True:  # 무한 반복
+        if is_device_connected(device_address):
+            print(f"Device {device_address} is already connected.")
+            break
         try:
             result = subprocess.run(['bluetoothctl', 'connect', device_address], capture_output=True, text=True)
             if "Connection successful" in result.stdout:
@@ -39,12 +37,10 @@ def connect_bluetooth_device(device_address):
                 break
             else:
                 print("Connection failed. Retrying...")
-                retries += 1
-                time.sleep(5)  # 5초 후 재시도
+                time.sleep(10)  # 10초 후 재시도
         except Exception as e:
             print(f"Error connecting to the device: {str(e)}")
-            retries += 1
-            time.sleep(5)
+            time.sleep(10)  # 예외 발생시에도 10초 후 재시도
 
 if __name__ == '__main__':
     device_address = get_last_connected_device()
