@@ -127,6 +127,9 @@ After=pulseaudio.target
 [Service]
 Type=oneshot
 ExecStart=/bin/sh -c "pactl load-module module-null-sink sink_name=virtual_mic sink_properties=device.description=Virtual_Microphone; pactl load-module module-loopback source=virtual_mic.monitor"
+# 10초 대기 후 기본 싱크 설정
+ExecStartPost=/bin/sleep 10
+ExecStartPost=/bin/pactl set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
 
 [Install]
 WantedBy=default.target
