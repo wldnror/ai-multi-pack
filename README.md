@@ -176,7 +176,7 @@ WantedBy=multi-user.target
 - 아래 파일을 만들다
 
 ```bash
-  sudo nano /usr/local/bin/bluetooth-audio-switch
+sudo nano /usr/local/bin/bluetooth-audio-switch
 ```
 
 - 아래 내용을 입력합니다.
