@@ -195,6 +195,19 @@ else
     pactl set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
 fi
 ```
+
+#### 5-3 오디오 라우팅 변경 스크립트
+- 스크립트 실행 권한 설정
+
+```bash
+sudo chmod +x /usr/local/bin/bluetooth-audio-switch
+```
+- 서비스 활성화 및 시작
+```bash
+sudo systemctl enable bluetooth-audio-switch.service
+sudo systemctl start bluetooth-audio-switch.service
+```
+
 # 루프백 자동화 이후 오디오 문제 해결
 
 ### 1. udev 룰 생성
