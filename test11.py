@@ -1,10 +1,10 @@
 import pulsectl
 
-pulse = pulsectl.Pulse('audio-device-listener')
+pulse = pulsectl.Pulse('audio-stream-listener')
 
 try:
-    sinks = pulse.sink_list()
-    for sink in sinks:
-        print(f"Sink Name: {sink.name}, Description: {sink.description}")
+    sink_inputs = pulse.sink_input_list()
+    for stream in sink_inputs:
+        print(f"Stream Index: {stream.index}, Name: {stream.name}, Sink: {stream.sink}")
 finally:
     pulse.close()
