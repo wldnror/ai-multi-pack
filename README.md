@@ -159,7 +159,7 @@ systemctl --user start pulseaudio-modules.service
   ```
 - 아래 내용을 입력합니다.
 ```bash
-  [Unit]
+[Unit]
 Description=Switch audio to USB speaker on Bluetooth connect
 After=bluetooth.service
 BindsTo=bluetooth.target
@@ -188,12 +188,18 @@ WantedBy=multi-user.target
 connected=$(bluetoothctl info | grep 'Connected: yes')
 
 if [ -n "$connected" ]; then
-    # USB 스피커로 오디오 출력 설정
-    pactl set-default-sink alsa_output.usb-your_usb_speaker_device_name
+    # 사용 가능한 USB 스피커 중 하나를 찾아서 오디오 출력 설정
+    usb_sink=$(pactl list short sinks | grep usb | head -n 1 | awk '{print $2}')
+    if [ -n "$usb_sink" ]; then
+        pactl set-default-sink "$usb_sink"
+    else
+        echo "No USB audio sink found."
+    fi
 else
     # 기본 오디오 장치로 설정 (3.5mm 잭)
     pactl set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
 fi
+
 ```
 
 #### 5-3 오디오 라우팅 변경 스크립트
