@@ -1,10 +1,15 @@
 import pulsectl
 
-pulse = pulsectl.Pulse('audio-listener')
+pulse = pulsectl.Pulse('audio-manager')
 
-def list_all_sinks():
+def set_default_usb_speaker():
     sinks = pulse.sink_list()
-    for sink in sinks:
-        print(f"Sink ID: {sink.index}, Name: {sink.name}, Description: {sink.description}")
+    # 싱크의 이름에서 'usb'를 포함하는 것을 찾습니다.
+    usb_speakers = [sink for sink in sinks if 'usb' in sink.name]
+    if usb_speakers:
+        pulse.default_set(usb_speakers[0])
+        print(f"Default audio device set to USB speaker: {usb_speakers[0].description}")
+    else:
+        print("No USB speakers found.")
 
-list_all_sinks()
+set_default_usb_speaker()
