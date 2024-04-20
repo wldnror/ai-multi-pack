@@ -124,69 +124,7 @@ systemctl --user start pulseaudio-modules.service
    ```bash
    modprobe snd-aloop
    ```
-### 5. 연결된 블루투스 스피커는 usb스피커로 자동 조정
 
-#### 5-1 블루투스 연결 감지
-- 아래 파일을 만들다
-  ```bash
-  sudo nano /etc/systemd/system/bluetooth-audio-switch.service
-  ```
-- 아래 내용을 입력합니다.
-```bash
-[Unit]
-Description=Switch audio to USB speaker on Bluetooth connect
-After=bluetooth.service
-BindsTo=bluetooth.target
-
-[Service]
-Type=simple
-ExecStart=/usr/local/bin/bluetooth-audio-switch
-
-[Install]
-WantedBy=multi-user.target
-
-```
-#### 5-2 오디오 라우팅 변경 스크립트
-- 아래 파일을 만들다
-
-```bash
-sudo nano /usr/local/bin/bluetooth-audio-switch
-```
-
-- 아래 내용을 입력합니다.
-
-```bash
-#!/bin/bash
-
-# 블루투스 장치 연결 상태 체크
-connected=$(bluetoothctl info | grep 'Connected: yes')
-
-if [ -n "$connected" ]; then
-    # 사용 가능한 USB 스피커 중 하나를 찾아서 오디오 출력 설정
-    usb_sink=$(pactl list short sinks | grep usb | head -n 1 | awk '{print $2}')
-    if [ -n "$usb_sink" ]; then
-        pactl set-default-sink "$usb_sink"
-    else
-        echo "No USB audio sink found."
-    fi
-else
-    # 기본 오디오 장치로 설정 (3.5mm 잭)
-    pactl set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
-fi
-
-```
-
-#### 5-3 오디오 라우팅 변경 스크립트
-- 스크립트 실행 권한 설정
-
-```bash
-sudo chmod +x /usr/local/bin/bluetooth-audio-switch
-```
-- 서비스 활성화 및 시작
-```bash
-sudo systemctl enable bluetooth-audio-switch.service
-sudo systemctl start bluetooth-audio-switch.service
-```
 
 # AI 블랙박스 기능
 **카메라 관련 라이브러리 설치**
