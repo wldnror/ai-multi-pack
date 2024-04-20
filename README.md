@@ -158,7 +158,7 @@ systemctl --user start pulseaudio-modules.service
   sudo nano /etc/systemd/system/bluetooth-audio-switch.service
   ```
 - 아래 내용을 입력합니다.
-  ```bash
+```bash
   [Unit]
 Description=Switch audio to USB speaker on Bluetooth connect
 After=bluetooth.service
@@ -171,12 +171,13 @@ ExecStart=/usr/local/bin/bluetooth-audio-switch
 [Install]
 WantedBy=multi-user.target
 
-  ```
+```
 #### 5-2 오디오 라우팅 변경 스크립트
 - 아래 파일을 만들다
-  ```bash
+
+```bash
   sudo nano /usr/local/bin/bluetooth-audio-switch
-  ```
+```
 
 - 아래 내용을 입력합니다.
 
