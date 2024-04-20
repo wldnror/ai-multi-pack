@@ -110,6 +110,15 @@
      ```
 
 ## 루프백 자동화
+### 1. default.pa 설정 변경
+기본적으로 default.pa 파일을 통해 항상 3.5mm 잭을 기본 출력으로 설정할 수 있습니다:
+- ```bash
+  sudo nano /etc/pulse/default.pa
+  ```
+  ```bash
+  set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
+  ```
+
 ### 1. 사용자 systemd 디렉터리로 이동:
 ```bash
 mkdir -p ~/.config/systemd/user
