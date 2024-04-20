@@ -45,6 +45,11 @@
    ```bash
    sudo pip3 install adafruit-circuitpython-neopixel --break-system-packages
    ```
+- **PulseAudio**
+  -PulseAudio와 상호작용할 수 있는 파이썬 라이브러리
+  ```bash
+  sudo pip install pulsectl --break-system-packages
+  ```
 - **Sounddevice**:
   - 오디오를 녹음하고 재생할 수 있는 라이브러리입니다. 이 라이브러리는 PortAudio를 기반으로 합니다.
    ```bash
