@@ -2,14 +2,15 @@ import subprocess
 import time
 
 def get_last_connected_device():
-    # bluetoothctl을 통해 연결된 장치 목록을 가져옴
+    # bluetoothctl을 통해 페어링된 장치 목록을 가져옴
     result = subprocess.run(['bluetoothctl', 'paired-devices'], capture_output=True, text=True)
-    devices = result.stdout.strip().split('\n')
-    
-    # 연결된 장치 정보 파싱
-    if devices:
-        last_device = devices[-1].split()[-1]  # 가장 마지막에 목록에 있는 장치의 MAC 주소 추출
-        return last_device
+    if result.stdout:
+        devices = result.stdout.strip().split('\n')
+        for device in reversed(devices):  # 가장 최근에 연결된 장치를 찾기 위해 역순으로 검색
+            parts = device.split()
+            if len(parts) >= 2:
+                mac_address = parts[1]
+                return mac_address
     return None
 
 def connect_bluetooth_device(device_address):
