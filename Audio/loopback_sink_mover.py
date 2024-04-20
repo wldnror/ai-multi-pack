@@ -1,26 +1,42 @@
 import pulsectl
+import time
 
-pulse = pulsectl.Pulse('audio-stream-manager')
+pulse = pulsectl.Pulse('audio-manager')
 
-def move_all_loopback_streams(sink_description):
-    try:
-        # 모든 싱크와 스트림 리스트 가져오기
-        sinks = pulse.sink_list()
-        sink_inputs = pulse.sink_input_list()
-        
-        # 원하는 싱크 찾기
-        target_sink = next((sink for sink in sinks if sink_description in sink.description), None)
-        if not target_sink:
-            print(f"Sink with description '{sink_description}' not found.")
-            return
+def find_sink(description_keyword):
+    sinks = pulse.sink_list()
+    return next((sink for sink in sinks if description_keyword in sink.description.lower()), None)
 
-        # 이름이 'loopback'으로 시작하는 모든 스트림 찾아서 이동
-        for stream in sink_inputs:
-            if stream.name.startswith('loopback'):
-                pulse.sink_input_move(stream.index, target_sink.index)
-                print(f"Moved stream {stream.name} to sink {target_sink.description}")
+def move_stream_to_sink(stream_name_pattern, sink_description):
+    streams = pulse.sink_input_list()
+    target_sink = find_sink(sink_description)
+    if not target_sink:
+        print(f"No target sink found for description '{sink_description}'.")
+        return
 
-    finally:
-        pulse.close()
+    for stream in streams:
+        if stream_name_pattern in stream.name:
+            pulse.sink_input_move(stream.index, target_sink.index)
+            print(f"Moved stream '{stream.name}' to sink '{target_sink.description}'")
 
-move_all_loopback_streams('Built-in Audio Analog Stereo')
+def handle_bluetooth_streams():
+    bluetooth_streams = [stream for stream in pulse.sink_input_list() if 'bluetooth' in stream.name.lower()]
+    usb_sink = find_sink('usb')
+    default_sink = find_sink('analog-stereo')
+    target_sink = usb_sink if usb_sink else default_sink
+
+    if not target_sink:
+        print("No suitable sink found for Bluetooth streams.")
+        return
+
+    for stream in bluetooth_streams:
+        pulse.sink_input_move(stream.index, target_sink.index)
+        print(f"Moved Bluetooth stream '{stream.name}' to '{target_sink.description}'")
+
+def monitor_and_update():
+    while True:
+        move_stream_to_sink('loopback', 'Built-in Audio Analog Stereo')
+        handle_bluetooth_streams()
+        time.sleep(10)  # Check every 10 seconds
+
+monitor_and_update()
