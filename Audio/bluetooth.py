@@ -17,9 +17,21 @@ def get_last_connected_device():
                     return mac_address
     return None
 
+def is_device_connected(device_address):
+    # 블루투스 장치의 연결 상태 확인
+    result = subprocess.run(['bluetoothctl', 'info', device_address], capture_output=True, text=True)
+    if "Connected: yes" in result.stdout:
+        return True
+    return False
+
 def connect_bluetooth_device(device_address):
-    # 블루투스 장치 연결 시도
-    while True:
+    # 블루투스 장치 연결 시도 전에 연결 상태 확인
+    if is_device_connected(device_address):
+        print(f"Device {device_address} is already connected.")
+        return
+    max_retries = 5  # 최대 재시도 횟수
+    retries = 0
+    while retries < max_retries:
         try:
             result = subprocess.run(['bluetoothctl', 'connect', device_address], capture_output=True, text=True)
             if "Connection successful" in result.stdout:
@@ -27,9 +39,11 @@ def connect_bluetooth_device(device_address):
                 break
             else:
                 print("Connection failed. Retrying...")
+                retries += 1
                 time.sleep(5)  # 5초 후 재시도
         except Exception as e:
             print(f"Error connecting to the device: {str(e)}")
+            retries += 1
             time.sleep(5)
 
 if __name__ == '__main__':
