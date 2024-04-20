@@ -1,29 +1,18 @@
-import pulsectl
+import subprocess
 
-pulse = pulsectl.Pulse('audio-routing')
+def unload_and_reload_loopback(source, sink):
+    # 현재 로드된 모듈 확인
+    result = subprocess.run(['pactl', 'list', 'short', 'modules'], capture_output=True, text=True)
+    modules = result.stdout.splitlines()
+    for module in modules:
+        if 'module-loopback' in module and source in module:
+            module_id = module.split()[0]
+            # 해당 모듈 언로드
+            subprocess.run(['pactl', 'unload-module', module_id])
+            # 새 설정으로 모듈 리로드
+            load_command = f"pactl load-module module-loopback source={source} sink={sink}"
+            subprocess.run(load_command.split())
+            print(f"Reloaded loopback from {source} to {sink}")
 
-# 모든 소스와 싱크를 나열하는 함수
-def list_all_sources_and_sinks():
-    print("Sources:")
-    for source in pulse.source_list():
-        print(f"{source.index}: {source.name} - {source.description}")
-    print("Sinks:")
-    for sink in pulse.sink_list():
-        print(f"{sink.index}: {sink.name} - {sink.description}")
-
-# 특정 소스를 특정 싱크로 연결하는 함수
-def connect_source_to_sink(source_name, sink_description):
-    sources = pulse.source_list()
-    sinks = pulse.sink_list()
-    source = next((s for s in sources if source_name in s.name), None)
-    sink = next((s for s in sinks if sink_description in s.description), None)
-    
-    if source and sink:
-        module_id = pulse.module_load('module-loopback', f'source={source.name} sink={sink.name}')
-        print(f"Connected {source.description} to {sink.description} with module id {module_id}")
-    else:
-        print("Source or sink not found.")
-
-# 실행 예시
-list_all_sources_and_sinks()
-connect_source_to_sink('alsa_input.platform-snd_aloop.0.analog-stereo', 'Samsung Speaker  Analog Stereo')
+# 예: 특정 소스를 Samsung USB 스피커로 리디렉션
+unload_and_reload_loopback('alsa_input.platform-snd_aloop.0.analog-stereo', 'alsa_output.usb-Samsung_Speaker_Samsung_Speaker-00.analog-stereo')
