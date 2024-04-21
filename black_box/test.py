@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import os
 
 # 현재 디렉토리의 절대 경로를 구합니다.
 current_directory = os.path.dirname(os.path.abspath(__file__))
