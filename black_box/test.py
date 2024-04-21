@@ -63,9 +63,9 @@ def start_recording(duration=30):
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))  # 실제 적용된 FPS를 확인
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 코덱 사용
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
@@ -80,12 +80,14 @@ def start_recording(duration=30):
             out.write(frame)
         else:
             break
+
     duration_real = time.time() - start_time
     print(f"Recorded {int(duration_real * fps)} frames in {duration_real} seconds at {fps} FPS.")
 
     cap.release()
     out.release()
     return output_filename
+
 
 
 def upload_file_to_ftp(file_path):
