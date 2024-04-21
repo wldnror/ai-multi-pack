@@ -135,6 +135,29 @@ sudo apt-get install python3-opencv
 ```bash
 ffmpeg -f v4l2 -framerate 30 -video_size 1920x1080 -i /dev/video0 output.mp4
 ```
+
+**객체 인식 훈련 데이터 설치**
+
+### YOLOv3 가중치 파일 다운로드
+```bash
+wget https://pjreddie.com/media/files/yolov3.weights
+```
+### YOLOv3 구성 파일 다운로드
+```bash
+wget https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg?raw=true -O yolov3.cfg
+```
+### YOLOv4 가중치 파일 다운로드
+```bash
+wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v4_pre/yolov4.weights
+```
+### YOLOv4 구성 파일 다운로드
+```bash
+wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg
+```
+### coco.names 파일 다운로드
+```bash
+wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O coco.names
+```
 ## 각종 문제 해결 방안
 
 - 라이브러리 설치 실패 시
