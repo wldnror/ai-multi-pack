@@ -65,9 +65,8 @@ def start_recording(duration=30):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    output_filename = os.path.join(output_directory, f'video_{current_time}.avi')
-
+    fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 코덱 사용
+    output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
@@ -88,8 +87,6 @@ def start_recording(duration=30):
     cap.release()
     out.release()
     return output_filename
-
-
 
 def upload_file_to_ftp(file_path):
     try:
