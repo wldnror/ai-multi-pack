@@ -18,7 +18,7 @@ def init_ftp_config():
         config.write(configfile)
 
 def check_config_exists():
-    if not os.path.exists('/ftp_config.ini'):
+    if not os.path.exists('ftp_config.ini'):
         print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
         init_ftp_config()
     else:
