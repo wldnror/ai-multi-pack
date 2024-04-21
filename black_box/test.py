@@ -1,83 +1,64 @@
-import os
-import time
-import configparser
-from ftplib import FTP
-import subprocess
+import cv2
+import numpy as np
 
-# 설정 파일에서 FTP 정보를 읽어옴
-def read_ftp_config():
-    config = configparser.ConfigParser()
-    script_directory = os.path.dirname(__file__)
-    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    config.read(config_file_path)
-    return config['FTP']
+# YOLO 모델 불러오기
+net = cv2.dnn.readNet('yolov3.weights', 'yolov3.cfg')
+classes = []
+with open("coco.names", "r") as f:
+    classes = [line.strip() for line in f.readlines()]
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
-def init_ftp_config():
-    config = configparser.ConfigParser()
-    config['FTP'] = {
-        'ftp_address': input('FTP 주소 입력: '),
-        'ftp_username': input('FTP 사용자 이름 입력: '),
-        'ftp_password': input('FTP 비밀번호 입력: '),
-        'ftp_target_path': input('FTP 대상 경로 입력: ')
-    }
-    script_directory = os.path.dirname(__file__)
-    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    with open(config_file_path, 'w') as configfile:
-        config.write(configfile)
+# 카메라 캡처 시작
+cap = cv2.VideoCapture(0)
 
-def check_config_exists():
-    script_directory = os.path.dirname(__file__)
-    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    if not os.path.exists(config_file_path):
-        print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
-        init_ftp_config()
-    else:
-        print("기존의 FTP 설정을 불러옵니다.")
+while True:
+    _, frame = cap.read()
+    height, width, channels = frame.shape
 
-def start_ffmpeg_recording(duration=30):
-    output_directory = os.path.join(os.path.dirname(__file__), 'video')
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+    # 객체 탐지 수행
+    blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), True, crop=False)
+    net.setInput(blob)
+    outs = net.forward(output_layers)
 
-    command = [
-        'ffmpeg',
-        '-f', 'v4l2',
-        '-framerate', '30',
-        '-video_size', '1280x720',
-        '-i', '/dev/video0',
-        '-c:v', 'libx264',
-        '-preset', 'ultrafast',
-        '-crf', '28',
-        '-t', str(duration),
-        output_filename
-    ]
-    subprocess.run(command)
-    return output_filename
+    # 정보를 화면에 표시
+    class_ids = []
+    confidences = []
+    boxes = []
+    for out in outs:
+        for detection in out:
+            scores = detection[5:]
+            class_id = np.argmax(scores)
+            confidence = scores[class_id]
+            if confidence > 0.5:
+                # 객체 탐지
+                center_x = int(detection[0] * width)
+                center_y = int(detection[1] * height)
+                w = int(detection[2] * width)
+                h = int(detection[3] * height)
 
-def upload_file_to_ftp(file_path):
-    try:
-        ftp_info = read_ftp_config()
-        ftp = FTP(ftp_info['ftp_address'])
-        ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
-        with open(file_path, 'rb') as file:
-            ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
-        print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
-    except Exception as e:
-        print(f"파일 업로드 중 오류 발생: {e}")
-    finally:
-        ftp.quit()
+                # 사각형 좌표
+                x = int(center_x - w / 2)
+                y = int(center_y - h / 2)
 
-check_config_exists()
-try:
-    while True:
-        input_value = int(input("가속도 값 입력 (0-65535): "))
-        if input_value > 15000:  # 예시: 가속도 임계값을 초과할 경우
-            print("충격 감지! 녹화 시작")
-            output_file = start_ffmpeg_recording(30)
-            if output_file:
-                upload_file_to_ftp(output_file)
-        time.sleep(0.1)
-except KeyboardInterrupt:
-    print("테스트 종료.")
+                boxes.append([x, y, w, h])
+                confidences.append(float(confidence))
+                class_ids.append(class_id)
+
+    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+    for i in range(len(boxes)):
+        if i in indexes:
+            x, y, w, h = boxes[i]
+            label = str(classes[class_ids[i]])
+            if label == "person" or label == "car":
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+    
+    # 결과 화면에 표시
+    cv2.imshow("Image", frame)
+    key = cv2.waitKey(1)
+    if key == 27:  # ESC 키
+        break
+
+cap.release()
+cv2.destroyAllWindows()
