@@ -42,9 +42,7 @@ def get_last_connected_device():
 def is_device_connected(device_address):
     # 블루투스 장치의 연결 상태 확인
     result = subprocess.run(['bluetoothctl', 'info', device_address], capture_output=True, text=True)
-    if "Connected: yes" in result.stdout:
-        return True
-    return False
+    return "Connected: yes" in result.stdout
 
 def get_connected_device_profiles(device_address):
     # 연결된 장치의 프로파일 정보 가져오기
@@ -60,8 +58,7 @@ def get_connected_device_profiles(device_address):
 
 def connect_bluetooth_device(device_address):
     # 블루투스 장치 연결 시도
-    connected = is_device_connected(device_address)
-    if connected:
+    if is_device_connected(device_address):
         print(f"Device {device_address} is already connected.")
         profiles = get_connected_device_profiles(device_address)
         save_successful_profiles(device_address, profiles)
