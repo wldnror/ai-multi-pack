@@ -31,7 +31,8 @@ def connect_bluetooth_device(device_address):
             print(f"Device {device_address} is already connected.")
             break
         try:
-            result = subprocess.run(['bluetoothctl', 'connect', device_address], capture_output=True, text=True)
+            # 블루투스 기기 연결을 시도하며, Role을 Central로 설정하는 명령 추가
+            result = subprocess.run(['bluetoothctl', 'connect', device_address, '--role', 'central'], capture_output=True, text=True)
             if "Connection successful" in result.stdout:
                 print("Connected to the device successfully.")
                 break
