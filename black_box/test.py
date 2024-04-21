@@ -4,9 +4,7 @@ import cv2
 from ftplib import FTP
 import configparser
 
-# FTP 설정 파일 존재 여부 확인 및 초기 설정
 def init_ftp_config():
-    # FTP 설정 정보를 사용자로부터 받아 저장
     config = configparser.ConfigParser()
     config['FTP'] = {
         'ftp_address': input('FTP 주소 입력: '),
@@ -14,7 +12,6 @@ def init_ftp_config():
         'ftp_password': input('FTP 비밀번호 입력: '),
         'ftp_target_path': input('FTP 대상 경로 입력: ')
     }
-    # 스크립트 파일의 경로를 기준으로 상대 경로 사용
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     with open(config_file_path, 'w') as configfile:
@@ -28,59 +25,61 @@ def check_config_exists():
         print("기존의 FTP 설정을 불러옵니다.")
 
 def read_ftp_config():
-    # 설정 파일에서 FTP 정보를 불러오기
     config = configparser.ConfigParser()
     config.read('ftp_config.ini')
     return config['FTP']
 
 class MockSMBus:
     def __init__(self, bus_number):
-        self.value = 0  # 초기 가속도 값은 0
+        self.value = 0
 
     def write_byte_data(self, addr, reg, value):
         pass
 
     def read_i2c_block_data(self, addr, reg, length):
-        # 현재 설정된 가속도 값 반환
         return [self.value >> 8 & 0xFF, self.value & 0xFF]
 
     def set_acceleration(self, new_value):
-        self.value = new_value  # 새로운 가속도 값 설정
+        self.value = new_value
 
-# Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
-camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
+camera_device_id = 0
 
 def start_recording(duration=10):
-    cap = cv2.VideoCapture(camera_device_id)  # 카메라 장치 열기 시도
-    if not cap.isOpened():  # 주 장치 열기 실패 시
-        cap = cv2.VideoCapture(0)  # 기본 장치로 다시 시도
-        if not cap.isOpened():  # 기본 장치도 실패할 경우
+    script_directory = os.path.dirname(__file__)
+    video_directory = os.path.join(script_directory, 'video')
+    if not os.path.exists(video_directory):
+        os.makedirs(video_directory)
+    
+    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+    output_filename = os.path.join(video_directory, f'video_{current_time}.mp4')
+    
+    cap = cv2.VideoCapture(camera_device_id)
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(0)
+        if not cap.isOpened():
             print("카메라를 시작할 수 없습니다.")
             return None
 
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # 카메라에서 프레임 너비 가져오기
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # 카메라에서 프레임 높이 가져오기
-
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 비디오 코덱 설정
-    output_filename = 'output11.mp4'
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))  # 비디오 파일 쓰기 객체 생성
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))
 
     start_time = time.time()
     try:
-        while (time.time() - start_time) < duration:  # 지정된 녹화 시간 동안 반복
-            ret, frame = cap.read()  # 카메라로부터 프레임 읽기
+        while (time.time() - start_time) < duration:
+            ret, frame = cap.read()
             if ret:
-                out.write(frame)  # 프레임이 유효할 경우 파일에 쓰기
+                out.write(frame)
             else:
-                break  # 프레임 읽기 실패 시 반복 중지
+                break
     except Exception as e:
-        print(f"예외 발생: {e}")  # 예외 발생 시 메시지 출력
+        print(f"예외 발생: {e}")
     finally:
-        cap.release()  # 카메라 장치 해제
-        out.release()  # 파일 쓰기 객체 해제
+        cap.release()
+        out.release()
 
-    return output_filename  # 녹화된 파일의 이름 반환
-
+    return output_filename
 
 def upload_file_to_ftp(file_path):
     ftp_info = read_ftp_config()
@@ -106,11 +105,10 @@ def read_acceleration(axis):
         value -= 65536
     return value
 
-threshold = 15000  # 임계값 설정
-check_config_exists()  # 프로그램 시작 시 설정 파일 확인
+threshold = 15000
+check_config_exists()
 try:
     while True:
-        # 사용자 입력을 받아 충격 감지 여부 결정
         input_value = int(input("가속도 값 입력 (0-65535): "))
         bus.set_acceleration(input_value)
         acceleration = read_acceleration(0x3B)
