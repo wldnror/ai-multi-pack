@@ -1,23 +1,14 @@
 import cv2
 import numpy as np
-import os
-
-# 현재 디렉토리의 절대 경로를 구합니다.
-current_directory = os.path.dirname(os.path.abspath(__file__))
-
-# YOLO 모델 및 클래스 이름 파일의 경로를 설정합니다.
-weights_path = os.path.join(current_directory, 'yolov4.weights')
-config_path = os.path.join(current_directory, 'yolov4.cfg')
-classes_path = os.path.join(current_directory, 'coco.names')
 
 # YOLO 모델 불러오기
-net = cv2.dnn.readNet(weights_path, config_path)
+net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
 
-# 클래스 이름 불러오기
 classes = []
-with open(classes_path, "r") as f:
+with open("coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
-
+layer_names = net.getLayerNames()
+output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
 
 # 카메라 캡처 시작
 cap = cv2.VideoCapture(0)
