@@ -60,7 +60,7 @@ def start_recording(duration=30):
     # 명시적으로 카메라 설정을 지정
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-    cap.set(cv2.CAP_PROP_FPS, 60)
+    cap.set(cv2.CAP_PROP_FPS, 30)
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
