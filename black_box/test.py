@@ -65,7 +65,7 @@ def start_recording(duration=30):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 코덱 사용
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')  # H.264 코덱 사용
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
