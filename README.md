@@ -75,6 +75,11 @@
    ```bash
    pip install mpu6050-raspberrypi --break-system-packages
    ```
+- **ffmpeg**
+  - ffmpeg는 비디오 녹화, 변환 및 스트리밍을 위한 강력한 도구입니다. 라즈베리파이에서 ffmpeg를 사용하여 웹캠을 통한 비디오 녹화를 설정할 수 있습니다.
+   ```bash
+   sudo apt-get install ffmpeg
+   ```
 
 # 루프백 자동화
 
