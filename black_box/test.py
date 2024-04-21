@@ -78,7 +78,7 @@ def start_recording(duration=30):
             ret, frame = cap.read()  # 카메라로부터 프레임 읽기
             if ret:
                 out.write(frame)  # 프레임이 유효할 경우 파일에 쓰기
-                time.sleep(frame_duration)  # 프레임 간격만큼 대기
+                # time.sleep(frame_duration)  # 프레임 간격만큼 대기
             else:
                 break  # 프레임 읽기 실패 시 반복 중지
     except Exception as e:
