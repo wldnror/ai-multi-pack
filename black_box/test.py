@@ -28,12 +28,22 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-
 def read_ftp_config():
+    # 스크립트 파일의 디렉토리를 기준으로 설정 파일 경로 설정
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+
     # 설정 파일에서 FTP 정보를 불러오기
     config = configparser.ConfigParser()
-    config.read('ftp_config.ini')
+    config.read(config_file_path)
+    
+    # 'FTP' 섹션이 없을 경우 예외 처리
+    if 'FTP' not in config:
+        print("FTP 설정 정보가 없습니다. 설정 파일을 확인하세요.")
+        return None
+    
     return config['FTP']
+
 
 class MockSMBus:
     def __init__(self, bus_number):
