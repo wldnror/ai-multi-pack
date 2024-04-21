@@ -1,7 +1,7 @@
 import cv2  # cv2 모듈을 불러옵니다.
 
 # 비디오 캡처 객체를 생성합니다. 여기서 '0'은 시스템의 기본 카메라를 의미합니다.
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
 # cap 객체의 초기화 상태를 확인합니다.
 if cap.isOpened():
