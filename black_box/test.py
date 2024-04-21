@@ -14,7 +14,10 @@ def init_ftp_config():
         'ftp_password': input('FTP 비밀번호 입력: '),
         'ftp_target_path': input('FTP 대상 경로 입력: ')
     }
-    with open('/ftp_config.ini', 'w') as configfile:
+    # 스크립트 파일의 경로를 기준으로 상대 경로 사용
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    with open(config_file_path, 'w') as configfile:
         config.write(configfile)
 
 def check_config_exists():
