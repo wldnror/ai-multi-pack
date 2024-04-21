@@ -6,7 +6,6 @@ import os
 profile_info_file = "successful_profiles.json"
 
 def save_successful_profiles(device_address, profiles):
-    # 성공적으로 연결된 프로파일을 파일에 저장
     data = {}
     if os.path.exists(profile_info_file):
         with open(profile_info_file, 'r') as file:
@@ -16,7 +15,6 @@ def save_successful_profiles(device_address, profiles):
         json.dump(data, file, indent=4)
 
 def load_successful_profiles(device_address):
-    # 파일에서 프로파일 정보 로드
     if os.path.exists(profile_info_file):
         with open(profile_info_file, 'r') as file:
             data = json.load(file)
@@ -24,7 +22,6 @@ def load_successful_profiles(device_address):
     return []
 
 def get_last_connected_device():
-    # bluetoothctl을 통해 페어링된 장치 목록을 가져옴
     process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
     process.stdin.write('devices\n')
     process.stdin.write('exit\n')
@@ -35,17 +32,17 @@ def get_last_connected_device():
             if "Device" in line:
                 parts = line.split()
                 if len(parts) >= 2:
-                    mac_address = parts[1]  # MAC 주소 추출
+                    mac_address = parts[1]
                     return mac_address
     return None
 
 def is_device_connected(device_address):
-    # 블루투스 장치의 연결 상태 확인
     result = subprocess.run(['bluetoothctl', 'info', device_address], capture_output=True, text=True)
-    return "Connected: yes" in result.stdout
+    if "Connected: yes" in result.stdout:
+        return True
+    return False
 
 def get_connected_device_profiles(device_address):
-    # 연결된 장치의 프로파일 정보 가져오기
     result = subprocess.run(['bluetoothctl', 'info', device_address], capture_output=True, text=True)
     profiles = []
     if "UUID" in result.stdout:
@@ -56,12 +53,18 @@ def get_connected_device_profiles(device_address):
                 profiles.append(uuid)
     return profiles
 
+def verify_active_connection(device_address):
+    # 예를 들어, `pactl`을 사용하여 오디오 스트림이 활성화되었는지 확인
+    result = subprocess.run(['pactl', 'list', 'sinks'], capture_output=True, text=True)
+    return "RUNNING" in result.stdout
+
 def connect_bluetooth_device(device_address):
-    # 블루투스 장치 연결 시도
-    if is_device_connected(device_address):
-        print(f"Device {device_address} is already connected.")
-        profiles = get_connected_device_profiles(device_address)
-        save_successful_profiles(device_address, profiles)
+    connected = is_device_connected(device_address)
+    if connected:
+        if verify_active_connection(device_address):
+            print(f"Device {device_address} is actively connected.")
+        else:
+            print(f"Device {device_address} seems connected but not actively transmitting.")
         return
     
     while True:
@@ -74,7 +77,7 @@ def connect_bluetooth_device(device_address):
                 break
             else:
                 print(f"Connection failed. Retrying...\nstdout: {result.stdout}\nstderr: {result.stderr}")
-                time.sleep(10)  # 10초 후 재시도
+                time.sleep(10)
         except Exception as e:
             print(f"Error connecting to the device: {str(e)}")
             time.sleep(10)
