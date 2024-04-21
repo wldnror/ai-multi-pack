@@ -3,6 +3,7 @@ import time
 import cv2
 from ftplib import FTP
 import configparser
+import psutil  # 시스템 모니터링을 위한 라이브러리 추가
 
 # 설정 파일에서 FTP 정보를 읽어옴
 def read_ftp_config():
@@ -65,7 +66,7 @@ def start_recording(duration=30):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    fourcc = cv2.VideoWriter_fourcc(*'H264')
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
@@ -76,18 +77,20 @@ def start_recording(duration=30):
     frame_count = 0
     start_time = time.time()
     while (time.time() - start_time) < duration:
+        cpu_usage = psutil.cpu_percent(interval=None)  # CPU 사용량 측정
+        memory_usage = psutil.virtual_memory().percent  # 메모리 사용량 측정
+
         ret, frame = cap.read()
         if ret:
             frame_start = time.time()
             out.write(frame)
             frame_duration = time.time() - frame_start
-            print(f"Frame {frame_count}: {frame_duration:.5f} seconds")
+            print(f"Frame {frame_count}: {frame_duration:.5f} seconds - CPU {cpu_usage}%, Memory {memory_usage}%")
             frame_count += 1
         else:
             break
 
-    duration_real = time.time() - start_time
-    print(f"Recorded {frame_count} frames in {duration_real:.2f} seconds at {fps} FPS.")
+    print(f"Recorded {frame_count} frames in {time.time() - start_time:.2f} seconds at {fps} FPS.")
 
     cap.release()
     out.release()
