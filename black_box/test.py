@@ -71,12 +71,14 @@ def start_recording(duration=30):
     output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')  # 비디오 파일 이름 생성
     out = cv2.VideoWriter(output_filename, fourcc, 30, (width, height))  # 비디오 파일 쓰기 객체 생성
 
+    frame_duration = 1 / 30  # 각 프레임의 시간 (30fps 기준)
     start_time = time.time()
     try:
         while (time.time() - start_time) < duration:  # 지정된 녹화 시간 동안 반복
             ret, frame = cap.read()  # 카메라로부터 프레임 읽기
             if ret:
                 out.write(frame)  # 프레임이 유효할 경우 파일에 쓰기
+                time.sleep(frame_duration)  # 프레임 간격만큼 대기
             else:
                 break  # 프레임 읽기 실패 시 반복 중지
     except Exception as e:
@@ -84,7 +86,7 @@ def start_recording(duration=30):
     finally:
         cap.release()  # 카메라 장치 해제
         out.release()  # 파일 쓰기 객체 해제
-
+        
     return output_filename  # 녹화된 파일의 이름 반환
 
 def upload_file_to_ftp(file_path):
