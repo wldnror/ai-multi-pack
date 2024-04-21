@@ -131,6 +131,10 @@ systemctl --user start pulseaudio-modules.service
  ```bash
 sudo apt-get install python3-opencv
 ```
+- 녹화 명령 예제 (파이썬 코드로 활용가능)
+```bash
+ffmpeg -f v4l2 -framerate 30 -video_size 1920x1080 -i /dev/video0 output.mp4
+```
 ## 각종 문제 해결 방안
 
 - 라이브러리 설치 실패 시
