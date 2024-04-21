@@ -13,27 +13,23 @@ def init_ftp_config():
         'ftp_password': input('FTP 비밀번호 입력: '),
         'ftp_target_path': input('FTP 대상 경로 입력: ')
     }
-    # FTP 설정 파일의 저장 경로를 기억
+    # 스크립트 파일의 경로를 기준으로 상대 경로 사용
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     with open(config_file_path, 'w') as configfile:
         config.write(configfile)
-    return config_file_path  # 저장된 파일 경로 반환
 
 def check_config_exists():
-    script_directory = os.path.dirname(__file__)
-    config_path = os.path.join(script_directory, 'ftp_config.ini')
-    if not os.path.exists(config_path):
+    if not os.path.exists('ftp_config.ini'):
         print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
         init_ftp_config()
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-
-def read_ftp_config(config_file_path):
+def read_ftp_config():
     # 설정 파일에서 FTP 정보를 불러오기
     config = configparser.ConfigParser()
-    config.read(config_file_path)
+    config.read('ftp_config.ini')
     return config['FTP']
 
 class MockSMBus:
@@ -115,8 +111,7 @@ def read_acceleration(axis):
     return value
 
 threshold = 15000
-config_file_path = init_ftp_config()  # FTP 설정 파일 생성 및 경로 반환
-check_config_exists(config_file_path)  # 프로그램 시작 시 설정 파일 확인
+check_config_exists()
 try:
     while True:
         input_value = int(input("가속도 값 입력 (0-65535): "))
