@@ -24,16 +24,15 @@ def is_device_connected(device_address):
         return True
     return False
 
-def connect_specific_profile(device_address, profile_uuid):
-    # 특정 프로파일에 대한 블루투스 장치 연결 시도
+def connect_bluetooth_device(device_address):
+    # 블루투스 장치 연결 시도
     if is_device_connected(device_address):
         print(f"Device {device_address} is already connected.")
         return
     
-    connect_command = f"connect {device_address} {profile_uuid}"
     while True:
         try:
-            result = subprocess.run(['bluetoothctl'], input=connect_command, capture_output=True, text=True)
+            result = subprocess.run(['bluetoothctl', 'connect', device_address], capture_output=True, text=True)
             if "Connection successful" in result.stdout:
                 print("Connected to the device successfully.")
                 break
@@ -48,7 +47,6 @@ if __name__ == '__main__':
     device_address = get_last_connected_device()
     if device_address:
         print(f"Attempting to connect to the last connected device: {device_address}")
-        # Audio Source 프로파일 UUID
-        connect_specific_profile(device_address, '0000110a-0000-1000-8000-00805f9b34fb')
+        connect_bluetooth_device(device_address)
     else:
         print("No paired devices found.")
