@@ -49,8 +49,7 @@ class MockSMBus:
     def set_acceleration(self, new_value):
         self.value = new_value  # 새로운 가속도 값 설정
 
-# Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
-camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
+camera_device_id = 0  # Logitech BRIO 장치 ID를 0으로 가정
 
 def start_recording(duration=30):
     cap = cv2.VideoCapture(camera_device_id)
@@ -58,15 +57,18 @@ def start_recording(duration=30):
         print("카메라를 시작할 수 없습니다.")
         return None
 
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    # 명시적으로 카메라 설정을 지정
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    cap.set(cv2.CAP_PROP_FPS, 60)
+
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-    out = cv2.VideoWriter(output_filename, fourcc, 30, (width, height))
+    out = cv2.VideoWriter(output_filename, fourcc, 60, (1920, 1080))
 
     frame_count = 0
     start_time = time.time()
@@ -83,7 +85,6 @@ def start_recording(duration=30):
     cap.release()
     out.release()
     return output_filename
-
 
 def upload_file_to_ftp(file_path):
     try:
@@ -109,11 +110,10 @@ def read_acceleration(axis):
         value -= 65536
     return value
 
-threshold = 15000  # 임계값 설정
-check_config_exists()  # 프로그램 시작 시 설정 파일 확인
+threshold = 15000
+check_config_exists()
 try:
     while True:
-        # 사용자 입력을 받아 충격 감지 여부 결정
         input_value = int(input("가속도 값 입력 (0-65535): "))
         bus.set_acceleration(input_value)
         acceleration = read_acceleration(0x3B)
