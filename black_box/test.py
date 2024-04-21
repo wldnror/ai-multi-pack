@@ -69,7 +69,7 @@ def start_recording(duration=30):
         os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')  # 비디오 파일 이름 생성
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))  # 비디오 파일 쓰기 객체 생성
+    out = cv2.VideoWriter(output_filename, fourcc, 300.0, (width, height))  # 비디오 파일 쓰기 객체 생성
 
     start_time = time.time()
     try:
