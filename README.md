@@ -121,15 +121,10 @@ systemctl --user start pulseaudio-modules.service
    ```bash
    modprobe snd-aloop
    ```
-
-
 # AI 블랙박스 기능
 **카메라 관련 라이브러리 설치**
  ```bash
-sudo apt-get update
 sudo apt-get install python3-opencv
-sudo pip3 install opencv-python-headless torch torchvision pillow
-sudo pip3 install pandas
 ```
 ## 각종 문제 해결 방안
 
