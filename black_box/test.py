@@ -53,7 +53,7 @@ class MockSMBus:
 camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
 
 def start_recording(duration=30):
-    cap = cv2.VideoCapture(camera_device_id)
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("카메라를 시작할 수 없습니다.")
         return None
