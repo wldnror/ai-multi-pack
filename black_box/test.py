@@ -65,7 +65,7 @@ def start_recording(duration=30):
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    fourcc = cv2.VideoWriter_fourcc(*'H264')  # H.264 코덱 사용
+    fourcc = cv2.VideoWriter_fourcc(*'H264')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
@@ -73,20 +73,26 @@ def start_recording(duration=30):
     output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
     out = cv2.VideoWriter(output_filename, fourcc, fps, (width, height))
 
+    frame_count = 0
     start_time = time.time()
     while (time.time() - start_time) < duration:
         ret, frame = cap.read()
         if ret:
+            frame_start = time.time()
             out.write(frame)
+            frame_duration = time.time() - frame_start
+            print(f"Frame {frame_count}: {frame_duration:.5f} seconds")
+            frame_count += 1
         else:
             break
 
     duration_real = time.time() - start_time
-    print(f"Recorded {int(duration_real * fps)} frames in {duration_real} seconds at {fps} FPS.")
+    print(f"Recorded {frame_count} frames in {duration_real:.2f} seconds at {fps} FPS.")
 
     cap.release()
     out.release()
     return output_filename
+
 
 def upload_file_to_ftp(file_path):
     try:
