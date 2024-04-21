@@ -52,7 +52,7 @@ class MockSMBus:
 # Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
 camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
 
-def start_recording(duration=10):
+def start_recording(duration=30):
     cap = cv2.VideoCapture(camera_device_id)  # 카메라 장치 열기 시도
     if not cap.isOpened():  # 주 장치 열기 실패 시
         cap = cv2.VideoCapture(0)  # 기본 장치로 다시 시도
