@@ -5,6 +5,7 @@ from ftplib import FTP
 import configparser
 
 def init_ftp_config():
+    # FTP 설정 정보를 사용자로부터 받아 저장
     config = configparser.ConfigParser()
     config['FTP'] = {
         'ftp_address': input('FTP 주소 입력: '),
@@ -12,6 +13,7 @@ def init_ftp_config():
         'ftp_password': input('FTP 비밀번호 입력: '),
         'ftp_target_path': input('FTP 대상 경로 입력: ')
     }
+    # 스크립트 파일의 경로를 기준으로 상대 경로 사용
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     with open(config_file_path, 'w') as configfile:
@@ -25,24 +27,27 @@ def check_config_exists():
         print("기존의 FTP 설정을 불러옵니다.")
 
 def read_ftp_config():
+    # 설정 파일에서 FTP 정보를 불러오기
     config = configparser.ConfigParser()
     config.read('ftp_config.ini')
     return config['FTP']
 
 class MockSMBus:
     def __init__(self, bus_number):
-        self.value = 0
+        self.value = 0  # 초기 가속도 값은 0
 
     def write_byte_data(self, addr, reg, value):
         pass
 
     def read_i2c_block_data(self, addr, reg, length):
+        # 현재 설정된 가속도 값 반환
         return [self.value >> 8 & 0xFF, self.value & 0xFF]
 
     def set_acceleration(self, new_value):
-        self.value = new_value
+        self.value = new_value  # 새로운 가속도 값 설정
 
-camera_device_id = 0
+# Logitech BRIO 카메라의 경우 장치 ID를 확인하고 이에 맞게 수정
+camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
 
 def start_recording(duration=10):
     script_directory = os.path.dirname(__file__)
