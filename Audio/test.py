@@ -7,8 +7,13 @@ profile_info_file = "successful_profiles.json"
 
 def save_successful_profiles(device_address, profiles):
     # 성공적으로 연결된 프로파일을 파일에 저장
+    data = {}
+    if os.path.exists(profile_info_file):
+        with open(profile_info_file, 'r') as file:
+            data = json.load(file)
+    data[device_address] = profiles
     with open(profile_info_file, 'w') as file:
-        json.dump({device_address: profiles}, file)
+        json.dump(data, file, indent=4)
 
 def load_successful_profiles(device_address):
     # 파일에서 프로파일 정보 로드
@@ -55,8 +60,11 @@ def get_connected_device_profiles(device_address):
 
 def connect_bluetooth_device(device_address):
     # 블루투스 장치 연결 시도
-    if is_device_connected(device_address):
+    connected = is_device_connected(device_address)
+    if connected:
         print(f"Device {device_address} is already connected.")
+        profiles = get_connected_device_profiles(device_address)
+        save_successful_profiles(device_address, profiles)
         return
     
     while True:
