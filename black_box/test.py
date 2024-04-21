@@ -20,11 +20,14 @@ def init_ftp_config():
         config.write(configfile)
 
 def check_config_exists():
-    if not os.path.exists('ftp_config.ini'):
+    script_directory = os.path.dirname(__file__)
+    config_path = os.path.join(script_directory, 'ftp_config.ini')
+    if not os.path.exists(config_path):
         print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
         init_ftp_config()
     else:
         print("기존의 FTP 설정을 불러옵니다.")
+
 
 def read_ftp_config():
     # 설정 파일에서 FTP 정보를 불러오기
