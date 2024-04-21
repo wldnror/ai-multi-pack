@@ -14,7 +14,7 @@ def init_ftp_config():
         'ftp_password': input('FTP 비밀번호 입력: '),
         'ftp_target_path': input('FTP 대상 경로 입력: ')
     }
-    with open('/ftp_config.ini', 'w') as configfile:
+    with open('./ftp_config.ini', 'w') as configfile:
         config.write(configfile)
 
 def check_config_exists():
