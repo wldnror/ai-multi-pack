@@ -57,14 +57,13 @@ def start_recording(duration=30):
         print("카메라를 시작할 수 없습니다.")
         return None
 
-    # 원하는 해상도로 설정
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+    cap.set(cv2.CAP_PROP_FPS, 30)
 
-    # 적용된 해상도 확인
-    actual_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    actual_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    print(f"적용된 해상도: {actual_width}x{actual_height}")
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))  # 실제 적용된 FPS를 확인
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
@@ -72,23 +71,22 @@ def start_recording(duration=30):
         os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-    out = cv2.VideoWriter(output_filename, fourcc, 30, (actual_width, actual_height))
+    out = cv2.VideoWriter(output_filename, fourcc, fps, (width, height))
 
-    frame_count = 0
     start_time = time.time()
     while (time.time() - start_time) < duration:
         ret, frame = cap.read()
         if ret:
             out.write(frame)
-            frame_count += 1
         else:
             break
-
-    print(f"Recorded {frame_count} frames in {duration} seconds.")
+    duration_real = time.time() - start_time
+    print(f"Recorded {int(duration_real * fps)} frames in {duration_real} seconds at {fps} FPS.")
 
     cap.release()
     out.release()
     return output_filename
+
 
 def upload_file_to_ftp(file_path):
     try:
