@@ -14,7 +14,7 @@ def init_ftp_config():
         'ftp_password': input('FTP 비밀번호 입력: '),
         'ftp_target_path': input('FTP 대상 경로 입력: ')
     }
-    with open('ftp_config.ini', 'w') as configfile:
+    with open('/ftp_config.ini', 'w') as configfile:
         config.write(configfile)
 
 def check_config_exists():
@@ -27,7 +27,7 @@ def check_config_exists():
 def read_ftp_config():
     # 설정 파일에서 FTP 정보를 불러오기
     config = configparser.ConfigParser()
-    config.read('/ftp_config.ini')
+    config.read('ftp_config.ini')
     return config['FTP']
 
 class MockSMBus:
