@@ -71,7 +71,7 @@ def start_recording(duration=30):
     output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')  # 비디오 파일 이름 생성
     out = cv2.VideoWriter(output_filename, fourcc, 30, (width, height))  # 비디오 파일 쓰기 객체 생성
 
-    frame_duration = int(1000 / 30)  # 각 프레임의 시간 (30fps 기준)
+    frame_duration = 1 / 30  # 각 프레임의 시간 (30fps 기준)
     start_time = time.time()
     try:
         while (time.time() - start_time) < duration:  # 지정된 녹화 시간 동안 반복
