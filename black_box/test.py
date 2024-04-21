@@ -53,41 +53,37 @@ class MockSMBus:
 camera_device_id = 0  # 장치 ID를 0으로 가정합니다.
 
 def start_recording(duration=30):
-    cap = cv2.VideoCapture(camera_device_id)  # 카메라 장치 열기 시도
-    if not cap.isOpened():  # 주 장치 열기 실패 시
-        cap = cv2.VideoCapture(0)  # 기본 장치로 다시 시도
-        if not cap.isOpened():  # 기본 장치도 실패할 경우
-            print("카메라를 시작할 수 없습니다.")
-            return None
+    cap = cv2.VideoCapture(camera_device_id)
+    if not cap.isOpened():
+        print("카메라를 시작할 수 없습니다.")
+        return None
 
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))  # 카메라에서 프레임 너비 가져오기
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))  # 카메라에서 프레임 높이 가져오기
-
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # 비디오 코덱 설정
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')  # 비디오 파일 이름 생성
-    out = cv2.VideoWriter(output_filename, fourcc, 30, (width, height))  # 비디오 파일 쓰기 객체 생성
+    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+    out = cv2.VideoWriter(output_filename, fourcc, 30, (width, height))
 
-    frame_duration = 1 / 30  # 각 프레임의 시간 (30fps 기준)
+    frame_count = 0
     start_time = time.time()
-    try:
-        while (time.time() - start_time) < duration:  # 지정된 녹화 시간 동안 반복
-            ret, frame = cap.read()  # 카메라로부터 프레임 읽기
-            if ret:
-                out.write(frame)  # 프레임이 유효할 경우 파일에 쓰기
-                # time.sleep(frame_duration)  # 프레임 간격만큼 대기
-            else:
-                break  # 프레임 읽기 실패 시 반복 중지
-    except Exception as e:
-        print(f"예외 발생: {e}")  # 예외 발생 시 메시지 출력
-    finally:
-        cap.release()  # 카메라 장치 해제
-        out.release()  # 파일 쓰기 객체 해제
-        
-    return output_filename  # 녹화된 파일의 이름 반환
+    while (time.time() - start_time) < duration:
+        ret, frame = cap.read()
+        if ret:
+            out.write(frame)
+            frame_count += 1
+        else:
+            break
+
+    print(f"Recorded {frame_count} frames in {duration} seconds.")
+
+    cap.release()
+    out.release()
+    return output_filename
+
 
 def upload_file_to_ftp(file_path):
     try:
