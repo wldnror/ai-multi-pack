@@ -8,7 +8,8 @@ with open("/home/user/LED/black_box/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 layer_names = net.getLayerNames()
-output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+out_layer_indices = net.getUnconnectedOutLayers()
+output_layers = [layer_names[i[0] - 1] if len(i) > 1 else layer_names[i - 1] for i in out_layer_indices]
 
 # 카메라 캡처 초기화
 cap = cv2.VideoCapture(0)
