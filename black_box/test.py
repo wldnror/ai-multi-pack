@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 # YOLO 모델 불러오기
 net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
@@ -17,6 +18,9 @@ cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
+plt.ion()  # 대화형 모드 활성화
+
+fig, ax = plt.subplots()
 while True:
     _, frame = cap.read()
     height, width, channels = frame.shape
@@ -36,7 +40,6 @@ while True:
             class_id = np.argmax(scores)
             confidence = scores[class_id]
             if confidence > 0.5:
-                # 객체의 위치 계산
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
@@ -58,11 +61,14 @@ while True:
         cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
         cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
-    # 결과를 화면에 표시
-    cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1)
-    if key == 27:  # ESC 키
+    # Matplotlib으로 결과 표시
+    ax.clear()
+    ax.imshow(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    plt.pause(0.01)
+
+    if plt.waitforbuttonpress(0.01):
         break
 
 cap.release()
 cv2.destroyAllWindows()
+plt.close()
