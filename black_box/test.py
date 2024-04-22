@@ -1,16 +1,17 @@
 import cv2
 import numpy as np
 
-# YOLO 설정 파일과 가중치 파일 로드
+# YOLO 모델 불러오기
 net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
 
-# 객체 이름 불러오기
+# 클래스 이름 불러오기
 classes = []
 with open("/home/user/LED/black_box/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 layer_names = net.getLayerNames()
-output_layers = [layer_names[int(i[0]) - 1] for i in net.getUnconnectedOutLayers()]
+# getUnconnectedOutLayers()의 반환 값에 대한 적절한 처리
+output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers().flatten()]
 
 # 카메라 초기화
 cap = cv2.VideoCapture(0)
@@ -59,7 +60,7 @@ while True:
         cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     # 결과를 화면에 표시
-    cv2.imshow("Image", frame)
+    cv2.imshow("Frame", frame)
     key = cv2.waitKey(1)
     if key == 27:  # ESC 키
         break
