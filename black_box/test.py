@@ -9,7 +9,12 @@ with open("/home/user/LED/black_box/coco.names", "r") as f:
 
 layer_names = net.getLayerNames()
 out_layer_indices = net.getUnconnectedOutLayers()
-output_layers = [layer_names[i[0] - 1] if len(i) > 1 else layer_names[i - 1] for i in out_layer_indices]
+
+# 다양한 버전의 OpenCV에서 반환 형태가 다를 수 있기 때문에 처리
+if out_layer_indices.ndim == 1:
+    output_layers = [layer_names[int(index) - 1] for index in out_layer_indices]
+else:
+    output_layers = [layer_names[index[0] - 1] for index in out_layer_indices]
 
 # 카메라 캡처 초기화
 cap = cv2.VideoCapture(0)
@@ -39,13 +44,10 @@ while True:
             class_id = np.argmax(scores)
             confidence = scores[class_id]
             if confidence > 0.5:
-                # 객체 탐지
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
                 h = int(detection[3] * height)
-
-                # 사각형 좌표
                 x = int(center_x - w / 2)
                 y = int(center_y - h / 2)
                 boxes.append([x, y, w, h])
@@ -65,6 +67,5 @@ while True:
     if cv2.waitKey(1) == ord('q'):
         break
 
-# 완료 후 자원 해제
 cap.release()
 cv2.destroyAllWindows()
