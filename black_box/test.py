@@ -10,26 +10,15 @@ with open("/home/user/LED/black_box/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 layer_names = net.getLayerNames()
-output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers().flatten()]
 
 # 카메라 초기화
 cap = cv2.VideoCapture(0)
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-cap.set(cv2.CAP_PROP_FPS, 30)  # FPS를 카메라 지원 범위 내에서 설정
-
-frame_id = 0
-frame_skip = 5  # 5개 프레임마다 한 번씩 처리
 
 while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    frame_id += 1
-    if frame_id % frame_skip != 0:
-        continue  # 프레임 스킵
-
+    _, frame = cap.read()
     height, width, channels = frame.shape
 
     # 객체 탐지를 위한 전처리
