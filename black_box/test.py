@@ -4,11 +4,18 @@ import numpy as np
 # YOLO 모델 불러오기
 net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
 
+# 클래스 이름 불러오기
 classes = []
 with open("/home/user/LED/black_box/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
+
 layer_names = net.getLayerNames()
-output_layers = [layer_names[i[0] - 1] for i in net.getUnconnectedOutLayers()]
+# getUnconnectedOutLayers()의 출력을 적절하게 처리
+out_layer_indices = net.getUnconnectedOutLayers()
+if out_layer_indices.ndim == 1:  # 최신 OpenCV 버전에서는 1D 배열로 반환
+    output_layers = [layer_names[i - 1] for i in out_layer_indices.flatten()]
+else:  # 이전 OpenCV 버전에서는 2D 배열로 반환
+    output_layers = [layer_names[i[0] - 1] for i in out_layer_indices]
 
 # 카메라 캡처 시작
 cap = cv2.VideoCapture(0)
