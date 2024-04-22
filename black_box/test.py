@@ -9,8 +9,6 @@ with open("/home/user/LED/black_box/coco.names", "r") as f:
 
 layer_names = net.getLayerNames()
 out_layer_indices = net.getUnconnectedOutLayers()
-
-# 다양한 버전의 OpenCV에서 반환 형태가 다를 수 있기 때문에 처리
 if out_layer_indices.ndim == 1:
     output_layers = [layer_names[int(index) - 1] for index in out_layer_indices]
 else:
@@ -55,9 +53,12 @@ while True:
                 class_ids.append(class_id)
 
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
-    for i in indexes.flatten():
-        x, y, w, h = boxes[i]
-        label = str(classes[class_ids[i]])
+    if type(indexes) == tuple:
+        indexes = indexes[0]
+
+    for i in indexes:
+        x, y, w, h = boxes[int(i)]
+        label = str(classes[class_ids[int(i)]])
         if label == "person" or label == "car":
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             cv2.putText(frame, label, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
