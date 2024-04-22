@@ -19,10 +19,11 @@ cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
 plt.ion()  # 대화형 모드 활성화
-
 fig, ax = plt.subplots()
+
 while True:
     _, frame = cap.read()
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     height, width, channels = frame.shape
 
     # 객체 탐지를 위한 전처리
@@ -53,20 +54,21 @@ while True:
 
     # 겹치는 박스 제거
     indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
-    if len(indexes) > 0:  # 인덱스 리스트가 비어있지 않은지 확인
-        for i in indexes.flatten():  # flatten()을 사용하여 모든 인덱스를 1차원 배열로 변환
+    if len(indexes) > 0:
+        for i in indexes.flatten():
             x, y, w, h = boxes[i]
             label = str(classes[class_ids[i]])
             color = (0, 255, 0)
-            cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(frame, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-   
+            cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 2)
+            cv2.putText(frame_rgb, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+
     # 결과를 화면에 표시
-    cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1)
-    if key == 27:  # ESC 키
+    ax.clear()
+    ax.imshow(frame_rgb)
+    plt.pause(0.001)  # UI를 갱신하기 위해 짧은 일시 중지
+
+    if plt.waitforbuttonpress(0.001):
         break
 
 cap.release()
-cv2.destroyAllWindows()
 plt.close()
