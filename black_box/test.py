@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('GTK3Agg')  # 또는 'TkAgg', 'Qt5Agg' 등 사용 가능한 다른 백엔드를 시도
+# matplotlib.use('GTK3Agg')  # 또는 'TkAgg', 'Qt5Agg' 등 사용 가능한 다른 백엔드를 시도
 
 # YOLO 모델 불러오기
 net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
