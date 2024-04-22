@@ -4,18 +4,13 @@ import numpy as np
 # YOLO 모델 불러오기
 net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
 
-# 클래스 이름 불러오기
 classes = []
 with open("/home/user/LED/black_box/coco.names", "r") as f:
     classes = [line.strip() for line in f.readlines()]
 
 layer_names = net.getLayerNames()
-# getUnconnectedOutLayers()의 출력을 적절하게 처리
 out_layer_indices = net.getUnconnectedOutLayers()
-if out_layer_indices.ndim == 1:  # 최신 OpenCV 버전에서는 1D 배열로 반환
-    output_layers = [layer_names[i - 1] for i in out_layer_indices.flatten()]
-else:  # 이전 OpenCV 버전에서는 2D 배열로 반환
-    output_layers = [layer_names[i[0] - 1] for i in out_layer_indices]
+output_layers = [layer_names[i - 1] for i in out_layer_indices.flatten()]
 
 # 카메라 캡처 시작
 cap = cv2.VideoCapture(0)
@@ -39,13 +34,11 @@ while True:
             class_id = np.argmax(scores)
             confidence = scores[class_id]
             if confidence > 0.5:
-                # 객체 탐지
                 center_x = int(detection[0] * width)
                 center_y = int(detection[1] * height)
                 w = int(detection[2] * width)
                 h = int(detection[3] * height)
 
-                # 사각형 좌표
                 x = int(center_x - w / 2)
                 y = int(center_y - h / 2)
 
@@ -58,11 +51,9 @@ while True:
         if i in indexes:
             x, y, w, h = boxes[i]
             label = str(classes[class_ids[i]])
-            if label == "person" or label == "car":
-                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, label, (x, y + 30), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
     
-    # 결과 화면에 표시
     cv2.imshow("Image", frame)
     key = cv2.waitKey(1)
     if key == 27:  # ESC 키
