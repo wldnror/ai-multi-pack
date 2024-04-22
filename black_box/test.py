@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('GTK3Agg')  # 또는 'TkAgg', 'Qt5Agg' 등 사용 가능한 다른 백엔드를 시도
 
 # YOLO 모델 불러오기
 net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
@@ -63,6 +65,9 @@ while True:
             cv2.putText(frame_rgb, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 
     # 결과를 화면에 표시
+    # 프레임 저장 테스트
+    cv2.imwrite('/home/user/LED/test_frame.jpg', frame)
+
     ax.clear()
     ax.imshow(frame_rgb)
     plt.pause(0.001)  # UI를 갱신하기 위해 짧은 일시 중지
