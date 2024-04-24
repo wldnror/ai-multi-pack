@@ -24,7 +24,7 @@ def read_ftp_config():
     config.read(config_file_path)
     return config['FTP']
 
-def start_detection_and_recording(duration=24):
+def start_detection_and_recording(duration=30.000):
     cap = cv2.VideoCapture(0)  # 웹캠 입력
     # MJPG 포맷을 사용하여 해상도를 1920x1080으로 설정
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
