@@ -34,13 +34,13 @@ def start_detection_and_recording(duration=24):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # 녹화 설정, MJPG 포맷 사용
+    # 녹화 설정, MJPG 포맷 사용, AVI 파일 포맷으로 변경
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+    output_filename = os.path.join(output_directory, f'video_{current_time}.avi')  # 파일 확장자를 .mp4에서 .avi로 변경
     out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))
 
     start_time = time.time()
