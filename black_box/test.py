@@ -1,66 +1,88 @@
+import os
+import time
 import cv2
 import torch
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
+import configparser
+from ftplib import FTP
+import subprocess
 
 # YOLOv5 모델 로드
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
-# 웹캠 설정
-cap = cv2.VideoCapture(0)
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+# 설정 파일에서 FTP 정보를 읽어옴
+def read_ftp_config():
+    config = configparser.ConfigParser()
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    config.read(config_file_path)
+    return config['FTP']
 
-# 녹화 설정
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
+def check_config_exists():
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    if not os.path.exists(config_file_path):
+        print("FTP 설정 파일이 없습니다.")
+        return False
+    else:
+        print("기존의 FTP 설정을 불러옵니다.")
+        return True
 
-# 폰트 설정
-fontpath = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # 라즈베리 파이에서 사용 가능한 폰트 경로
-font = ImageFont.truetype(fontpath, 20)
+def upload_file_to_ftp(file_path):
+    try:
+        ftp_info = read_ftp_config()
+        ftp = FTP(ftp_info['ftp_address'])
+        ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
+        with open(file_path, 'rb') as file:
+            ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+        print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
+    except Exception as e:
+        print(f"파일 업로드 중 오류 발생: {e}")
+    finally:
+        ftp.quit()
 
-# 녹화 시간 계산을 위한 변수
-start_time = cv2.getTickCount()
-record_time = 60
+def record_and_upload():
+    cap = cv2.VideoCapture(0)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    output_directory = os.path.join(os.path.dirname(__file__), 'video')
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+    start_time = cv2.getTickCount()
+    record_time = 10  # seconds
+    while (cv2.getTickCount() - start_time) / cv2.getTickFrequency() < record_time:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        results = model(frame)
+        img_pil = Image.fromarray(frame)
+        draw = ImageDraw.Draw(img_pil)
+        for det in results.xyxy[0]:
+            # Add bounding boxes and labels
+            pass
+        frame = np.array(img_pil)
+        out.write(frame)
 
-    # YOLOv5로 추론
-    results = model(frame)
+    cap.release()
+    out.release()
+    cv2.destroyAllWindows()
 
-    # Pillow 이미지로 변환
-    img_pil = Image.fromarray(frame)
-    draw = ImageDraw.Draw(img_pil)
+    if check_config_exists():
+        upload_file_to_ftp(output_filename)
 
-    # results.xyxy[0]은 탐지된 객체들의 정보를 포함하는 텐서
-    for det in results.xyxy[0]:
-        x1, y1, x2, y2, conf, cls = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4], int(det[5])
-        if cls == 0:  # 'person' 클래스의 ID
-            label = "사람"
-        elif cls == 2:  # 'car' 클래스의 ID
-            label = "자동차"
-        else:
-            continue  # 다른 객체는 무시
-
-        # 레이블 및 바운딩 박스 출력 (Pillow 사용)
-        draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=2)
-        draw.text((x1, y1 - 30), f'{label} {conf:.2f}', font=font, fill=(255, 255, 255))
-
-    # NumPy 배열로 변환
-    frame = np.array(img_pil)
-
-    cv2.imshow('YOLOv5 Detection', frame)
-    out.write(frame)
-
-    if (cv2.getTickCount() - start_time) / cv2.getTickFrequency() > record_time:
-        break
-
-    if cv2.waitKey(1) == ord('q'):
-        break
-
-cap.release()
-out.release()
-cv2.destroyAllWindows()
+if __name__ == "__main__":
+    try:
+        while True:
+            input_value = int(input("가속도 값 입력 (0-65535): "))
+            if input_value > 15000:
+                print("충격 감지! 녹화 시작")
+                record_and_upload()
+            time.sleep(0.1)
+    except KeyboardInterrupt:
+        print("테스트 종료.")
