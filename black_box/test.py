@@ -1,79 +1,66 @@
 import cv2
+import torch
+from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib
-# matplotlib.use('GTK3Agg')  # 또는 'TkAgg', 'Qt5Agg' 등 사용 가능한 다른 백엔드를 시도
 
-# YOLO 모델 불러오기
-net = cv2.dnn.readNet('/home/user/LED/black_box/yolov4.weights', '/home/user/LED/black_box/yolov4.cfg')
+# YOLOv5 모델 로드
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
-# 클래스 이름 불러오기
-classes = []
-with open("/home/user/LED/black_box/coco.names", "r") as f:
-    classes = [line.strip() for line in f.readlines()]
-
-layer_names = net.getLayerNames()
-output_layers = [layer_names[i - 1] for i in net.getUnconnectedOutLayers().flatten()]
-
-# 카메라 초기화
+# 웹캠 설정
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-plt.ion()  # 대화형 모드 활성화
-fig, ax = plt.subplots()
+# 녹화 설정
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
+
+# 폰트 설정
+fontpath = "/Library/Fonts/Arial Unicode.ttf"  # 폰트 파일 경로
+font = ImageFont.truetype(fontpath, 20)
+
+# 녹화 시간 계산을 위한 변수
+start_time = cv2.getTickCount()
+record_time = 10
 
 while True:
-    _, frame = cap.read()
-    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-    height, width, channels = frame.shape
+    ret, frame = cap.read()
+    if not ret:
+        break
 
-    # 객체 탐지를 위한 전처리
-    blob = cv2.dnn.blobFromImage(frame, 0.00392, (416, 416), (0, 0, 0), swapRB=True, crop=False)
-    net.setInput(blob)
-    outs = net.forward(output_layers)
+    # YOLOv5로 추론
+    results = model(frame)
 
-    # 감지된 객체 정보 저장
-    class_ids = []
-    confidences = []
-    boxes = []
-    for out in outs:
-        for detection in out:
-            scores = detection[5:]
-            class_id = np.argmax(scores)
-            confidence = scores[class_id]
-            if confidence > 0.5:
-                center_x = int(detection[0] * width)
-                center_y = int(detection[1] * height)
-                w = int(detection[2] * width)
-                h = int(detection[3] * height)
-                x = int(center_x - w / 2)
-                y = int(center_y - h / 2)
+    # Pillow 이미지로 변환
+    img_pil = Image.fromarray(frame)
+    draw = ImageDraw.Draw(img_pil)
 
-                boxes.append([x, y, w, h])
-                confidences.append(float(confidence))
-                class_ids.append(class_id)
+    # results.xyxy[0]은 탐지된 객체들의 정보를 포함하는 텐서
+    for det in results.xyxy[0]:
+        x1, y1, x2, y2, conf, cls = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4], int(det[5])
+        if cls == 0:  # 'person' 클래스의 ID
+            label = "사람"
+        elif cls == 2:  # 'car' 클래스의 ID
+            label = "자동차"
+        else:
+            continue  # 다른 객체는 무시
 
-    # 겹치는 박스 제거
-    indexes = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
-    if len(indexes) > 0:
-        for i in indexes.flatten():
-            x, y, w, h = boxes[i]
-            label = str(classes[class_ids[i]])
-            color = (0, 255, 0)
-            cv2.rectangle(frame_rgb, (x, y), (x + w, y + h), color, 2)
-            cv2.putText(frame_rgb, label, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        # 레이블 및 바운딩 박스 출력 (Pillow 사용)
+        draw.rectangle([x1, y1, x2, y2], outline=(255, 0, 0), width=2)
+        draw.text((x1, y1 - 30), f'{label} {conf:.2f}', font=font, fill=(255, 255, 255))
 
-    # 결과를 화면에 표시
-    # 프레임 저장 테스트
-    cv2.imwrite('/home/user/LED/test_frame.jpg', frame)
+    # NumPy 배열로 변환
+    frame = np.array(img_pil)
 
-    ax.clear()
-    ax.imshow(frame_rgb)
-    plt.pause(0.001)  # UI를 갱신하기 위해 짧은 일시 중지
+    cv2.imshow('YOLOv5 Detection', frame)
+    out.write(frame)
 
-    if plt.waitforbuttonpress(0.001):
+    if (cv2.getTickCount() - start_time) / cv2.getTickFrequency() > record_time:
+        break
+
+    if cv2.waitKey(1) == ord('q'):
         break
 
 cap.release()
-plt.close()
+out.release()
+cv2.destroyAllWindows()
