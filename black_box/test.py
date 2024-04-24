@@ -34,7 +34,7 @@ def start_detection_and_recording(duration=10):
     os.makedirs(output_directory, exist_ok=True)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     output_filename = os.path.join(output_directory, f'video_{current_time}.avi')
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (1920, 1080))
+    out = cv2.VideoWriter(output_filename, fourcc, 1.58, (1920, 1080))
 
     frame_count = 0
     start_time = time.time()
