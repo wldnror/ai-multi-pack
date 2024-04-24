@@ -2,15 +2,18 @@ import cv2
 
 cap = cv2.VideoCapture(0)  # 웹캠 열기
 
-# 실제 카메라에서 사용되는 프레임 레이트를 얻습니다.
-fps = cap.get(cv2.CAP_PROP_FPS)
+# 해상도를 1920x1080으로 설정
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
-# 비디오 스트림의 너비와 높이를 가져옵니다.
+# 설정한 해상도를 확인
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+print("Set resolution: {}x{}".format(width, height))
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-out = cv2.VideoWriter('output.mp4', fourcc, fps, (width, height))  # 실제 FPS 및 해상도 사용
+fps = cap.get(cv2.CAP_PROP_FPS)  # 실제 카메라의 FPS를 얻음
+out = cv2.VideoWriter('output.mp4', fourcc, fps, (width, height))  # 실제 FPS 및 설정한 해상도 사용
 
 while True:
     ret, frame = cap.read()
