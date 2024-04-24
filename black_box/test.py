@@ -25,15 +25,17 @@ def read_ftp_config():
     return config['FTP']
 
 def start_detection_and_recording(duration=24):
-    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # 웹캠 입력, V4L2 백엔드 명시
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+    cap = cv2.VideoCapture(0)  # 웹캠 입력
+    # MJPG 포맷을 사용하여 해상도를 1920x1080으로 설정
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # H.264 코덱을 사용하여 녹화 설정
-    fourcc = cv2.VideoWriter_fourcc('X','2','6','4')
+    # 녹화 설정, MJPG 포맷 사용
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
@@ -46,18 +48,18 @@ def start_detection_and_recording(duration=24):
         ret, frame = cap.read()
         if not ret:
             break
-
+        
         # 객체 탐지
         results = model(frame)
-
+        
         # 탐지 결과를 프레임에 그리기
         for det in results.xyxy[0]:
             x1, y1, x2, y2, conf, cls = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4], int(det[5])
-            if cls == 0 or cls == 2:
+            if cls == 0 or cls == 2:  # 사람 또는 자동차 클래스
                 label = "사람" if cls == 0 else "자동차"
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
-
+                cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
+        
         cv2.imshow('Detection', frame)
         out.write(frame)
 
