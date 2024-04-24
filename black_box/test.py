@@ -25,16 +25,17 @@ def read_ftp_config():
     return config['FTP']
 
 def start_detection_and_recording(duration=24):
-    cap = cv2.VideoCapture(0)  # 웹캠 입력
-    # 해상도를 1920x1080으로 설정
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # 웹캠 입력, V4L2 백엔드 명시
+    # MJPG 포맷을 사용하여 해상도를 1280x720으로 설정
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    # 녹화 설정
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # 녹화 설정, MJPG 포맷 사용
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
