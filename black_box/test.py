@@ -5,7 +5,6 @@ import cv2
 import torch
 from ftplib import FTP
 
-# 객체 탐지 모델 로드
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
 
 def check_config_exists():
@@ -24,47 +23,41 @@ def read_ftp_config():
     config.read(config_file_path)
     return config['FTP']
 
-def start_detection_and_recording(duration=30.000):
-    cap = cv2.VideoCapture(0)  # 웹캠 입력
-    # MJPG 포맷을 사용하여 해상도를 1920x1080으로 설정
+def start_detection_and_recording(duration=10):
+    cap = cv2.VideoCapture(0)
     cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
 
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-
-    # 녹화 설정, MJPG 포맷 사용, AVI 파일 포맷으로 변경
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+    os.makedirs(output_directory, exist_ok=True)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.avi')  # 파일 확장자를 .mp4에서 .avi로 변경
-    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (width, height))
+    output_filename = os.path.join(output_directory, f'video_{current_time}.avi')
+    out = cv2.VideoWriter(output_filename, fourcc, 30.0, (1920, 1080))
 
+    frame_count = 0
     start_time = time.time()
+
     while (time.time() - start_time) < duration:
         ret, frame = cap.read()
         if not ret:
             break
-        
-        # 객체 탐지
+
         results = model(frame)
-        
-        # 탐지 결과를 프레임에 그리기
         for det in results.xyxy[0]:
-            x1, y1, x2, y2, conf, cls = int(det[0]), int(det[1]), int(det[2]), int(det[3]), det[4], int(det[5])
-            if cls == 0 or cls == 2:  # 사람 또는 자동차 클래스
+            x1, y1, x2, y2, conf, cls = map(int, det[:6])
+            if cls in [0, 2]:
                 label = "사람" if cls == 0 else "자동차"
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255,255,255), 2)
-        
-        cv2.imshow('Detection', frame)
-        out.write(frame)
+                cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
 
-        if cv2.waitKey(1) == ord('q'):
-            break
+        out.write(frame)
+        frame_count += 1
+
+    elapsed_time = time.time() - start_time
+    actual_fps = frame_count / elapsed_time
+    print(f"Recorded {frame_count} frames in {elapsed_time:.2f} seconds, actual FPS: {actual_fps:.2f}")
 
     cap.release()
     out.release()
