@@ -29,7 +29,7 @@ def read_ftp_config():
 def start_detection_and_recording(duration=30):
     cap = cv2.VideoCapture(0)  # 웹캠 입력
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cap.CAP_PROP_FRAME_HEIGHT))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     # 녹화 설정
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
