@@ -21,7 +21,7 @@ font = ImageFont.truetype(fontpath, 20)
 
 # 녹화 시간 계산을 위한 변수
 start_time = cv2.getTickCount()
-record_time = 10
+record_time = 60
 
 while True:
     ret, frame = cap.read()
