@@ -16,7 +16,7 @@ fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 out = cv2.VideoWriter('output11.mp4', fourcc, 30.0, (width, height))
 
 # 폰트 설정
-fontpath = "/Library/Fonts/Arial Unicode.ttf"  # 폰트 파일 경로
+fontpath = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"  # 라즈베리 파이에서 사용 가능한 폰트 경로
 font = ImageFont.truetype(fontpath, 20)
 
 # 녹화 시간 계산을 위한 변수
