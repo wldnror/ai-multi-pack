@@ -5,7 +5,10 @@ import cv2
 import torch
 from ftplib import FTP
 
+# 객체 탐지 모델 로드 및 임계값 설정
 model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+model.conf = 0.25  # 탐지 신뢰도 임계값 설정
+model.iou = 0.45   # IoU 임계값 설정
 
 def check_config_exists():
     script_directory = os.path.dirname(__file__)
@@ -34,7 +37,7 @@ def start_detection_and_recording(duration=10):
     os.makedirs(output_directory, exist_ok=True)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
     output_filename = os.path.join(output_directory, f'video_{current_time}.avi')
-    out = cv2.VideoWriter(output_filename, fourcc, 16.4, (1280, 720))
+    out = cv2.VideoWriter(output_filename, fourcc, 1.58, (1280, 720))  # 프레임 레이트를 실제 측정된 값으로 조정
 
     frame_count = 0
     start_time = time.time()
