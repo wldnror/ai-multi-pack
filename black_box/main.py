@@ -45,7 +45,7 @@ def start_ffmpeg_recording(duration=30):
         'ffmpeg',
         '-f', 'v4l2',
         '-framerate', '30',
-        '-video_size', '1280x720',
+        '-video_size', '4096x2160',
         '-i', '/dev/video0',
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
