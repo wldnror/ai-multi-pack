@@ -78,13 +78,14 @@
 
 
 import numpy as np
+import board
 import neopixel
 import sounddevice as sd
 import time
 
 # LED 스트립 설정
 LED_COUNT = 150       # LED 개수
-LED_PIN = 21          # GPIO 핀 번호 직접 지정
+LED_PIN = board.D21   # GPIO 핀 객체로 지정
 LED_BRIGHTNESS = 0.05 # LED 밝기 (0.0에서 1.0 사이)
 SAMPLE_RATE = 48000   # 오디오 샘플레이트
 FFT_SIZE = 1024       # FFT 크기
@@ -133,4 +134,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
