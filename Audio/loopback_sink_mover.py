@@ -16,7 +16,7 @@ def move_all_loopback_streams(sink_description):
 
         # 이름이 'loopback'으로 시작하는 모든 스트림 찾아서 이동
         for stream in sink_inputs:
-            if stream.name.startswith('loopback'):
+            if stream.name.startswith('loo'):
                 pulse.sink_input_move(stream.index, target_sink.index)
                 print(f"Moved stream {stream.name} to sink {target_sink.description}")
 
