@@ -4,6 +4,51 @@ import configparser
 from ftplib import FTP
 import subprocess
 from collections import deque
+import smbus
+import math
+
+# MPU-6050 센서 초기 설정
+power_mgmt_1 = 0x6b
+power_mgmt_2 = 0x6c
+bus = smbus.SMBus(1)  # 라즈베리 파이의 I2C 버스 사용
+address = 0x68        # MPU-6050의 I2C 주소
+
+def read_byte(adr):
+    return bus.read_byte_data(address, adr)
+
+def read_word(adr):
+    high = bus.read_byte_data(address, adr)
+    low = bus.read_byte_data(address, adr + 1)
+    val = (high << 8) + low
+    return val
+
+def read_word_2c(adr):
+    val = read_word(adr)
+    if (val >= 0x8000):
+        return -((65535 - val) + 1)
+    else:
+        return val
+
+def dist(a, b):
+    return math.sqrt((a * a) + (b * b))
+
+def get_y_rotation(x, y, z):
+    radians = math.atan2(x, dist(y, z))
+    return -math.degrees(radians)
+
+def get_x_rotation(x, y, z):
+    radians = math.atan2(y, dist(x, z))
+    return math.degrees(radians)
+
+def get_acceleration():
+    bus.write_byte_data(address, power_mgmt_1, 0)  # 센서 깨우기
+    accel_xout = read_word_2c(0x3b)
+    accel_yout = read_word_2c(0x3d)
+    accel_zout = read_word_2c(0x3f)
+    accel_xout_scaled = accel_xout / 16384.0
+    accel_yout_scaled = accel_yout / 16384.0
+    accel_zout_scaled = accel_zout / 16384.0
+    return accel_xout_scaled, accel_yout_scaled, accel_zout_scaled
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -92,13 +137,12 @@ def main():
         while True:
             output_file = start_ffmpeg_recording(60)
             video_files.append(output_file)
-            if len(video_files) > 100:  # 더 이상 필요 없는 파일 삭제
+            if len(video_files) > 100:
                 os.remove(video_files.popleft())
-            # 감지 로직은 별도의 센서 데이터로부터 받는 것으로 가정
-            input_value = int(input("가속도 값 입력 (0-65535): "))
-            if input_value > 15000:
+            x, y, z = get_acceleration()  # 센서 데이터 읽기
+            if abs(x) > 1.5 or abs(y) > 1.5 or abs(z) > 1.5:  # 가속도 임계값 초과 감지
                 print("충격 감지! 이전 파일 업로드")
-                if len(video_files) > 1:  # 가장 최근 파일을 업로드하지 않고, 그 이전 파일을 업로드
+                if len(video_files) > 1:
                     upload_file_to_ftp(video_files[-2])
             time.sleep(60)  # 1분 간격으로 계속 녹화
     except KeyboardInterrupt:
