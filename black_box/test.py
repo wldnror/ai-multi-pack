@@ -6,7 +6,6 @@ import subprocess
 from collections import deque
 import smbus
 import math
-import threading
 
 # MPU-6050 센서 초기 설정
 power_mgmt_1 = 0x6b
@@ -39,12 +38,15 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
             try:
                 ftp.cwd(ftp_target_path)
                 print("FTP 경로 접근 성공!")
-                return True
             except Exception as e:
-                ftp.mkd(ftp_target_path)
-                ftp.cwd(ftp_target_path)
-                print("경로가 없어 새로 생성했습니다.")
-                return True
+                try:
+                    ftp.mkd(ftp_target_path)
+                    ftp.cwd(ftp_target_path)
+                    print("경로가 없어 새로 생성했습니다.")
+                except Exception as e:
+                    print(f"경로 생성 실패: {e}")
+                    return False
+            return True
     except Exception as e:
         print(f"FTP 접속 실패: {e}")
         return False
@@ -53,7 +55,7 @@ def init_ftp_config():
     config = configparser.ConfigParser()
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    if not os.path.exists(config_file_path):
+    while True:
         ftp_address = input('FTP 주소 입력: ')
         ftp_username = input('FTP 사용자 이름 입력: ')
         ftp_password = input('FTP 비밀번호 입력: ')
@@ -67,16 +69,15 @@ def init_ftp_config():
             }
             with open(config_file_path, 'w') as configfile:
                 config.write(configfile)
-            print("FTP 설정이 저장되었습니다.")
+            break
         else:
-            print("FTP 정보가 잘못되었습니다. 다시 확인해주세요.")
-    else:
-        config.read(config_file_path)
-        print("기존 FTP 설정을 불러왔습니다.")
-    return config
+            print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
 def read_ftp_config():
-    config = init_ftp_config()
+    config = configparser.ConfigParser()
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    config.read(config_file_path)
     return config['FTP']
 
 def start_ffmpeg_recording(output_filename, duration):
@@ -112,18 +113,24 @@ def upload_file_to_ftp(file_path):
     except Exception as e:
         print(f"파일 업로드 중 오류 발생: {e}")
 
-def monitor_impacts():
-    video_files = os.path.join(os.path.dirname(__file__), 'video')
-    if not os.path.exists(video_files):
-        os.makedirs(video_files)
-    last_time_recorded = time.time()
-    while True:
-        acceleration = get_acceleration()
-        if any(abs(a) > 1.5 for a in acceleration):
-            print("충격 감지! 이벤트 저장 및 업로드 시작")
-            event_filename = capture_event(video_files, last_time_recorded)
-            upload_file_to_ftp(event_filename)
-        time.sleep(1)  # Check acceleration every second
+def main():
+    video_files = deque(maxlen=100)  # 최대 100개의 파일을 유지
+    try:
+        while True:
+            current_time = time.time()
+            output_file = os.path.join(os.path.dirname(__file__), 'video', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S", time.gmtime(current_time))}.mp4')
+            start_ffmpeg_recording(output_file, 60)
+            video_files.append(output_file)
+            if len(video_files) > 100:
+                os.remove(video_files.popleft())
+            x, y, z = get_acceleration()  # 센서 데이터 읽기
+            if abs(x) > 1.5 or abs(y) > 1.5 or abs(z) > 1.5:  # 가속도 임계값 초과 감지
+                print("충격 감지! 이벤트 저장 및 업로드 시작")
+                event_filename = capture_event(os.path.dirname(__file__), current_time)
+                upload_file_to_ftp(event_filename)
+            time.sleep(60)  # 1분 간격으로 계속 녹화
+    except KeyboardInterrupt:
+        print("테스트 종료.")
 
 if __name__ == "__main__":
-    monitor_impacts()
+    main()
