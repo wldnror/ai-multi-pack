@@ -117,6 +117,7 @@ def record_and_upload():
             time.sleep(60)  # 1분 대기
             if output_file:
                 upload_file_to_ftp(output_file)
+                os.remove(output_file)  # 업로드 후 파일 삭제
             manage_video_files()  # 최대 파일 개수 관리
     except KeyboardInterrupt:
         print("테스트 종료.")
