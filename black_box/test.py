@@ -3,6 +3,7 @@ import time
 import configparser
 from ftplib import FTP
 import subprocess
+from threading import Thread
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -108,14 +109,21 @@ def manage_video_files():
         os.remove(file_to_delete)
         print(f"파일 {file_to_delete}가 삭제되었습니다.")
 
+def record_and_upload():
+    try:
+        while True:
+            print("녹화 시작")
+            output_file = start_ffmpeg_recording()  # 1분 녹화
+            time.sleep(60)  # 1분 대기
+            if output_file:
+                upload_file_to_ftp(output_file)
+            manage_video_files()  # 최대 파일 개수 관리
+    except KeyboardInterrupt:
+        print("테스트 종료.")
+
 check_config_exists()
-try:
-    while True:
-        print("녹화 시작")
-        output_file = start_ffmpeg_recording()  # 1분 녹화
-        time.sleep(60)  # 1분 대기
-        if output_file:
-            upload_file_to_ftp(output_file)
-        manage_video_files()  # 최대 파일 개수 관리
-except KeyboardInterrupt:
-    print("테스트 종료.")
+
+# 파일 업로드를 별도의 스레드로 처리
+upload_thread = Thread(target=record_and_upload)
+upload_thread.start()
+upload_thread.join()  # 메인 스레드 종료를 대기합니다.
