@@ -3,7 +3,7 @@ import time
 import configparser
 from ftplib import FTP
 import subprocess
-from collections import deque
+from threading import Thread
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -24,6 +24,13 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
     except Exception as e:
         print(f"FTP 접속 실패: {e}")
         return False
+
+def read_ftp_config():
+    config = configparser.ConfigParser()
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    config.read(config_file_path)
+    return config['FTP']
 
 def init_ftp_config():
     config = configparser.ConfigParser()
@@ -47,19 +54,16 @@ def init_ftp_config():
         else:
             print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
-def read_ftp_config():
-    config = configparser.ConfigParser()
+def check_config_exists():
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    config.read(config_file_path)
-    return config['FTP']
+    if not os.path.exists(config_file_path):
+        print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
+        init_ftp_config()
+    else:
+        print("기존의 FTP 설정을 불러옵니다.")
 
-def start_ffmpeg_recording(duration=60):
-    output_directory = os.path.join(os.path.dirname(__file__), 'video')
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+def start_ffmpeg_recording(output_filename, duration=60):
     command = [
         'ffmpeg',
         '-f', 'v4l2',
@@ -73,34 +77,55 @@ def start_ffmpeg_recording(duration=60):
         output_filename
     ]
     subprocess.run(command)
-    return output_filename
 
 def upload_file_to_ftp(file_path):
     try:
         ftp_info = read_ftp_config()
-        with FTP(ftp_info['ftp_address']) as ftp:
-            ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
-            with open(file_path, 'rb') as file:
-                ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
-            print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
+        ftp = FTP(ftp_info['ftp_address'])
+        ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
+        with open(file_path, 'rb') as file:
+            ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+        print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
     except Exception as e:
         print(f"파일 업로드 중 오류 발생: {e}")
+    finally:
+        ftp.quit()
 
-def main():
-    video_files = deque(maxlen=100)  # 최대 100개의 파일을 유지
+def manage_video_files():
+    output_directory = os.path.join(os.path.dirname(__file__), 'video')
+    if not os.path.exists(output_directory):
+        return
+
+    video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
+    while len(video_files) > 100:
+        file_to_delete = os.path.join(output_directory, video_files.pop(0))
+        os.remove(file_to_delete)
+        print(f"파일 {file_to_delete}가 삭제되었습니다.")
+
+def record_and_upload():
     try:
         while True:
-            output_file = start_ffmpeg_recording(60)
-            video_files.append(output_file)
-            if len(video_files) > 100:  # 더 이상 필요 없는 파일 삭제
-                os.remove(video_files.popleft())
-            input_value = int(input("가속도 값 입력 (0-65535): "))
-            if input_value > 15000:
-                print("충격 감지! 파일 업로드")
-                upload_file_to_ftp(output_file)
-            time.sleep(60)  # 1분 간격
+            current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+            output_directory = os.path.join(os.path.dirname(__file__), 'video')
+            if not os.path.exists(output_directory):
+                os.makedirs(output_directory)
+            output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+            
+            print(f"녹화 시작: {current_time}")
+            start_ffmpeg_recording(output_filename)  # 1분 녹화
+            
+            time.sleep(60)  # 1분 대기
+            if os.path.exists(output_filename):
+                upload_file_to_ftp(output_filename)
+                os.remove(output_filename)  # 업로드 후 파일 삭제
+            
+            manage_video_files()  # 최대 파일 개수 관리
     except KeyboardInterrupt:
         print("테스트 종료.")
 
-if __name__ == "__main__":
-    main()
+check_config_exists()
+
+# 파일 업로드를 별도의 스레드로 처리
+upload_thread = Thread(target=record_and_upload)
+upload_thread.start()
+upload_thread.join()  # 메인 스레드 종료를 대기합니다.
