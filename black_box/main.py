@@ -80,7 +80,7 @@ def start_ffmpeg_recording(duration=30):
         '-i', '/dev/video0',
         '-c:v', 'libx264',
         '-preset', 'veryfast',
-        '-crf', '28',
+        '-crf', '18',
         '-t', str(duration),
         output_filename
     ]
