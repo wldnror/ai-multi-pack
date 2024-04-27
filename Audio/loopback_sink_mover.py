@@ -2,9 +2,8 @@ import pulsectl
 
 pulse = pulsectl.Pulse('audio-stream-manager')
 
-def move_all_loopback_streams(sink_description):
+def move_all_loopback_streams(descriptions):
     try:
-        # 모든 싱크와 스트림 리스트 가져오기
         sinks = pulse.sink_list()
         sink_inputs = pulse.sink_input_list()
 
@@ -14,9 +13,14 @@ def move_all_loopback_streams(sink_description):
             print(f"Sink Index: {sink.index}, Name: {sink.name}, Description: {sink.description}")
 
         # 원하는 싱크 찾기
-        target_sink = next((sink for sink in sinks if sink_description in sink.description), None)
+        target_sink = None
+        for description in descriptions:
+            target_sink = next((sink for sink in sinks if description in sink.description), None)
+            if target_sink:
+                break
+
         if not target_sink:
-            print(f"Sink with description '{sink_description}' not found.")
+            print("No matching sink found for given descriptions.")
             return
 
         # 스트림 목록 출력
@@ -33,4 +37,5 @@ def move_all_loopback_streams(sink_description):
     finally:
         pulse.close()
 
-move_all_loopback_streams('Built-in Audio Analog Stereo')
+# 여러 언어로 된 설명을 리스트로 전달
+move_all_loopback_streams(['Built-in Audio Analog Stereo', '내장 오디오 아날로그 스테레오'])
