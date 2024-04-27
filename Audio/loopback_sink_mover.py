@@ -8,16 +8,21 @@ def move_all_loopback_streams(sink_description):
         sinks = pulse.sink_list()
         sink_inputs = pulse.sink_input_list()
 
-        # 스트림 목록 출력
-        print("Available Streams:")
-        for stream in sink_inputs:
-            print(f"Stream Index: {stream.index}, Name: {stream.name}, Description: {stream.proplist.get('application.name')}")
+        # 사용 가능한 싱크 목록 출력
+        print("Available Sinks:")
+        for sink in sinks:
+            print(f"Sink Index: {sink.index}, Name: {sink.name}, Description: {sink.description}")
 
         # 원하는 싱크 찾기
         target_sink = next((sink for sink in sinks if sink_description in sink.description), None)
         if not target_sink:
             print(f"Sink with description '{sink_description}' not found.")
             return
+
+        # 스트림 목록 출력
+        print("Available Streams:")
+        for stream in sink_inputs:
+            print(f"Stream Index: {stream.index}, Name: {stream.name}, Description: {stream.proplist.get('application.name')}")
 
         # 이름이 'loopback'으로 시작하는 모든 스트림 찾아서 이동
         for stream in sink_inputs:
