@@ -7,7 +7,12 @@ def move_all_loopback_streams(sink_description):
         # 모든 싱크와 스트림 리스트 가져오기
         sinks = pulse.sink_list()
         sink_inputs = pulse.sink_input_list()
-        
+
+        # 스트림 목록 출력
+        print("Available Streams:")
+        for stream in sink_inputs:
+            print(f"Stream Index: {stream.index}, Name: {stream.name}, Description: {stream.proplist.get('application.name')}")
+
         # 원하는 싱크 찾기
         target_sink = next((sink for sink in sinks if sink_description in sink.description), None)
         if not target_sink:
