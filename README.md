@@ -103,8 +103,6 @@ ExecStart=/bin/sh -c "pactl load-module module-null-sink sink_name=virtual_mic s
 # 10초 대기 후 기본 싱크 설정
 ExecStartPost=/bin/sleep 10
 ExecStartPost=/bin/pactl set-default-sink alsa_output.platform-bcm2835_audio.stereo-fallback
-# Python 스크립트 실행
-ExecStartPost=/usr/bin/python3 /home/user/LED/Audio/main.py
 
 [Install]
 WantedBy=default.target
