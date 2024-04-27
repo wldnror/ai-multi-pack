@@ -112,12 +112,12 @@ def manage_video_files():
 check_config_exists()
 try:
     while True:
-        manage_video_files()  # 최대 파일 개수 관리
         print("녹화 시작")
         output_file = start_ffmpeg_recording()  # 1분 녹화
+        time.sleep(60)  # 1분 대기
         if output_file:
             upload_file_to_ftp(output_file)
             os.remove(output_file)  # 업로드 후 로컬에서 삭제
-        time.sleep(60)  # 1분 대기
+        manage_video_files()  # 최대 파일 개수 관리
 except KeyboardInterrupt:
     print("테스트 종료.")
