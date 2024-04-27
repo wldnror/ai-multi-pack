@@ -1,14 +1,57 @@
 import os
 import time
 import configparser
-import cv2
-import torch
 from ftplib import FTP
+import subprocess
 
-# 객체 탐지 모델 로드 및 임계값 설정
-model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-model.conf = 0.25  # 탐지 신뢰도 임계값 설정
-model.iou = 0.45   # IoU 임계값 설정
+def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
+    try:
+        with FTP(ftp_address) as ftp:
+            ftp.login(ftp_username, ftp_password)
+            try:
+                ftp.cwd(ftp_target_path)
+                print("FTP 경로 접근 성공!")
+            except Exception as e:
+                try:
+                    ftp.mkd(ftp_target_path)
+                    ftp.cwd(ftp_target_path)
+                    print("경로가 없어 새로 생성했습니다.")
+                except Exception as e:
+                    print(f"경로 생성 실패: {e}")
+                    return False
+            return True
+    except Exception as e:
+        print(f"FTP 접속 실패: {e}")
+        return False
+
+def read_ftp_config():
+    config = configparser.ConfigParser()
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    config.read(config_file_path)
+    return config['FTP']
+
+def init_ftp_config():
+    config = configparser.ConfigParser()
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    while True:
+        ftp_address = input('FTP 주소 입력: ')
+        ftp_username = input('FTP 사용자 이름 입력: ')
+        ftp_password = input('FTP 비밀번호 입력: ')
+        ftp_target_path = input('FTP 대상 경로 입력: ')
+        if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
+            config['FTP'] = {
+                'ftp_address': ftp_address,
+                'ftp_username': ftp_username,
+                'ftp_password': ftp_password,
+                'ftp_target_path': ftp_target_path
+            }
+            with open(config_file_path, 'w') as configfile:
+                config.write(configfile)
+            break
+        else:
+            print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
 def check_config_exists():
     script_directory = os.path.dirname(__file__)
@@ -19,52 +62,26 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-def read_ftp_config():
-    config = configparser.ConfigParser()
-    script_directory = os.path.dirname(__file__)
-    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    config.read(config_file_path)
-    return config['FTP']
-
-def start_detection_and_recording(duration=10):
-    cap = cv2.VideoCapture(0)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
-    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+def start_ffmpeg_recording(duration=60):
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
-    os.makedirs(output_directory, exist_ok=True)
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
     current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.avi')
-    out = cv2.VideoWriter(output_filename, fourcc, 1.75, (1280, 720))  # 프레임 레이트를 실제 측정된 값으로 조정
+    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
 
-    frame_count = 0
-    start_time = time.time()
-
-    while (time.time() - start_time) < duration:
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        results = model(frame)
-        for det in results.xyxy[0]:
-            x1, y1, x2, y2, conf, cls = map(int, det[:6])
-            if cls in [0, 2]:
-                label = "사람" if cls == 0 else "자동차"
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 255, 255), 2)
-
-        out.write(frame)
-        frame_count += 1
-
-    elapsed_time = time.time() - start_time
-    actual_fps = frame_count / elapsed_time
-    print(f"Recorded {frame_count} frames in {elapsed_time:.2f} seconds, actual FPS: {actual_fps:.2f}")
-
-    cap.release()
-    out.release()
-    cv2.destroyAllWindows()
+    command = [
+        'ffmpeg',
+        '-f', 'v4l2',
+        '-framerate', '30',
+        '-video_size', '1920x1080',
+        '-i', '/dev/video0',
+        '-c:v', 'libx264',
+        '-preset', 'veryfast',
+        '-crf', '18',
+        '-t', str(duration),
+        output_filename
+    ]
+    subprocess.run(command)
     return output_filename
 
 def upload_file_to_ftp(file_path):
@@ -80,16 +97,27 @@ def upload_file_to_ftp(file_path):
     finally:
         ftp.quit()
 
-# 메인 루프
+def manage_video_files():
+    output_directory = os.path.join(os.path.dirname(__file__), 'video')
+    if not os.path.exists(output_directory):
+        return
+
+    video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
+    while len(video_files) > 100:
+        file_to_delete = os.path.join(output_directory, video_files[0])
+        os.remove(file_to_delete)
+        print(f"파일 {file_to_delete}가 삭제되었습니다.")
+        video_files.pop(0)
+
 check_config_exists()
 try:
     while True:
-        input_value = int(input("가속도 값 입력 (0-65535): "))
-        if input_value > 15000:
-            print("충격 감지! 녹화 시작")
-            output_file = start_detection_and_recording(30)
-            if output_file:
-                upload_file_to_ftp(output_file)
-        time.sleep(0.1)
+        manage_video_files()  # 최대 파일 개수 관리
+        print("녹화 시작")
+        output_file = start_ffmpeg_recording()  # 1분 녹화
+        if output_file:
+            upload_file_to_ftp(output_file)
+            os.remove(output_file)  # 업로드 후 로컬에서 삭제
+        time.sleep(60)  # 1분 대기
 except KeyboardInterrupt:
     print("테스트 종료.")
