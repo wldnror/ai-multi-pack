@@ -63,7 +63,7 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-def start_ffmpeg_recording(output_filename, duration=60):
+def continuous_ffmpeg_recording(segment_duration=60, segment_wrapup=10):
     command = [
         'ffmpeg',
         '-f', 'v4l2',
@@ -73,10 +73,14 @@ def start_ffmpeg_recording(output_filename, duration=60):
         '-c:v', 'libx264',
         '-preset', 'veryfast',
         '-crf', '18',
-        '-t', str(duration),
-        output_filename
+        '-segment_time', str(segment_duration),  # 1분 단위로 세그먼트 분할
+        '-f', 'segment',
+        '-reset_timestamps', '1',
+        '-strftime', '1',  # 파일명에 시간 포함
+        os.path.join(output_directory, 'video_%Y-%m-%d_%H-%M-%S.mp4')
     ]
-    subprocess.run(command)
+    subprocess.Popen(command)  # subprocess.run 대신 Popen 사용
+
 
 def upload_file_to_ftp(file_path):
     try:
