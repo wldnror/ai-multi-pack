@@ -104,10 +104,9 @@ def manage_video_files():
 
     video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
     while len(video_files) > 100:
-        file_to_delete = os.path.join(output_directory, video_files[0])
+        file_to_delete = os.path.join(output_directory, video_files.pop(0))
         os.remove(file_to_delete)
         print(f"파일 {file_to_delete}가 삭제되었습니다.")
-        video_files.pop(0)
 
 check_config_exists()
 try:
@@ -117,7 +116,6 @@ try:
         time.sleep(60)  # 1분 대기
         if output_file:
             upload_file_to_ftp(output_file)
-            os.remove(output_file)  # 업로드 후 로컬에서 삭제
         manage_video_files()  # 최대 파일 개수 관리
 except KeyboardInterrupt:
     print("테스트 종료.")
