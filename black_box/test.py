@@ -124,7 +124,7 @@ def main():
             if len(video_files) > 100:
                 os.remove(video_files.popleft())
             x, y, z = get_acceleration()  # 센서 데이터 읽기
-            if abs(x) > 1.5 or abs(y) > 1.5 or abs(z) > 1.5:  # 가속도 임계값 초과 감지
+            if abs(x) > 0.5 or abs(y) > 0.5 or abs(z) > 0.5:  # 가속도 임계값 초과 감지
                 print("충격 감지! 이벤트 저장 및 업로드 시작")
                 event_filename = capture_event(os.path.dirname(__file__), current_time)
                 upload_file_to_ftp(event_filename)
