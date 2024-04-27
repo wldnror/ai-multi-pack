@@ -94,11 +94,13 @@ def main():
             video_files.append(output_file)
             if len(video_files) > 100:  # 더 이상 필요 없는 파일 삭제
                 os.remove(video_files.popleft())
+            # 감지 로직은 별도의 센서 데이터로부터 받는 것으로 가정
             input_value = int(input("가속도 값 입력 (0-65535): "))
             if input_value > 15000:
-                print("충격 감지! 파일 업로드")
-                upload_file_to_ftp(output_file)
-            time.sleep(60)  # 1분 간격
+                print("충격 감지! 이전 파일 업로드")
+                if len(video_files) > 1:  # 가장 최근 파일을 업로드하지 않고, 그 이전 파일을 업로드
+                    upload_file_to_ftp(video_files[-2])
+            time.sleep(60)  # 1분 간격으로 계속 녹화
     except KeyboardInterrupt:
         print("테스트 종료.")
 
