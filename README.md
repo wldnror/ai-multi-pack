@@ -94,13 +94,11 @@ nano ~/.config/systemd/user/pulseaudio-modules.service
 ### 1-3. 다음 내용을 파일에 입력합니다:
 ```bash
 [Unit]
-Description=Load PulseAudio modules and snd-aloop for user
+Description=Load PulseAudio modules for user
 After=pulseaudio.target
 
 [Service]
 Type=oneshot
-# snd-aloop 모듈 로드
-ExecStartPre=/sbin/modprobe snd-aloop
 ExecStart=/bin/sh -c "pactl load-module module-null-sink sink_name=virtual_mic sink_properties=device.description=Virtual_Microphone; pactl load-module module-loopback source=virtual_mic.monitor"
 # 10초 대기 후 기본 싱크 설정
 ExecStartPost=/bin/sleep 10
