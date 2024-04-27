@@ -4,6 +4,28 @@ import configparser
 from ftplib import FTP
 import subprocess
 
+def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
+    try:
+        with FTP(ftp_address) as ftp:
+            ftp.login(ftp_username, ftp_password)
+            # 경로 존재 여부 확인
+            try:
+                ftp.cwd(ftp_target_path)  # 해당 경로로 이동 시도
+                print("FTP 경로 접근 성공!")
+            except Exception as e:
+                # 경로가 존재하지 않을 경우, 생성 시도
+                try:
+                    ftp.mkd(ftp_target_path)  # 경로 생성
+                    ftp.cwd(ftp_target_path)  # 생성 후 경로로 이동
+                    print("경로가 없어 새로 생성했습니다.")
+                except Exception as e:
+                    print(f"경로 생성 실패: {e}")
+                    return False
+            return True
+    except Exception as e:
+        print(f"FTP 접속 실패: {e}")
+        return False
+
 # 설정 파일에서 FTP 정보를 읽어옴
 def read_ftp_config():
     config = configparser.ConfigParser()
@@ -14,16 +36,25 @@ def read_ftp_config():
 
 def init_ftp_config():
     config = configparser.ConfigParser()
-    config['FTP'] = {
-        'ftp_address': input('FTP 주소 입력: '),
-        'ftp_username': input('FTP 사용자 이름 입력: '),
-        'ftp_password': input('FTP 비밀번호 입력: '),
-        'ftp_target_path': input('FTP 대상 경로 입력: ')
-    }
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    with open(config_file_path, 'w') as configfile:
-        config.write(configfile)
+    while True:
+        ftp_address = input('FTP 주소 입력: ')
+        ftp_username = input('FTP 사용자 이름 입력: ')
+        ftp_password = input('FTP 비밀번호 입력: ')
+        ftp_target_path = input('FTP 대상 경로 입력: ')
+        if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
+            config['FTP'] = {
+                'ftp_address': ftp_address,
+                'ftp_username': ftp_username,
+                'ftp_password': ftp_password,
+                'ftp_target_path': ftp_target_path
+            }
+            with open(config_file_path, 'w') as configfile:
+                config.write(configfile)
+            break
+        else:
+            print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
 def check_config_exists():
     script_directory = os.path.dirname(__file__)
