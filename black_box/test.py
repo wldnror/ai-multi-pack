@@ -63,13 +63,7 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-def start_ffmpeg_recording(duration=60):
-    output_directory = os.path.join(os.path.dirname(__file__), 'video')
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-
+def start_ffmpeg_recording(output_filename, duration=60):
     command = [
         'ffmpeg',
         '-f', 'v4l2',
@@ -83,7 +77,6 @@ def start_ffmpeg_recording(duration=60):
         output_filename
     ]
     subprocess.run(command)
-    return output_filename
 
 def upload_file_to_ftp(file_path):
     try:
@@ -112,12 +105,20 @@ def manage_video_files():
 def record_and_upload():
     try:
         while True:
-            print("녹화 시작")
-            output_file = start_ffmpeg_recording()  # 1분 녹화
+            current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+            output_directory = os.path.join(os.path.dirname(__file__), 'video')
+            if not os.path.exists(output_directory):
+                os.makedirs(output_directory)
+            output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+            
+            print(f"녹화 시작: {current_time}")
+            start_ffmpeg_recording(output_filename)  # 1분 녹화
+            
             time.sleep(60)  # 1분 대기
-            if output_file:
-                upload_file_to_ftp(output_file)
-                os.remove(output_file)  # 업로드 후 파일 삭제
+            if os.path.exists(output_filename):
+                upload_file_to_ftp(output_filename)
+                os.remove(output_filename)  # 업로드 후 파일 삭제
+            
             manage_video_files()  # 최대 파일 개수 관리
     except KeyboardInterrupt:
         print("테스트 종료.")
