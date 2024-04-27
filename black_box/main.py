@@ -75,11 +75,11 @@ def start_ffmpeg_recording(duration=30):
     command = [
         'ffmpeg',
         '-f', 'v4l2',
-        '-framerate', '60',
+        '-framerate', '30',
         '-video_size', '1920x1080',
         '-i', '/dev/video0',
         '-c:v', 'libx264',
-        '-preset', 'ultrafast',
+        '-preset', 'veryfast',
         '-crf', '28',
         '-t', str(duration),
         output_filename
