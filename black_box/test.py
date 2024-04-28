@@ -97,7 +97,6 @@ def upload_worker():
         except Exception as e:
             print(f"파일 업로드 중 오류 발생: {e}")
         finally:
-            os.remove(file_path)
             queue.task_done()
 
 def manage_video_files():
