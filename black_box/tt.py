@@ -63,6 +63,7 @@ def start_ffmpeg_recording(output_filename):
     print(f"녹화 완료: {output_filename}")
 
 if __name__ == "__main__":
-    video_directory = '/path/to/video_directory'  # 비디오 파일 디렉터리 경로
+    video_directory = '/home/user/LED/black_box/video'  # 실제 비디오 파일 디렉터리 경로로 수정
     impact_threshold = 10000  # 충격 감지 임계값 설정
     monitor_impact(impact_threshold, video_directory)
+
