@@ -35,11 +35,11 @@ def detect_impact(x, y, z, threshold):
     # 변화가 임계값을 초과하는 경우 True 반환
     return (delta_x + delta_y + delta_z) > threshold
 
-def copy_last_two_videos(output_directory, impact_time):
+def copy_last_two_videos(input_directory, output_directory, impact_time):
     # 가장 최근 두 개의 원본 비디오 파일만 찾아 복사
     video_files = sorted(
-        [f for f in os.listdir(output_directory) if not f.startswith('충격녹화')],
-        key=lambda x: os.path.getmtime(os.path.join(output_directory, x)),
+        os.listdir(input_directory),
+        key=lambda x: os.path.getmtime(os.path.join(input_directory, x)),
         reverse=True
     )
     global recording_in_progress
@@ -47,14 +47,14 @@ def copy_last_two_videos(output_directory, impact_time):
         print("녹화 중인 파일 완료 대기중...")
         time.sleep(1)
 
-    if len(video_files) >= 1:
+    if len(video_files) >= 2:
         for file in video_files[:2]:  # 최근 두 개 파일만 복사
-            src = os.path.join(output_directory, file)
+            src = os.path.join(input_directory, file)
             dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
             shutil.copy(src, dst)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
 
-def monitor_impact(threshold, output_directory):
+def monitor_impact(threshold, input_directory, output_directory):
     init_sensor()
     try:
         while True:
@@ -62,7 +62,7 @@ def monitor_impact(threshold, output_directory):
             if detect_impact(x, y, z, threshold):
                 current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
                 print(f"충격 감지: {current_time}")
-                copy_last_two_videos(output_directory, current_time)
+                copy_last_two_videos(input_directory, output_directory, current_time)
             time.sleep(1)
     except KeyboardInterrupt:
         print("모니터링 중단")
@@ -79,6 +79,9 @@ def start_ffmpeg_recording(output_filename):
     print(f"녹화 완료: {output_filename}")
 
 if __name__ == "__main__":
-    video_directory = '/home/user/LED/black_box/video'  # 실제 비디오 파일 디렉터리 경로로 수정
+    input_directory = os.path.join(os.path.dirname(__file__), 'video', '상시녹화')  # 상시녹화 폴더 경로
+    output_directory = os.path.join(os.path.dirname(__file__), 'video', '충격녹화')  # 충격녹화 폴더 경로
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)  # 충격녹화 폴더가 없으면 생성
     impact_threshold = 10000  # 충격 감지 임계값 설정 (이 값을 실험을 통해 조정할 필요가 있음)
-    monitor_impact(impact_threshold, video_directory)
+    monitor_impact(impact_threshold, input_directory, output_directory)
