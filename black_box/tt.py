@@ -39,7 +39,7 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
     # 디렉토리에서 모든 파일 목록을 가져온 후, .mp4 확장자를 가진 파일만 필터링
     video_files = [
         f for f in os.listdir(input_directory)
-        if f.endswith('.mp4')
+        if f.endswith('.mp4') and f != current_recording_file
     ]
     # 파일의 수정 시간을 기준으로 정렬
     video_files = sorted(
@@ -48,10 +48,14 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
         reverse=True
     )
 
-    # 녹화 중 상태를 확인하며 대기
+    # 녹화 중인 파일 완료 대기
     while recording_in_progress:
         print("녹화 중인 파일 완료 대기중...")
         time.sleep(1)
+
+    # 녹화가 완료된 경우, 파일 리스트에 추가
+    if current_recording_file:
+        video_files.insert(0, current_recording_file)
 
     # 최근 두 개의 비디오 파일만 복사
     if len(video_files) >= 2:
@@ -60,7 +64,6 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
             dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
             shutil.copy(src, dst)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
-
 
 def monitor_impact(threshold, input_directory, output_directory):
     init_sensor()
@@ -84,6 +87,7 @@ def start_ffmpeg_recording(output_filename):
     # 이 부분에 FFmpeg 녹화 명령을 넣으세요
     time.sleep(10)  # 예시로 10초 녹화
     recording_in_progress = False
+    current_recording_file = None
     print(f"녹화 완료: {output_filename}")
 
 if __name__ == "__main__":
