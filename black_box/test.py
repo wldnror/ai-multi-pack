@@ -7,8 +7,30 @@ from threading import Thread, Lock
 from queue import Queue
 import datetime
 from datetime import timedelta
+import smbus2
 
-# FTP 관련 함수
+# 센서 설정 및 데이터 읽기
+DEVICE_ADDRESS = 0x68
+PWR_MGMT_1 = 0x6B
+ACCEL_XOUT_H = 0x3B
+
+def init_mpu6050(bus, address):
+    bus.write_byte_data(address, PWR_MGMT_1, 0)
+
+def read_acceleration(bus, address):
+    raw_data = bus.read_i2c_block_data(address, ACCEL_XOUT_H, 6)
+    accel_x = (raw_data[0] << 8) | raw_data[1]
+    accel_y = (raw_data[2] << 8) | raw_data[3]
+    accel_z = (raw_data[4] << 8) | raw_data[5]
+    return (accel_x, accel_y, accel_z)
+
+def detect_impact(acceleration, threshold=15000):
+    x, y, z = acceleration
+    if abs(x) > threshold or abs(y) > threshold or abs(z) > threshold:
+        return True
+    return False
+
+# FTP 연결 및 설정
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
         with FTP(ftp_address) as ftp:
@@ -67,7 +89,7 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-# 비디오 녹화 관련 함수
+# 비디오 녹화
 def start_ffmpeg_recording(output_filename, duration=60):
     command = [
         'ffmpeg',
@@ -117,25 +139,34 @@ def manage_video_files():
             print(f"파일 {file_to_delete}가 삭제되었습니다.")
 
 # 메인 녹화 및 충격 감지 로직
-def record_and_upload():
+def record_and_upload(bus):
     while True:
-        current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         output_directory = os.path.join(os.path.dirname(__file__), 'video')
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
-        start_ffmpeg_recording(output_filename)
+        start_ffmpeg_recording(output_filename, duration=60)
+        
+        # 충격 감지
+        acceleration = read_acceleration(bus, DEVICE_ADDRESS)
+        if detect_impact(acceleration):
+            print("충격 감지됨! 관련 비디오 처리 시작...")
+            # 충격 관련 파일 처리 및 업로드 로직 구현 필요
         
         manage_video_files()
         queue.put(output_filename)
 
-# 설정 확인 및 스레드 시작
+# 설정 확인 및 센서 초기화
+bus = smbus2.SMBus(1)
+init_mpu6050(bus, DEVICE_ADDRESS)
 check_config_exists()
 
+# 스레드 시작
 uploader_thread = Thread(target=upload_worker)
 uploader_thread.start()
 
-record_thread = Thread(target=record_and_upload)
+record_thread = Thread(target=lambda: record_and_upload(bus))
 record_thread.start()
 
 record_thread.join()
