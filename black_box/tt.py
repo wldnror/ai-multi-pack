@@ -47,11 +47,12 @@ def monitor_impact(threshold, output_directory):
     try:
         while True:
             x, y, z = read_acceleration(address)
-            if abs(x) + abs(y) + abs(z) > threshold:  # 간단한 충격 감지 로직
+            print(f"Acceleration X: {x}, Y: {y}, Z: {z}")  # 센서 데이터 출력
+            if abs(x) + abs(y) + abs(z) > threshold:
                 current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
                 print(f"충격 감지: {current_time}")
                 copy_last_two_videos(output_directory, current_time)
-            time.sleep(1)  # 1초 간격으로 검사
+            time.sleep(1)
     except KeyboardInterrupt:
         print("모니터링 중단")
 
