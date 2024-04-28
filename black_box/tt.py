@@ -35,39 +35,44 @@ def detect_impact(x, y, z, threshold):
     # 변화가 임계값을 초과하는 경우 True 반환
     return (delta_x + delta_y + delta_z) > threshold
 
+def is_file_ready(filepath, timeout=10):
+    # 파일이 완전히 쓰여졌는지 확인하는 함수
+    initial_size = os.path.getsize(filepath)
+    time.sleep(1)
+    for _ in range(timeout):
+        size = os.path.getsize(filepath)
+        if size == initial_size:
+            return True
+        initial_size = size
+        time.sleep(1)
+    return False
+
 def copy_last_two_videos(input_directory, output_directory, impact_time):
-    while True:
-        # 디렉토리에서 .mp4 확장자를 가진 파일만 필터링
-        video_files = [
-            f for f in os.listdir(input_directory)
-            if f.endswith('.mp4')
-        ]
-        # 파일의 수정 시간을 기준으로 정렬
-        video_files = sorted(
-            video_files,
-            key=lambda x: os.path.getmtime(os.path.join(input_directory, x)),
-            reverse=True
-        )
+    video_files = [
+        f for f in os.listdir(input_directory)
+        if f.endswith('.mp4')
+    ]
+    video_files = sorted(
+        video_files,
+        key=lambda x: os.path.getmtime(os.path.join(input_directory, x)),
+        reverse=True
+    )
 
-        # 녹화 중인 파일이 완료될 때까지 대기
-        if recording_in_progress and current_recording_file in video_files:
-            print("녹화 중인 파일 완료 대기중...")
-            time.sleep(1)
-            continue  # 녹화 중 상태 확인 후 계속 대기
+    # 녹화 중인 파일 완료 대기
+    while recording_in_progress:
+        print("녹화 중인 파일 완료 대기중...")
+        time.sleep(1)
 
-        # 녹화가 완료된 경우, 파일 리스트에 추가
-        if current_recording_file and current_recording_file not in video_files:
-            video_files.insert(0, current_recording_file)
-
-        # 최근 두 개의 비디오 파일만 복사
-        if len(video_files) >= 2:
-            for file in video_files[:2]:
-                src = os.path.join(input_directory, file)
-                dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
-                shutil.copy(src, dst)
-                print(f"파일 {file}이 {dst}로 복사되었습니다.")
-            break  # 파일 복사 후 반복문 종료
-
+    copied_files = 0
+    for file in video_files:
+        if copied_files >= 2:
+            break
+        file_path = os.path.join(input_directory, file)
+        if is_file_ready(file_path):
+            dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
+            shutil.copy(file_path, dst)
+            print(f"파일 {file}이 {dst}로 복사되었습니다.")
+            copied_files += 1
 
 def monitor_impact(threshold, input_directory, output_directory):
     init_sensor()
@@ -86,18 +91,16 @@ def start_ffmpeg_recording(output_filename):
     global recording_in_progress, current_recording_file
     recording_in_progress = True
     current_recording_file = output_filename
-    # FFmpeg 녹화 시작 명령어 (실제 코드에서는 subprocess 등을 사용할 것)
     print(f"녹화 시작: {output_filename}")
-    # 이 부분에 FFmpeg 녹화 명령을 넣으세요
     time.sleep(10)  # 예시로 10초 녹화
     recording_in_progress = False
     current_recording_file = None
     print(f"녹화 완료: {output_filename}")
 
 if __name__ == "__main__":
-    input_directory = os.path.join(os.path.dirname(__file__), 'video', '상시녹화')  # 상시녹화 폴더 경로
-    output_directory = os.path.join(os.path.dirname(__file__), 'video', '충격녹화')  # 충격녹화 폴더 경로
+    input_directory = os.path.join(os.path.dirname(__file__), 'video', '상시녹화')
+    output_directory = os.path.join(os.path.dirname(__file__), 'video', '충격녹화')
     if not os.path.exists(output_directory):
-        os.makedirs(output_directory)  # 충격녹화 폴더가 없으면 생성
-    impact_threshold = 80000  # 충격 감지 임계값 설정 (이 값을 실험을 통해 조정할 필요가 있음)
+        os.makedirs(output_directory)
+    impact_threshold = 80000
     monitor_impact(impact_threshold, input_directory, output_directory)
