@@ -11,6 +11,7 @@ address = 0x68       # MPU-6050의 I2C 주소
 current_recording_file = None
 recording_in_progress = False
 last_x, last_y, last_z = 0, 0, 0
+copied_files_list = set()  # 복사된 파일 목록 관리
 
 def read_acceleration(addr):
     # 레지스터에서 가속도 데이터 읽기
@@ -68,9 +69,10 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
         if copied_files >= 2:
             break
         file_path = os.path.join(input_directory, file)
-        if is_file_ready(file_path):
+        if is_file_ready(file_path) and file not in copied_files_list:
             dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
             shutil.copy(file_path, dst)
+            copied_files_list.add(file)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
             copied_files += 1
 
