@@ -5,7 +5,10 @@ from ftplib import FTP
 import subprocess
 from threading import Thread, Lock
 from queue import Queue
+import datetime
+from datetime import timedelta
 
+# FTP 관련 함수
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
         with FTP(ftp_address) as ftp:
@@ -64,6 +67,7 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
+# 비디오 녹화 관련 함수
 def start_ffmpeg_recording(output_filename, duration=60):
     command = [
         'ffmpeg',
@@ -79,6 +83,7 @@ def start_ffmpeg_recording(output_filename, duration=60):
     ]
     subprocess.run(command)
 
+# 파일 업로드 및 관리
 queue = Queue()
 lock = Lock()
 
@@ -111,6 +116,7 @@ def manage_video_files():
             os.remove(file_to_delete)
             print(f"파일 {file_to_delete}가 삭제되었습니다.")
 
+# 메인 녹화 및 충격 감지 로직
 def record_and_upload():
     while True:
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
@@ -123,6 +129,7 @@ def record_and_upload():
         manage_video_files()
         queue.put(output_filename)
 
+# 설정 확인 및 스레드 시작
 check_config_exists()
 
 uploader_thread = Thread(target=upload_worker)
