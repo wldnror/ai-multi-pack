@@ -25,6 +25,8 @@ def shock_event_handler(file_path):
             # 필요한 경우 FTP 업로드 등 다른 작업 수행 가능
 
 # 충격 감지 스레드 시작
-shock_thread = Thread(target=shock_event_handler, args=(os.path.dirname(__file__),))
+file_path = '/home/user/LED/black_box/video/'
+shock_thread = Thread(target=shock_event_handler, args=(file_path,))
 shock_thread.start()
 
+# 기존 코드 유지
