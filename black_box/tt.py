@@ -5,7 +5,8 @@ from threading import Thread
 from queue import Queue
 from mpu6050 import mpu6050  # MPU-6050 센서 라이브러리
 
-# 기존 코드 유지
+# 충격 감지 기준값 설정
+threshold = 10  # 필요에 따라 조정
 
 def shock_event_handler():
     sensor = mpu6050(0x68)  # MPU-6050 센서 객체 생성
