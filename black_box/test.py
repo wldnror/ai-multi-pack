@@ -113,12 +113,12 @@ def record_and_upload():
             
             print(f"녹화 시작: {current_time}")
             start_ffmpeg_recording(output_filename)  # 1분 녹화
-            
-            time.sleep(0)  # 1분 대기
+
+            # 바로 다음 녹화 시작 전에 파일을 FTP로 업로드하고, 파일 관리
             if os.path.exists(output_filename):
                 upload_file_to_ftp(output_filename)
                 os.remove(output_filename)  # 업로드 후 파일 삭제
-            
+
             manage_video_files()  # 최대 파일 개수 관리
     except KeyboardInterrupt:
         print("테스트 종료.")
