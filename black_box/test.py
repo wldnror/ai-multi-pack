@@ -3,7 +3,8 @@ import time
 import configparser
 from ftplib import FTP
 import subprocess
-from threading import Thread
+from threading import Thread, Lock
+from queue import Queue
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -78,54 +79,59 @@ def start_ffmpeg_recording(output_filename, duration=60):
     ]
     subprocess.run(command)
 
-def upload_file_to_ftp(file_path):
-    try:
-        ftp_info = read_ftp_config()
-        ftp = FTP(ftp_info['ftp_address'])
-        ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
-        with open(file_path, 'rb') as file:
-            ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
-        print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
-    except Exception as e:
-        print(f"파일 업로드 중 오류 발생: {e}")
-    finally:
-        ftp.quit()
+queue = Queue()
+lock = Lock()
+
+def upload_worker():
+    while True:
+        file_path = queue.get()
+        if file_path is None:
+            break
+        try:
+            ftp_info = read_ftp_config()
+            with FTP(ftp_info['ftp_address']) as ftp:
+                ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
+                with open(file_path, 'rb') as file:
+                    ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+                print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
+        except Exception as e:
+            print(f"파일 업로드 중 오류 발생: {e}")
+        finally:
+            os.remove(file_path)
+            queue.task_done()
 
 def manage_video_files():
     output_directory = os.path.join(os.path.dirname(__file__), 'video')
     if not os.path.exists(output_directory):
-        return
+        os.makedirs(output_directory)
 
-    video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
-    while len(video_files) > 100:
-        file_to_delete = os.path.join(output_directory, video_files.pop(0))
-        os.remove(file_to_delete)
-        print(f"파일 {file_to_delete}가 삭제되었습니다.")
+    with lock:
+        video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
+        while len(video_files) > 100:
+            file_to_delete = os.path.join(output_directory, video_files.pop(0))
+            os.remove(file_to_delete)
+            print(f"파일 {file_to_delete}가 삭제되었습니다.")
 
 def record_and_upload():
-    try:
-        while True:
-            current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-            output_directory = os.path.join(os.path.dirname(__file__), 'video')
-            if not os.path.exists(output_directory):
-                os.makedirs(output_directory)
-            output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-            
-            print(f"녹화 시작: {current_time}")
-            start_ffmpeg_recording(output_filename)  # 1분 녹화
-
-            # 바로 다음 녹화 시작 전에 파일을 FTP로 업로드하고, 파일 관리
-            if os.path.exists(output_filename):
-                upload_file_to_ftp(output_filename)
-                os.remove(output_filename)  # 업로드 후 파일 삭제
-
-            manage_video_files()  # 최대 파일 개수 관리
-    except KeyboardInterrupt:
-        print("테스트 종료.")
+    while True:
+        current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+        output_directory = os.path.join(os.path.dirname(__file__), 'video')
+        output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+        
+        print(f"녹화 시작: {current_time}")
+        start_ffmpeg_recording(output_filename)
+        
+        manage_video_files()
+        queue.put(output_filename)
 
 check_config_exists()
 
-# 파일 업로드를 별도의 스레드로 처리
-upload_thread = Thread(target=record_and_upload)
-upload_thread.start()
-upload_thread.join()  # 메인 스레드 종료를 대기합니다.
+uploader_thread = Thread(target=upload_worker)
+uploader_thread.start()
+
+record_thread = Thread(target=record_and_upload)
+record_thread.start()
+
+record_thread.join()
+queue.put(None)
+uploader_thread.join()
