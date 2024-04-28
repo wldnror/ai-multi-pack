@@ -69,12 +69,17 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
         if copied_files >= 2:
             break
         file_path = os.path.join(input_directory, file)
-        if is_file_ready(file_path) and file not in copied_files_list:
+        file_mod_time = os.path.getmtime(file_path)
+
+        # 파일 이름과 수정 시간을 기반으로 복사된 파일인지 확인
+        file_identifier = (file, file_mod_time)
+        if is_file_ready(file_path) and file_identifier not in copied_files_list:
             dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
             shutil.copy(file_path, dst)
-            copied_files_list.add(file)
+            copied_files_list.add(file_identifier)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
             copied_files += 1
+
 
 def monitor_impact(threshold, input_directory, output_directory):
     init_sensor()
