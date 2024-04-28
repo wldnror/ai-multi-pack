@@ -7,9 +7,10 @@ import os
 bus = smbus.SMBus(1)  # Raspberry Pi의 I2C 인터페이스 사용
 address = 0x68       # MPU-6050의 I2C 주소
 
-# 파일 상태 관리를 위한 전역 변수
+# 파일 상태 관리 및 가속도 이전 값 저장을 위한 전역 변수
 current_recording_file = None
 recording_in_progress = False
+last_x, last_y, last_z = 0, 0, 0
 
 def read_acceleration(addr):
     # 레지스터에서 가속도 데이터 읽기
@@ -22,6 +23,17 @@ def read_acceleration(addr):
 def init_sensor():
     # MPU-6050 초기화
     bus.write_byte_data(address, 0x6B, 0)  # 장치 활성화
+
+def detect_impact(x, y, z, threshold):
+    global last_x, last_y, last_z
+    # 가속도 변화 계산
+    delta_x = abs(x - last_x)
+    delta_y = abs(y - last_y)
+    delta_z = abs(z - last_z)
+    # 이전 값을 현재 값으로 업데이트
+    last_x, last_y, last_z = x, y, z
+    # 변화가 임계값을 초과하는 경우 True 반환
+    return (delta_x + delta_y + delta_z) > threshold
 
 def copy_last_two_videos(output_directory, impact_time):
     # 가장 최근 두 개의 원본 비디오 파일만 찾아 복사
@@ -47,8 +59,7 @@ def monitor_impact(threshold, output_directory):
     try:
         while True:
             x, y, z = read_acceleration(address)
-            print(f"Acceleration X: {x}, Y: {y}, Z: {z}")  # 센서 데이터 출력
-            if abs(x) + abs(y) + abs(z) > threshold:
+            if detect_impact(x, y, z, threshold):
                 current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
                 print(f"충격 감지: {current_time}")
                 copy_last_two_videos(output_directory, current_time)
@@ -69,6 +80,5 @@ def start_ffmpeg_recording(output_filename):
 
 if __name__ == "__main__":
     video_directory = '/home/user/LED/black_box/video'  # 실제 비디오 파일 디렉터리 경로로 수정
-    impact_threshold = 10000  # 충격 감지 임계값 설정
+    impact_threshold = 10000  # 충격 감지 임계값 설정 (이 값을 실험을 통해 조정할 필요가 있음)
     monitor_impact(impact_threshold, video_directory)
-
