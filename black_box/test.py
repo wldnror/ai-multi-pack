@@ -22,13 +22,17 @@ def read_acceleration(bus, address):
     accel_x = (raw_data[0] << 8) | raw_data[1]
     accel_y = (raw_data[2] << 8) | raw_data[3]
     accel_z = (raw_data[4] << 8) | raw_data[5]
+    print(f"Read acceleration data - X: {accel_x}, Y: {accel_y}, Z: {accel_z}")  # 로그 추가
     return (accel_x, accel_y, accel_z)
 
 def detect_impact(acceleration, threshold=15000):
     x, y, z = acceleration
+    print(f"Checking impact - X: {x}, Y: {y}, Z: {z}, Threshold: {threshold}")  # 로그 추가
     if abs(x) > threshold or abs(y) > threshold or abs(z) > threshold:
+        print("Impact detected!")  # 충격 감지시 로그
         return True
     return False
+
 
 # FTP 연결 및 설정
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
