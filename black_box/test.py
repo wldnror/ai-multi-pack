@@ -21,14 +21,11 @@ def read_acceleration(bus, address):
     accel_x = (raw_data[0] << 8) | raw_data[1]
     accel_y = (raw_data[2] << 8) | raw_data[3]
     accel_z = (raw_data[4] << 8) | raw_data[5]
-    print(f"Read acceleration data - X: {accel_x}, Y: {accel_y}, Z: {accel_z}")
     return (accel_x, accel_y, accel_z)
 
 def detect_impact(acceleration, threshold=15000):
     x, y, z = acceleration
-    print(f"Checking impact - X: {x}, Y: {y}, Z: {z}, Threshold: {threshold}")
     if abs(x) > threshold or abs(y) > threshold or abs(z) > threshold:
-        print("Impact detected!")
         return True
     return False
 
@@ -37,17 +34,12 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
     try:
         with FTP(ftp_address) as ftp:
             ftp.login(ftp_username, ftp_password)
-            try:
-                ftp.cwd(ftp_target_path)
+            if ftp.cwd(ftp_target_path):
                 print("FTP 경로 접근 성공!")
-            except Exception as e:
-                try:
-                    ftp.mkd(ftp_target_path)
-                    ftp.cwd(ftp_target_path)
-                    print("경로가 없어 새로 생성했습니다.")
-                except Exception as e:
-                    print(f"경로 생성 실패: {e}")
-                    return False
+            else:
+                ftp.mkd(ftp_target_path)
+                ftp.cwd(ftp_target_path)
+                print("경로가 없어 새로 생성했습니다.")
             return True
     except Exception as e:
         print(f"FTP 접속 실패: {e}")
@@ -64,23 +56,22 @@ def init_ftp_config():
     config = configparser.ConfigParser()
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    while True:
-        ftp_address = input('FTP 주소 입력: ')
-        ftp_username = input('FTP 사용자 이름 입력: ')
-        ftp_password = input('FTP 비밀번호 입력: ')
-        ftp_target_path = input('FTP 대상 경로 입력: ')
-        if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
-            config['FTP'] = {
-                'ftp_address': ftp_address,
-                'ftp_username': ftp_username,
-                'ftp_password': ftp_password,
-                'ftp_target_path': ftp_target_path
-            }
-            with open(config_file_path, 'w') as configfile:
-                config.write(configfile)
-            break
-        else:
-            print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
+    ftp_address = input('FTP 주소 입력: ')
+    ftp_username = input('FTP 사용자 이름 입력: ')
+    ftp_password = input('FTP 비밀번호 입력: ')
+    ftp_target_path = input('FTP 대상 경로 입력: ')
+    if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
+        config['FTP'] = {
+            'ftp_address': ftp_address,
+            'ftp_username': ftp_username,
+            'ftp_password': ftp_password,
+            'ftp_target_path': ftp_target_path
+        }
+        with open(config_file_path, 'w') as configfile:
+            config.write(configfile)
+        print("FTP 설정 파일 생성 완료.")
+    else:
+        print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
 def check_config_exists():
     script_directory = os.path.dirname(__file__)
@@ -140,35 +131,16 @@ def manage_video_files():
             os.remove(file_to_delete)
             print(f"파일 {file_to_delete}가 삭제되었습니다.")
 
-# 메인 녹화 및 충격 감지 로직
-def record_and_upload(bus):
-    output_directory = os.path.join(os.path.dirname(__file__), 'video')
-    while True:
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-        
-        print(f"녹화 시작: {current_time}")
-        start_ffmpeg_recording(output_filename, duration=60)
-        
-        manage_video_files()
-
-        # 충격 감지
-        acceleration = read_acceleration(bus, DEVICE_ADDRESS)
-        if detect_impact(acceleration):
-            print("충격 감지됨! 관련 비디오 처리 시작...")
-            # 여기에 충격 관련 파일 처리 및 업로드 로직 구현 필요
-            def upload_impact_videos(queue, output_directory, current_time):
+def upload_impact_videos(queue, output_directory, current_time):
     video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
-    # 현재 파일을 기준으로 과거, 현재, 미래 파일 경로를 구하기
     current_index = video_files.index(f'video_{current_time}.mp4')
     files_to_upload = []
-    if current_index > 0:  # 과거 파일이 존재하는 경우
+    if current_index > 0:
         files_to_upload.append(video_files[current_index - 1])
-    files_to_upload.append(video_files[current_index])  # 현재 파일
-    if current_index + 1 < len(video_files):  # 미래 파일이 존재하는 경우
+    files_to_upload.append(video_files[current_index])
+    if current_index + 1 < len(video_files):
         files_to_upload.append(video_files[current_index + 1])
-    
-    # 해당 파일들을 업로드 큐에 추가
+
     for file in files_to_upload:
         queue.put(os.path.join(output_directory, file))
 
@@ -180,15 +152,11 @@ def record_and_upload(bus):
         start_ffmpeg_recording(output_filename, duration=60)
         manage_video_files()
 
-        # 충격 감지 및 파일 업로드
         acceleration = read_acceleration(bus, DEVICE_ADDRESS)
         if detect_impact(acceleration):
             print("충격 감지됨! 관련 비디오 처리 시작...")
             upload_impact_videos(queue, output_directory, current_time)
-        
-        queue.put(output_filename)
 
-        
         queue.put(output_filename)
 
 # 설정 확인 및 센서 초기화
