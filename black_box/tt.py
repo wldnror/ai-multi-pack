@@ -24,15 +24,19 @@ def init_sensor():
     bus.write_byte_data(address, 0x6B, 0)  # 장치 활성화
 
 def copy_last_two_videos(output_directory, impact_time):
-    # 가장 최근 두 개의 비디오 파일을 찾아 복사
-    video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getmtime(os.path.join(output_directory, x)), reverse=True)
+    # 가장 최근 두 개의 원본 비디오 파일만 찾아 복사
+    video_files = sorted(
+        [f for f in os.listdir(output_directory) if not f.startswith('충격녹화')],
+        key=lambda x: os.path.getmtime(os.path.join(output_directory, x)),
+        reverse=True
+    )
     global recording_in_progress
     while recording_in_progress:
         print("녹화 중인 파일 완료 대기중...")
         time.sleep(1)
-    
+
     if len(video_files) >= 1:
-        for file in video_files[:2]:
+        for file in video_files[:2]:  # 최근 두 개 파일만 복사
             src = os.path.join(output_directory, file)
             dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
             shutil.copy(src, dst)
