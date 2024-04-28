@@ -21,10 +21,10 @@ def log_system_status(path, threshold):
     # 온도나 사용량이 임계값을 초과하는 경우에만 기록
     if cpu_temp > threshold['temp'] or cpu_usage > threshold['cpu'] or memory.percent > threshold['memory']:
         with open(path, "a") as file:
-            file.write(f"{datetime.datetime.now()}, CPU Temp: {cpu_temp}C, CPU Usage: {cpu_usage}%, Memory Usage: {memory.percent}%\n")
+            file.write(f"{datetime.datetime.now()}, CPU 온도: {cpu_temp}C, CPU 사용량: {cpu_usage}%, 메모리 사용량: {memory.percent}%\n")
 
     # 실시간으로 모니터링 값을 출력
-    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - CPU Temp: {cpu_temp}C, CPU Usage: {cpu_usage}%, Memory Usage: {memory.percent}%")
+    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - CPU 온도: {cpu_temp}C, CPU 사용량: {cpu_usage}%, 메모리 사용량: {memory.percent}%")
 
 def main():
     log_path = "system_status.log"
