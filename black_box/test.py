@@ -114,7 +114,7 @@ def record_and_upload():
             print(f"녹화 시작: {current_time}")
             start_ffmpeg_recording(output_filename)  # 1분 녹화
             
-            time.sleep(60)  # 1분 대기
+            time.sleep(0)  # 1분 대기
             if os.path.exists(output_filename):
                 upload_file_to_ftp(output_filename)
                 os.remove(output_filename)  # 업로드 후 파일 삭제
