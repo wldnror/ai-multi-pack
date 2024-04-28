@@ -83,5 +83,5 @@ if __name__ == "__main__":
     output_directory = os.path.join(os.path.dirname(__file__), 'video', '충격녹화')  # 충격녹화 폴더 경로
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)  # 충격녹화 폴더가 없으면 생성
-    impact_threshold = 150000  # 충격 감지 임계값 설정 (이 값을 실험을 통해 조정할 필요가 있음)
+    impact_threshold = 100000  # 충격 감지 임계값 설정 (이 값을 실험을 통해 조정할 필요가 있음)
     monitor_impact(impact_threshold, input_directory, output_directory)
