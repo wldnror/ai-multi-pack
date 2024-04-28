@@ -66,7 +66,7 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
 
     copied_files = 0
     for file in video_files:
-        if copied_files >= 2:
+        if copied_files >= 1:
             break
         file_path = os.path.join(input_directory, file)
         file_mod_time = os.path.getmtime(file_path)
