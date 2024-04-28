@@ -3,6 +3,9 @@ import pulsectl
 pulse = pulsectl.Pulse('audio-stream-manager')
 
 def move_all_loopback_streams(descriptions):
+    # 모든 설명을 소문자로 변환하고 공백을 제거
+    normalized_descriptions = [desc.lower().replace(" ", "") for desc in descriptions]
+    
     try:
         sinks = pulse.sink_list()
         sink_inputs = pulse.sink_input_list()
@@ -14,9 +17,10 @@ def move_all_loopback_streams(descriptions):
 
         # 원하는 싱크 찾기
         target_sink = None
-        for description in descriptions:
-            target_sink = next((sink for sink in sinks if description in sink.description), None)
-            if target_sink:
+        for sink in sinks:
+            normalized_desc = sink.description.lower().replace(" ", "")
+            if any(desc in normalized_desc for desc in normalized_descriptions):
+                target_sink = sink
                 break
 
         if not target_sink:
