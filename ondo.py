@@ -33,7 +33,7 @@ def main():
 
     while True:
         log_system_status(log_path, thresholds)
-        time.sleep(10)  # 60초 간격으로 체크
+        time.sleep(5)  # 60초 간격으로 체크
 
 if __name__ == "__main__":
     main()
