@@ -1,12 +1,11 @@
 import os
 import time
+import datetime
 import configparser
 from ftplib import FTP
 import subprocess
 from threading import Thread, Lock
 from queue import Queue
-import datetime
-from datetime import timedelta
 import smbus2
 
 # 센서 설정 및 데이터 읽기
@@ -22,17 +21,16 @@ def read_acceleration(bus, address):
     accel_x = (raw_data[0] << 8) | raw_data[1]
     accel_y = (raw_data[2] << 8) | raw_data[3]
     accel_z = (raw_data[4] << 8) | raw_data[5]
-    print(f"Read acceleration data - X: {accel_x}, Y: {accel_y}, Z: {accel_z}")  # 로그 추가
+    print(f"Read acceleration data - X: {accel_x}, Y: {accel_y}, Z: {accel_z}")
     return (accel_x, accel_y, accel_z)
 
 def detect_impact(acceleration, threshold=15000):
     x, y, z = acceleration
-    print(f"Checking impact - X: {x}, Y: {y}, Z: {z}, Threshold: {threshold}")  # 로그 추가
+    print(f"Checking impact - X: {x}, Y: {y}, Z: {z}, Threshold: {threshold}")
     if abs(x) > threshold or abs(y) > threshold or abs(z) > threshold:
-        print("Impact detected!")  # 충격 감지시 로그
+        print("Impact detected!")
         return True
     return False
-
 
 # FTP 연결 및 설정
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
@@ -144,21 +142,53 @@ def manage_video_files():
 
 # 메인 녹화 및 충격 감지 로직
 def record_and_upload(bus):
+    output_directory = os.path.join(os.path.dirname(__file__), 'video')
     while True:
         current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_directory = os.path.join(os.path.dirname(__file__), 'video')
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
         start_ffmpeg_recording(output_filename, duration=60)
         
+        manage_video_files()
+
         # 충격 감지
         acceleration = read_acceleration(bus, DEVICE_ADDRESS)
         if detect_impact(acceleration):
             print("충격 감지됨! 관련 비디오 처리 시작...")
-            # 충격 관련 파일 처리 및 업로드 로직 구현 필요
-        
+            # 여기에 충격 관련 파일 처리 및 업로드 로직 구현 필요
+            def upload_impact_videos(queue, output_directory, current_time):
+    video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
+    # 현재 파일을 기준으로 과거, 현재, 미래 파일 경로를 구하기
+    current_index = video_files.index(f'video_{current_time}.mp4')
+    files_to_upload = []
+    if current_index > 0:  # 과거 파일이 존재하는 경우
+        files_to_upload.append(video_files[current_index - 1])
+    files_to_upload.append(video_files[current_index])  # 현재 파일
+    if current_index + 1 < len(video_files):  # 미래 파일이 존재하는 경우
+        files_to_upload.append(video_files[current_index + 1])
+    
+    # 해당 파일들을 업로드 큐에 추가
+    for file in files_to_upload:
+        queue.put(os.path.join(output_directory, file))
+
+def record_and_upload(bus):
+    output_directory = os.path.join(os.path.dirname(__file__), 'video')
+    while True:
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+        start_ffmpeg_recording(output_filename, duration=60)
         manage_video_files()
+
+        # 충격 감지 및 파일 업로드
+        acceleration = read_acceleration(bus, DEVICE_ADDRESS)
+        if detect_impact(acceleration):
+            print("충격 감지됨! 관련 비디오 처리 시작...")
+            upload_impact_videos(queue, output_directory, current_time)
+        
+        queue.put(output_filename)
+
+        
         queue.put(output_filename)
 
 # 설정 확인 및 센서 초기화
