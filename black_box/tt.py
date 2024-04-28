@@ -36,23 +36,31 @@ def detect_impact(x, y, z, threshold):
     return (delta_x + delta_y + delta_z) > threshold
 
 def copy_last_two_videos(input_directory, output_directory, impact_time):
-    # 가장 최근 두 개의 원본 비디오 파일만 찾아 복사
+    # 디렉토리에서 모든 파일 목록을 가져온 후, .mp4 확장자를 가진 파일만 필터링
+    video_files = [
+        f for f in os.listdir(input_directory)
+        if f.endswith('.mp4')
+    ]
+    # 파일의 수정 시간을 기준으로 정렬
     video_files = sorted(
-        os.listdir(input_directory),
+        video_files,
         key=lambda x: os.path.getmtime(os.path.join(input_directory, x)),
         reverse=True
     )
-    global recording_in_progress
+
+    # 녹화 중 상태를 확인하며 대기
     while recording_in_progress:
         print("녹화 중인 파일 완료 대기중...")
         time.sleep(1)
 
+    # 최근 두 개의 비디오 파일만 복사
     if len(video_files) >= 2:
-        for file in video_files[:2]:  # 최근 두 개 파일만 복사
+        for file in video_files[:2]:
             src = os.path.join(input_directory, file)
             dst = os.path.join(output_directory, f"충격녹화_{impact_time}_{file}")
             shutil.copy(src, dst)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
+
 
 def monitor_impact(threshold, input_directory, output_directory):
     init_sensor()
