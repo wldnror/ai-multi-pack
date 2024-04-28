@@ -100,7 +100,7 @@ def upload_worker():
             queue.task_done()
 
 def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+    output_directory = os.path.join(os.path.dirname(__file__), 'video', '상시녹화')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -114,7 +114,7 @@ def manage_video_files():
 def record_and_upload():
     while True:
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-        output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+        output_directory = os.path.join(os.path.dirname(__file__), 'video', '상시녹화')
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
