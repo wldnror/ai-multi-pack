@@ -13,6 +13,39 @@ DEVICE_ADDRESS = 0x68
 PWR_MGMT_1 = 0x6B
 ACCEL_XOUT_H = 0x3B
 
+def create_impact_directory(ftp, base_path, impact_time):
+    # 충격 감지 시 새 디렉토리 생성
+    new_dir = f"{base_path}/Impact_{impact_time}"
+    try:
+        ftp.cwd(new_dir)  # 시도: 디렉토리가 이미 있는지 확인
+    except:
+        ftp.mkd(new_dir)  # 없으면 생성
+        ftp.cwd(new_dir)  # 생성된 디렉토리로 이동
+    return new_dir
+
+def upload_impact_videos(queue, output_directory, current_time):
+    video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
+    current_index = video_files.index(f'video_{current_time}.mp4')
+    files_to_upload = []
+    if current_index > 0:
+        files_to_upload.append(video_files[current_index - 1])
+    files_to_upload.append(video_files[current_index])
+    if current_index + 1 < len(video_files):
+        files_to_upload.append(video_files[current_index + 1])
+
+    ftp_info = read_ftp_config()
+    with FTP(ftp_info['ftp_address']) as ftp:
+        ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
+        impact_dir = create_impact_directory(ftp, ftp_info['ftp_target_path'], current_time)
+
+        for file in files_to_upload:
+            local_path = os.path.join(output_directory, file)
+            remote_path = f"{impact_dir}/{file}"
+            with open(local_path, 'rb') as file_content:
+                ftp.storbinary(f"STOR {remote_path}", file_content)
+            print(f"파일 {file}가 {impact_dir}에 성공적으로 업로드되었습니다.")
+
+
 def init_mpu6050(bus, address):
     bus.write_byte_data(address, PWR_MGMT_1, 0)
 
