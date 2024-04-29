@@ -161,6 +161,7 @@ wget https://raw.githubusercontent.com/AlexeyAB/darknet/master/cfg/yolov4.cfg
 wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -O coco.names
 ```
 </details>
+
 ## 각종 문제 해결 방안
 
 - 라이브러리 설치 실패 시
