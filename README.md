@@ -138,7 +138,7 @@ ffmpeg -f v4l2 -framerate 30 -video_size 1920x1080 -i /dev/video0 output.mp4
 ```
 
 <details>
-  <summary> **객체 인식 훈련 데이터 설치 (클릭하여 펼치기)** </summary>
+  <summary> 객체 인식 훈련 데이터 설치 (클릭하여 펼치기) </summary>
 
 ### YOLOv3 가중치 파일 다운로드
 ```bash
