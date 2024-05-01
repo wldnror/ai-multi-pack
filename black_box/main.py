@@ -31,12 +31,14 @@ class Recorder:
 
     def stop_recording(self):
         if self.process:
+            print("Attempting to stop recording...")
             self.process.terminate()
             try:
-                self.process.wait(timeout=5)
+                # 기다릴 시간을 늘리거나 반복적으로 시도
+                self.process.wait(timeout=10)
             except subprocess.TimeoutExpired:
+                print("Forcefully terminating the recording process.")
                 self.process.kill()
-                self.process.wait()
             finally:
                 self.process = None
                 print("Recording stopped.")
