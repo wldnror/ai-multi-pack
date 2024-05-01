@@ -5,8 +5,8 @@ from ftplib import FTP
 import subprocess
 from threading import Thread, Lock
 from queue import Queue
-import socket
 import socketserver
+import socket
 
 class Recorder:
     def __init__(self):
@@ -49,9 +49,14 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
                 ftp.cwd(ftp_target_path)
                 print("FTP path access successful!")
             except Exception as e:
-                ftp.mkd(ftp_target_path)
-                ftp.cwd(ftp_target_path)
-                print("Path did not exist, created a new one.")
+                try:
+                    ftp.mkd(ftp_target_path)
+                    ftp.cwd(ftp_target_path)
+                    print("Path did not exist, created a new one.")
+                except Exception as e:
+                    print(f"Failed to create path: {e}")
+                    return False
+            return True
     except Exception as e:
         print(f"FTP connection failed: {e}")
         return False
@@ -67,21 +72,32 @@ def init_ftp_config():
     config = configparser.ConfigParser()
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    ftp_address = input('Enter FTP address: ')
-    ftp_username = input('Enter FTP username: ')
-    ftp_password = input('Enter FTP password: ')
-    ftp_target_path = input('Enter FTP target path: ')
-    if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
-        config['FTP'] = {
-            'ftp_address': ftp_address,
-            'ftp_username': ftp_username,
-            'ftp_password': ftp_password,
-            'ftp_target_path': ftp_target_path
-        }
-        with open(config_file_path, 'w') as configfile:
-            config.write(configfile)
+    while True:
+        ftp_address = input('Enter FTP address: ')
+        ftp_username = input('Enter FTP username: ')
+        ftp_password = input('Enter FTP password: ')
+        ftp_target_path = input('Enter FTP target path: ')
+        if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
+            config['FTP'] = {
+                'ftp_address': ftp_address,
+                'ftp_username': ftp_username,
+                'ftp_password': ftp_password,
+                'ftp_target_path': ftp_target_path
+            }
+            with open(config_file_path, 'w') as configfile:
+                config.write(configfile)
+            break
+        else:
+            print("Invalid FTP information. Please try again.")
+
+def check_config_exists():
+    script_directory = os.path.dirname(__file__)
+    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
+    if not os.path.exists(config_file_path):
+        print("FTP configuration file does not exist. Starting configuration.")
+        init_ftp_config()
     else:
-        print("Invalid FTP information. Please try again.")
+        print("Loading existing FTP configuration.")
 
 def manage_video_files(output_directory):
     if not os.path.exists(output_directory):
