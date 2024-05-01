@@ -1,10 +1,11 @@
 # main.py
 
+import socket
+import socketserver
 import subprocess
 import re
 import threading
 import os
-import socket
 
 def get_ip_address():
     try:
@@ -16,15 +17,16 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
-        # Use the exact script path
+        # 스크립트 전체 경로를 정확히 사용
         full_path = os.path.join(os.path.dirname(__file__), process_name)
         subprocess.check_output(['pgrep', '-f', full_path])
         return True
     except subprocess.CalledProcessError:
         return False
 
-def start_process(process_path):
-    subprocess.Popen(['python3', process_path])
+def start_process():
+    script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
+    subprocess.Popen(['python3', script_path])
 
 def send_command_to_process(command):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -33,23 +35,9 @@ def send_command_to_process(command):
 
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
-        self.data = self.request.recv(1024).strip().decode()
-        print(f"TCP server received: {self.data} from {self.client_address}")
-
-        if self.data == "start":
-            global recording
-            if not process_exists('black_box/main.py'):
-                print("black_box/main.py is not running. Starting the process.")
-                start_process('black_box/main.py')
-            else:
-                if not recording:
-                    print("Starting recording.")
-                    send_command_to_process('start')
-                    recording = True
-                else:
-                    print("Stopping recording.")
-                    send_command_to_process('stop')
-                    recording = False
+        self.data = self.request.recv(1024).strip()
+        print(f"TCP server received: {self.data.decode()} from {self.client_address}")
+        self.request.sendall(self.data.upper())
 
 def run_tcp_server():
     host, port = "localhost", 5002
@@ -62,40 +50,40 @@ tcp_server_thread = threading.Thread(target=run_tcp_server)
 tcp_server_thread.daemon = True
 tcp_server_thread.start()
 
-# UDP server setup
+# UDP 서버 설정
 udp_ip = "0.0.0.0"
 udp_port = 12345
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((udp_ip, udp_port))
-print("UDP server has started. Listening...")
+print("UDP 서버가 시작되었습니다. 대기 중...")
 
-recording = False  # Track recording status
+recording = False  # 녹화 상태 추적
 
 while True:
     data, address = sock.recvfrom(1024)
     message = data.decode().strip()
-    print(f"Received message: {message} from {address}")
+    print(f"수신된 메시지: {message} from {address}")
 
     if message == "0003":
         if not process_exists('black_box/main.py'):
-            print("black_box/main.py is not running. Starting the process.")
-            start_process('black_box/main.py')
+            print("main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
+            start_process()
         else:
             if not recording:
-                print("Starting recording.")
+                print("녹화 시작합니다.")
                 send_command_to_process('start')
                 recording = True
             else:
-                print("Stopping recording.")
+                print("녹화 중지합니다.")
                 send_command_to_process('stop')
                 recording = False
         continue
 
     if message.startswith("00"):
-        print(f"Button {message} pressed.")
+        print(f"버튼 {message}가 눌렸습니다.")
         continue
 
     raspberry_pi_ip = get_ip_address()
     if data and raspberry_pi_ip:
-        response = f"This is {raspberry_pi_ip}"
+        response = f"{raspberry_pi_ip} 입니다"
         sock.sendto(response.encode(), address)
