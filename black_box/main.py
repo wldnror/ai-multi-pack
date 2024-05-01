@@ -30,10 +30,19 @@ class Recorder:
 
     def stop_recording(self):
         if self.process:
-            self.process.send_signal(signal.SIGTERM)
-            self.process.wait()
-            self.process = None
-            print("녹화 중지됨")
+            # First try to terminate gracefully
+            self.process.terminate()
+            try:
+                # Wait for up to 5 seconds for the process to terminate
+                self.process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                # If the process does not terminate, force kill it
+                print("Terminating the recording process forcefully.")
+                self.process.kill()
+                self.process.wait()  # Ensure the process has been killed
+            finally:
+                self.process = None
+                print("Recording stopped.")
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
