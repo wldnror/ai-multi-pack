@@ -24,7 +24,12 @@ def process_exists(process_name):
 
 def start_process():
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
-    subprocess.Popen(['python3', script_path])
+    try:
+        subprocess.Popen(['python3', script_path])
+        logging.debug("Process started successfully.")
+    except Exception as e:
+        logging.error(f"Failed to start the process: {e}")
+
 
 def send_command_to_process(command):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
