@@ -104,17 +104,29 @@ def upload_worker():
         file_path = queue.get()
         if file_path is None:
             break
-        try:
-            ftp_info = read_ftp_config()
-            with FTP(ftp_info['ftp_address']) as ftp:
-                ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
-                with open(file_path, 'rb') as file:
-                    ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
-                print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
-        except Exception as e:
-            print(f"파일 업로드 중 오류 발생: {e}")
-        finally:
-            queue.task_done()
+        file_ready = False
+        attempts = 0
+        while not file_ready and attempts < 10:
+            if os.path.exists(file_path):
+                file_ready = True
+            else:
+                time.sleep(1)  # 1초 동안 대기
+                attempts += 1
+
+        if file_ready:
+            try:
+                ftp_info = read_ftp_config()
+                with FTP(ftp_info['ftp_address']) as ftp:
+                    ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
+                    with open(file_path, 'rb') as file:
+                        ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+                    print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
+            except Exception as e:
+                print(f"파일 업로드 중 오류 발생: {e}")
+        else:
+            print(f"파일 {file_path} 생성 실패 후 여러 차례 시도 끝에 포기했습니다.")
+
+        queue.task_done()
 
 def manage_video_files():
     output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
