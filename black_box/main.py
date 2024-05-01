@@ -67,6 +67,15 @@ def check_config_exists():
 class Recorder:
     def __init__(self):
         self.process = None
+        self.recording_thread = None
+
+    def _monitor_recording(self):
+        while True:
+            output = self.process.stderr.readline()
+            if output == '' and self.process.poll() is not None:
+                break
+            if output:
+                print(output.strip())
 
     def start_recording(self, output_filename, duration=60):
         if not self.process:
@@ -82,7 +91,9 @@ class Recorder:
                 '-t', str(duration),
                 output_filename
             ]
-            self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
+            self.recording_thread = threading.Thread(target=self._monitor_recording)
+            self.recording_thread.start()
 
     def stop_recording(self):
         if self.process:
@@ -94,6 +105,7 @@ class Recorder:
                 self.process.wait()
             print("녹화가 종료되었습니다.")
             self.process = None
+            self.recording_thread.join()
 
 recorder = Recorder()
 queue = Queue()
