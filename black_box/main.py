@@ -6,38 +6,6 @@ import subprocess
 from threading import Thread, Lock
 from queue import Queue
 
-class Recorder:
-    def __init__(self):
-        self.process = None
-
-    def start_recording(self, output_filename, duration=60):
-        if not self.process:
-            command = [
-                'ffmpeg',
-                '-f', 'v4l2',
-                '-framerate', '30',
-                '-video_size', '1920x1080',
-                '-i', '/dev/video0',
-                '-c:v', 'libx264',
-                '-preset', 'veryfast',
-                '-crf', '18',
-                '-t', str(duration),
-                output_filename
-            ]
-            self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            print(f"녹화 시작됨: {output_filename}")
-
-    def stop_recording(self):
-        if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
-            print("녹화가 종료되었습니다.")
-            self.process = None
-
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
         with FTP(ftp_address) as ftp:
@@ -96,6 +64,37 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
+class Recorder:
+    def __init__(self):
+        self.process = None
+
+    def start_recording(self, output_filename, duration=60):
+        if not self.process:
+            command = [
+                'ffmpeg',
+                '-f', 'v4l2',
+                '-framerate', '30',
+                '-video_size', '1920x1080',
+                '-i', '/dev/video0',
+                '-c:v', 'libx264',
+                '-preset', 'veryfast',
+                '-crf', '18',
+                '-t', str(duration),
+                output_filename
+            ]
+            self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    def stop_recording(self):
+        if self.process:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+            print("녹화가 종료되었습니다.")
+            self.process = None
+
 recorder = Recorder()
 queue = Queue()
 lock = Lock()
@@ -105,7 +104,16 @@ def upload_worker():
         file_path = queue.get()
         if file_path is None:
             break
-        if os.path.exists(file_path):
+        file_ready = False
+        attempts = 0
+        while not file_ready and attempts < 10:
+            if os.path.exists(file_path):
+                file_ready = True
+            else:
+                time.sleep(1)  # 1초 동안 대기
+                attempts += 1
+
+        if file_ready:
             try:
                 ftp_info = read_ftp_config()
                 with FTP(ftp_info['ftp_address']) as ftp:
@@ -116,7 +124,8 @@ def upload_worker():
             except Exception as e:
                 print(f"파일 업로드 중 오류 발생: {e}")
         else:
-            print(f"파일 {file_path}를 찾을 수 없습니다.")
+            print(f"파일 {file_path} 생성 실패 후 여러 차례 시도 끝에 포기했습니다.")
+
         queue.task_done()
 
 def manage_video_files():
@@ -138,7 +147,7 @@ def record_and_upload():
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
-        recorder.start_recording(output_filename, 60)  # 녹화 시간을 60초로 설정
+        recorder.start_recording(output_filename, 60)  # 녹화 시간을 1뷴으로 설정
         
         manage_video_files()
         queue.put(output_filename)
