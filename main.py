@@ -17,11 +17,15 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
-        # 스크립트 전체 경로를 정확히 사용
+        # 전체 경로 사용
         full_path = os.path.join(os.path.dirname(__file__), process_name)
-        subprocess.check_output(['pgrep', '-f', full_path])
+        # 로그로 전체 경로 출력
+        print("Checking if process exists:", full_path)
+        result = subprocess.check_output(['pgrep', '-f', full_path])
+        print("Process exists:", result)
         return True
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        print("Process not found:", e)
         return False
 
 def start_process():
