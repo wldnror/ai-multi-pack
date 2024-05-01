@@ -14,22 +14,17 @@ def get_ip_address():
         return None
 
 def process_exists(process_name):
-    # 특정 스크립트 경로를 포함하여 실행 중인 프로세스 검색
     try:
-        # Check for process existence using its command line
-        subprocess.check_output(['pgrep', '-f', process_name])
+        # 스크립트 전체 경로를 정확히 사용
+        full_path = os.path.join(os.path.dirname(__file__), process_name)
+        subprocess.check_output(['pgrep', '-f', full_path])
         return True
     except subprocess.CalledProcessError:
         return False
 
 def start_process():
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
-    try:
-        subprocess.Popen(['python3', script_path])
-        logging.debug("Process started successfully.")
-    except Exception as e:
-        logging.error(f"Failed to start the process: {e}")
-
+    subprocess.Popen(['python3', script_path])
 
 def send_command_to_process(command):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -68,7 +63,7 @@ while True:
     print(f"수신된 메시지: {message} from {address}")
 
     if message == "0003":
-        if not process_exists("black_box/main.py"):
+        if not process_exists('black_box/main.py'):
             print("main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
             start_process()
         else:
