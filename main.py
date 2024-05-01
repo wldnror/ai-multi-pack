@@ -15,13 +15,10 @@ def get_ip_address():
     except subprocess.CalledProcessError:
         return None
 
-def process_exists(process_name):
+def process_exists():
     try:
-        # 전체 경로 사용
-        full_path = os.path.join(os.path.dirname(__file__), process_name)
-        # 로그로 전체 경로 출력
-        print("Checking if process exists:", full_path)
-        result = subprocess.check_output(['pgrep', '-f', full_path])
+        # 'main.py'만 검색하여 보다 넓은 범위로 프로세스 존재 여부 확인
+        result = subprocess.check_output(['pgrep', '-f', 'main.py'])
         print("Process exists:", result)
         return True
     except subprocess.CalledProcessError as e:
