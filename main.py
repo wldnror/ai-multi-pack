@@ -31,7 +31,7 @@ while True:
 
     라즈베리파이_ip = get_ip_address()
     if 데이터 and 라즈베리파이_ip:
-        응답 = f"내 IP 주소는 {라즈베리파이_ip}입니다"
+        응답 = f"{라즈베리파이_ip} 입니다"
         소켓.sendto(응답.encode(), 주소)
 
     # 녹화 시작 및 중지 제어
