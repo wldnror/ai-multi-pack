@@ -3,6 +3,11 @@ import subprocess
 import re
 import multiprocessing
 
+# 서브 스크립트 모듈을 명시적으로 임포트
+import serve1
+import serve2
+import serve3
+
 def get_ip_address():
     try:
         결과 = subprocess.check_output(["hostname", "-I"]).decode("utf-8")
@@ -39,7 +44,8 @@ if __name__ == "__main__":
     processes = []
     for i in range(1, 4):  # 예시로 3개의 서브 스크립트를 사용
         parent_conn, child_conn = multiprocessing.Pipe()
-        p = multiprocessing.Process(target=eval(f'serve{i}.run'), args=(child_conn,))
+        module = eval(f'serve{i}')  # 모듈 객체를 가져옴
+        p = multiprocessing.Process(target=module.run, args=(child_conn,))
         p.start()
         processes.append(p)
         conn_dict[i] = parent_conn  # 버튼 번호와 연결
