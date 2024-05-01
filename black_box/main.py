@@ -26,14 +26,14 @@ class Recorder:
                 output_filename
             ]
             self.process = subprocess.Popen(command)
-            print(f"Recording started: {output_filename}")
+            print(f"녹화 시작됨: {output_filename}")
 
     def stop_recording(self):
         if self.process:
             self.process.send_signal(signal.SIGTERM)
             self.process.wait()
             self.process = None
-            print("Recording stopped.")
+            print("녹화 중지됨")
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -41,18 +41,18 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
             ftp.login(ftp_username, ftp_password)
             try:
                 ftp.cwd(ftp_target_path)
-                print("FTP path access successful!")
+                print("FTP 경로 접근 성공!")
             except Exception as e:
                 try:
                     ftp.mkd(ftp_target_path)
                     ftp.cwd(ftp_target_path)
-                    print("Created new directory as it did not exist.")
+                    print("경로가 없어 새로 생성했습니다.")
                 except Exception as e:
-                    print(f"Failed to create directory: {e}")
+                    print(f"경로 생성 실패: {e}")
                     return False
             return True
     except Exception as e:
-        print(f"FTP connection failed: {e}")
+        print(f"FTP 접속 실패: {e}")
         return False
 
 def read_ftp_config():
@@ -67,10 +67,10 @@ def init_ftp_config():
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     while True:
-        ftp_address = input('Enter FTP address: ')
-        ftp_username = input('Enter FTP username: ')
-        ftp_password = input('Enter FTP password: ')
-        ftp_target_path = input('Enter FTP target path: ')
+        ftp_address = input('FTP 주소 입력: ')
+        ftp_username = input('FTP 사용자 이름 입력: ')
+        ftp_password = input('FTP 비밀번호 입력: ')
+        ftp_target_path = input('FTP 대상 경로 입력: ')
         if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
             config['FTP'] = {
                 'ftp_address': ftp_address,
@@ -82,19 +82,18 @@ def init_ftp_config():
                 config.write(configfile)
             break
         else:
-            print("Incorrect FTP details. Please re-enter.")
+            print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
 def check_config_exists():
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     if not os.path.exists(config_file_path):
-        print("FTP configuration file does not exist. Starting configuration.")
+        print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
         init_ftp_config()
     else:
-        print("Loading existing FTP configuration.")
+        print("기존의 FTP 설정을 불러옵니다.")
 
-def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), 'ContinuousRecording')
+def manage_video_files(output_directory):
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -103,7 +102,7 @@ def manage_video_files():
         while len(video_files) > 100:
             file_to_delete = os.path.join(output_directory, video_files.pop(0))
             os.remove(file_to_delete)
-            print(f"Deleted file: {file_to_delete}")
+            print(f"파일 {file_to_delete}가 삭제되었습니다.")
 
 def upload_worker():
     while True:
@@ -116,24 +115,26 @@ def upload_worker():
                 ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
                 with open(file_path, 'rb') as file:
                     ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
-                    print(f"Successfully uploaded file: {file_path}")
+                print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
         except Exception as e:
-            print(f"Error uploading file: {e}")
+            print(f"파일 업로드 중 오류 발생: {e}")
         finally:
             queue.task_done()
 
 def record_and_upload():
     recorder = Recorder()
+    output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
     while True:
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-        output_directory = os.path.join(os.path.dirname(__file__), 'ContinuousRecording')
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
-        print(f"Starting recording: {current_time}")
-        recorder.start_recording(output_filename, 3600)  # 1 hour duration
-        
-        manage_video_files()
+        print(f"녹화 시작: {current_time}")
+        recorder.start_recording(output_filename, 3600)  # Duration set to 1 hour
+
+        manage_video_files(output_directory)
         queue.put(output_filename)
+        time.sleep(3600)  # Wait for the duration of the recording before stopping
+        recorder.stop_recording()
 
 def main():
     check_config_exists()
