@@ -64,21 +64,38 @@ def check_config_exists():
     else:
         print("기존의 FTP 설정을 불러옵니다.")
 
-def start_ffmpeg_recording(output_filename, duration=60):
-    command = [
-        'ffmpeg',
-        '-f', 'v4l2',
-        '-framerate', '30',
-        '-video_size', '1920x1080',
-        '-i', '/dev/video0',
-        '-c:v', 'libx264',
-        '-preset', 'veryfast',
-        '-crf', '18',
-        '-t', str(duration),
-        output_filename
-    ]
-    subprocess.run(command)
+class Recorder:
+    def __init__(self):
+        self.process = None
 
+    def start_recording(self, output_filename, duration=60):
+        if not self.process:
+            command = [
+                'ffmpeg',
+                '-f', 'v4l2',
+                '-framerate', '30',
+                '-video_size', '1920x1080',
+                '-i', '/dev/video0',
+                '-c:v', 'libx264',
+                '-preset', 'veryfast',
+                '-crf', '18',
+                '-t', str(duration),
+                output_filename
+            ]
+            self.process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    def stop_recording(self):
+        if self.process:
+            self.process.terminate()
+            try:
+                self.process.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                self.process.kill()
+                self.process.wait()
+            print("녹화가 종료되었습니다.")
+            self.process = None
+
+recorder = Recorder()
 queue = Queue()
 lock = Lock()
 
@@ -118,10 +135,12 @@ def record_and_upload():
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
-        start_ffmpeg_recording(output_filename)
+        recorder.start_recording(output_filename, 3600)  # 녹화 시간을 1시간으로 설정
         
         manage_video_files()
         queue.put(output_filename)
+        time.sleep(3600)  # 녹화 시간이 끝날 때까지 기다림
+        recorder.stop_recording()
 
 check_config_exists()
 
