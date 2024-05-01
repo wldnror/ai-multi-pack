@@ -28,11 +28,11 @@ def start_process():
 
 def stop_process():
     try:
-        # 프로세스 이름으로 실행 중인 프로세스를 찾아 종료
+        # 프로세스 이름으로 실행 중인 프로세스를 찾아 종료합니다. SIGKILL 신호를 사용합니다.
         pids = subprocess.check_output(['pgrep', '-f', 'black_box/main.py']).decode().strip().split()
         for pid in pids:
-            os.kill(int(pid), signal.SIGTERM)
-            print(f"Process {pid} has been stopped.")
+            os.kill(int(pid), signal.SIGKILL)  # SIGKILL 신호 사용
+            print(f"Process {pid} has been forcefully stopped.")
     except subprocess.CalledProcessError:
         print("black_box/main.py is not currently running.")
 
