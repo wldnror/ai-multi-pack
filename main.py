@@ -15,24 +15,21 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
-        # 'pgrep'를 사용하여 프로세스가 실행 중인지 확인합니다.
         subprocess.check_output(['pgrep', '-f', process_name])
         return True
     except subprocess.CalledProcessError:
         return False
 
 def start_process():
-    # 'black_box/main.py' 프로세스를 시작합니다.
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
     subprocess.Popen(['python3', script_path])
 
 def stop_process():
     try:
-        # 프로세스 이름으로 실행 중인 프로세스를 찾아 종료합니다. SIGKILL 신호를 사용합니다.
         pids = subprocess.check_output(['pgrep', '-f', 'black_box/main.py']).decode().strip().split()
         for pid in pids:
-            os.kill(int(pid), signal.SIGKILL)  # SIGKILL 신호 사용
-            print(f"Process {pid} has been forcefully stopped.")
+            os.kill(int(pid), signal.SIGKILL)  # Use SIGKILL instead of SIGTERM
+            print(f"Process {pid} has been forcefully stopped with SIGKILL.")
     except subprocess.CalledProcessError:
         print("black_box/main.py is not currently running.")
 
@@ -46,14 +43,14 @@ def run_udp_server():
     while True:
         data, address = sock.recvfrom(1024)
         message = data.decode().strip()
-        print(f"수신된 메시지: {message} from {address}")
+        print(f"Received message: {message} from {address}")
 
         if message == "0003":
             if not process_exists('black_box/main.py'):
-                print("black_box/main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
+                print("black_box/main.py is not running. Starting the process...")
                 start_process()
             else:
-                print("black_box/main.py 실행 중입니다. 프로세스를 종료합니다.")
+                print("black_box/main.py is running. Stopping the process...")
                 stop_process()
 
         raspberry_pi_ip = get_ip_address()
