@@ -15,20 +15,23 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
+        # Check if the process is running by searching for its name with pgrep
         subprocess.check_output(['pgrep', '-f', process_name])
         return True
     except subprocess.CalledProcessError:
         return False
 
 def start_process():
+    # Start the black_box/main.py process
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
     subprocess.Popen(['python3', script_path])
 
 def stop_process():
     try:
+        # Find the process by name and send SIGKILL to forcefully stop it
         pids = subprocess.check_output(['pgrep', '-f', 'black_box/main.py']).decode().strip().split()
         for pid in pids:
-            os.kill(int(pid), signal.SIGKILL)  # Use SIGKILL instead of SIGTERM
+            os.kill(int(pid), signal.SIGKILL)  # Use SIGKILL to ensure the process is stopped
             print(f"Process {pid} has been forcefully stopped with SIGKILL.")
     except subprocess.CalledProcessError:
         print("black_box/main.py is not currently running.")
@@ -38,7 +41,7 @@ def run_udp_server():
     udp_port = 12345
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((udp_ip, udp_port))
-    print("UDP 서버가 시작되었습니다. 대기 중...")
+    print("UDP server has started. Listening...")
 
     while True:
         data, address = sock.recvfrom(1024)
