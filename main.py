@@ -2,7 +2,6 @@ import socket
 import subprocess
 import threading
 import os
-import re
 
 def get_ip_address():
     try:
@@ -12,49 +11,55 @@ def get_ip_address():
     except subprocess.CalledProcessError:
         return None
 
-def process_exists():
+def process_exists(process_name):
     try:
-        # 'main.py'만 검색하여 프로세스 존재 여부 확인
-        result = subprocess.check_output(['pgrep', '-f', 'black_box/main.py'])
-        print("Process exists:", result.decode())
+        # 'pgrep'를 사용하여 프로세스가 실행 중인지 확인합니다.
+        subprocess.check_output(['pgrep', '-f', process_name])
         return True
     except subprocess.CalledProcessError:
-        print("black_box/main.py is not running.")
         return False
 
 def start_process():
+    # 'black_box/main.py' 프로세스를 시작합니다.
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
-    print("Starting black_box/main.py...")
     subprocess.Popen(['python3', script_path])
 
 def stop_process():
     try:
-        subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
-        print("Stopped black_box/main.py successfully.")
+        # 프로세스 이름으로 실행 중인 프로세스를 찾아 종료
+        pids = subprocess.check_output(['pgrep', '-f', 'black_box/main.py']).decode().strip().split()
+        for pid in pids:
+            os.kill(int(pid), signal.SIGTERM)
+            print(f"Process {pid} has been stopped.")
     except subprocess.CalledProcessError:
-        print("Failed to stop black_box/main.py.")
+        print("black_box/main.py is not currently running.")
 
-udp_ip = "0.0.0.0"
-udp_port = 12345
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((udp_ip, udp_port))
-print("UDP server is up and listening...")
+def run_udp_server():
+    udp_ip = "0.0.0.0"
+    udp_port = 12345
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((udp_ip, udp_port))
+    print("UDP 서버가 시작되었습니다. 대기 중...")
 
-while True:
-    data, address = sock.recvfrom(1024)
-    message = data.decode().strip()
-    print(f"Received message: {message} from {address}")
+    while True:
+        data, address = sock.recvfrom(1024)
+        message = data.decode().strip()
+        print(f"수신된 메시지: {message} from {address}")
 
-    if message == "0003":
-        if not process_exists():
-            start_process()
-        else:
-            stop_process()
+        if message == "0003":
+            if not process_exists('black_box/main.py'):
+                print("black_box/main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
+                start_process()
+            else:
+                print("black_box/main.py 실행 중입니다. 프로세스를 종료합니다.")
+                stop_process()
 
-    elif message.startswith("00"):
-        print(f"Button {message} was pressed.")
+        raspberry_pi_ip = get_ip_address()
+        if raspberry_pi_ip:
+            response = f"{raspberry_pi_ip} 입니다"
+            sock.sendto(response.encode(), address)
 
-    raspberry_pi_ip = get_ip_address()
-    if data and raspberry_pi_ip:
-        response = f"{raspberry_pi_ip} is your IP"
-        sock.sendto(response.encode(), address)
+if __name__ == "__main__":
+    server_thread = threading.Thread(target=run_udp_server)
+    server_thread.start()
+    server_thread.join()
