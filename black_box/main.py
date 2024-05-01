@@ -5,6 +5,8 @@ from ftplib import FTP
 import subprocess
 from threading import Thread, Lock
 from queue import Queue
+import socket
+import socketserver
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -123,14 +125,17 @@ def record_and_upload():
         manage_video_files()
         queue.put(output_filename)
 
-check_config_exists()
+def main():
+    check_config_exists()
+    uploader_thread = Thread(target=upload_worker)
+    uploader_thread.start()
 
-uploader_thread = Thread(target=upload_worker)
-uploader_thread.start()
+    record_thread = Thread(target=record_and_upload)
+    record_thread.start()
 
-record_thread = Thread(target=record_and_upload)
-record_thread.start()
+    record_thread.join()
+    queue.put(None)
+    uploader_thread.join()
 
-record_thread.join()
-queue.put(None)
-uploader_thread.join()
+if __name__ == "__main__":
+    main()
