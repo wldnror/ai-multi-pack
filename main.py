@@ -12,6 +12,11 @@ def get_ip_address():
     except subprocess.CalledProcessError:
         return None
 
+def send_command_to_black_box(command):
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect(('localhost', 5002))  # 'localhost'와 포트 5002에 연결
+        s.sendall(command.encode())  # 명령어를 인코딩하여 보냄
+
 # UDP 서버 설정
 udp_ip = "0.0.0.0"  # 모든 인터페이스에서 들어오는 데이터를 수신하도록 설정
 udp_port = 12345
@@ -28,5 +33,12 @@ while True:
     if 데이터 and 라즈베리파이_ip:
         응답 = f"내 IP 주소는 {라즈베리파이_ip}입니다"
         소켓.sendto(응답.encode(), 주소)
+
+    # 녹화 시작 및 중지 제어
+    message = 데이터.decode().strip()
+    if message == "start recording":
+        send_command_to_black_box('start')
+    elif message == "stop recording":
+        send_command_to_black_box('stop')
 
 소켓.close()
