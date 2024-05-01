@@ -12,11 +12,28 @@ def get_ip_address():
     except subprocess.CalledProcessError:
         return None
 
+def process_exists(process_name):
+    # 'pgrep'를 사용하여 프로세스가 실행 중인지 확인합니다.
+    try:
+        subprocess.check_output(['pgrep', '-f', process_name])
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+def start_process():
+    # 'main.py' 프로세스를 시작합니다.
+    subprocess.Popen(['python', 'black_box/main.py'])
+
+def send_command_to_process(command):
+    # 프로세스에 명령을 전송하는 로직
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect(('localhost', 5002))
+        s.sendall(command.encode())
+
 class MyTCPHandler(socketserver.BaseRequestHandler):
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print(f"TCP server received: {self.data.decode()} from {self.client_address}")
-        # Here you could add any specific logic to handle incoming data
         self.request.sendall(self.data.upper())
 
 def run_tcp_server():
@@ -37,10 +54,27 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 sock.bind((udp_ip, udp_port))
 print("UDP 서버가 시작되었습니다. 대기 중...")
 
+recording = False  # 녹화 상태 추적
+
 while True:
     data, address = sock.recvfrom(1024)
     message = data.decode().strip()
     print(f"수신된 메시지: {message} from {address}")
+
+    if message == "0003":
+        if not process_exists("main.py"):
+            print("main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
+            start_process()
+        else:
+            if not recording:
+                print("녹화 시작합니다.")
+                send_command_to_process('start')
+                recording = True
+            else:
+                print("녹화 중지합니다.")
+                send_command_to_process('stop')
+                recording = False
+        continue
 
     if message.startswith("00"):
         print(f"버튼 {message}가 눌렸습니다.")
