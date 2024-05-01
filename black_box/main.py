@@ -147,12 +147,13 @@ def record_and_upload():
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
-        recorder.start_recording(output_filename, 60)  # 녹화 시간을 1뷴으로 설정
+        recorder.start_recording(output_filename, 60)  # 녹화 시간을 1분으로 설정
+        
+        time.sleep(60)  # 녹화 시간이 끝날 때까지 기다림
+        recorder.stop_recording()  # 녹화 중지
         
         manage_video_files()
-        queue.put(output_filename)
-        time.sleep(60)  # 녹화 시간이 끝날 때까지 기다림
-        recorder.stop_recording()
+        queue.put(output_filename)  # 녹화가 완전히 끝난 후 파일을 업로드 큐에 추가
 
 check_config_exists()
 
@@ -163,5 +164,6 @@ record_thread = Thread(target=record_and_upload)
 record_thread.start()
 
 record_thread.join()
-queue.put(None)
+queue.put(None)  # 모든 작업 완료 후 None을 큐에 추가하여 업로더 스레드 종료 신호를 보냄
 uploader_thread.join()
+
