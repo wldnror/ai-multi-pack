@@ -7,7 +7,6 @@ import subprocess
 from threading import Thread, Lock
 from queue import Queue
 
-# FTP 연결을 테스트하는 함수
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
         with FTP(ftp_address) as ftp:
@@ -28,7 +27,6 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
         print(f"FTP 접속 실패: {e}")
         return False
 
-# FTP 설정을 읽는 함수
 def read_ftp_config():
     config = configparser.ConfigParser()
     script_directory = os.path.dirname(__file__)
@@ -36,7 +34,6 @@ def read_ftp_config():
     config.read(config_file_path)
     return config['FTP']
 
-# FTP 설정을 초기화하는 함수
 def init_ftp_config():
     config = configparser.ConfigParser()
     script_directory = os.path.dirname(__file__)
@@ -59,7 +56,6 @@ def init_ftp_config():
         else:
             print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
-# FTP 설정 파일의 존재 여부를 확인하는 함수
 def check_config_exists():
     script_directory = os.path.dirname(__file__)
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
@@ -72,9 +68,10 @@ def check_config_exists():
 class Recorder:
     def __init__(self):
         self.process = None
+        self.is_recording = False
 
     def start_recording(self, output_filename, duration=3600):
-        if not self.process:
+        if not self.is_recording:
             command = [
                 'ffmpeg',
                 '-f', 'v4l2',
@@ -88,12 +85,14 @@ class Recorder:
                 output_filename
             ]
             self.process = subprocess.Popen(command)
+            self.is_recording = True
             print(f"녹화 시작됨: {output_filename}")
 
     def stop_recording(self):
-        if self.process:
+        if self.is_recording:
             self.process.terminate()
             self.process = None
+            self.is_recording = False
             print("녹화 중지됨")
 
 def control_server():
