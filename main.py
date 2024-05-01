@@ -62,7 +62,7 @@ while True:
     print(f"수신된 메시지: {message} from {address}")
 
     if message == "0003":
-        if not process_exists("black_box/main.py"):
+        if not process_exists("/black_box/main.py"):
             print("main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
             start_process()
         else:
