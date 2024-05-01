@@ -78,22 +78,23 @@ class Recorder:
                 print(output.strip())
 
     def start_recording(self, output_filename, duration=60):
-        if not self.process:
-            command = [
-                'ffmpeg',
-                '-f', 'v4l2',
-                '-framerate', '30',
-                '-video_size', '1920x1080',
-                '-i', '/dev/video0',
-                '-c:v', 'libx264',
-                '-preset', 'veryfast',
-                '-crf', '18',
-                '-t', str(duration),
-                output_filename
-            ]
-            self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
-            self.recording_thread = threading.Thread(target=self._monitor_recording)
-            self.recording_thread.start()
+    if not self.process:
+        command = [
+            'ffmpeg',
+            '-f', 'v4l2',
+            '-framerate', '30',
+            '-video_size', '1920x1080',
+            '-i', '/dev/video0',
+            '-c:v', 'libx264',
+            '-preset', 'veryfast',
+            '-crf', '18',
+            '-t', str(duration),
+            output_filename
+        ]
+        self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
+        self.recording_thread = Thread(target=self._monitor_recording)  # 수정된 부분
+        self.recording_thread.start()
+
 
     def stop_recording(self):
         if self.process:
