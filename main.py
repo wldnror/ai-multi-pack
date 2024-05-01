@@ -3,6 +3,7 @@ import socketserver
 import subprocess
 import re
 import threading
+import os
 
 def get_ip_address():
     try:
@@ -13,19 +14,19 @@ def get_ip_address():
         return None
 
 def process_exists(process_name):
-    # 'pgrep'를 사용하여 프로세스가 실행 중인지 확인합니다.
+    # 특정 스크립트 경로를 포함하여 실행 중인 프로세스 검색
     try:
+        # Check for process existence using its command line
         subprocess.check_output(['pgrep', '-f', process_name])
         return True
     except subprocess.CalledProcessError:
         return False
 
 def start_process():
-    # 'main.py' 프로세스를 시작합니다.
-    subprocess.Popen(['python', 'black_box/main.py'])
+    script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
+    subprocess.Popen(['python3', script_path])
 
 def send_command_to_process(command):
-    # 프로세스에 명령을 전송하는 로직
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(('localhost', 5002))
         s.sendall(command.encode())
@@ -62,7 +63,7 @@ while True:
     print(f"수신된 메시지: {message} from {address}")
 
     if message == "0003":
-        if not process_exists("/black_box/main.py"):
+        if not process_exists("black_box/main.py"):
             print("main.py 실행 중이 아닙니다. 프로세스를 시작합니다.")
             start_process()
         else:
