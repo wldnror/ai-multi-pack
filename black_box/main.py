@@ -1,10 +1,11 @@
-import os
+import socket
+import threading
+from queue import Queue
+import subprocess
 import time
+import os
 import configparser
 from ftplib import FTP
-import subprocess
-from threading import Thread, Lock
-from queue import Queue
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -33,37 +34,6 @@ def read_ftp_config():
     config.read(config_file_path)
     return config['FTP']
 
-def init_ftp_config():
-    config = configparser.ConfigParser()
-    script_directory = os.path.dirname(__file__)
-    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    while True:
-        ftp_address = input('FTP 주소 입력: ')
-        ftp_username = input('FTP 사용자 이름 입력: ')
-        ftp_password = input('FTP 비밀번호 입력: ')
-        ftp_target_path = input('FTP 대상 경로 입력: ')
-        if test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
-            config['FTP'] = {
-                'ftp_address': ftp_address,
-                'ftp_username': ftp_username,
-                'ftp_password': ftp_password,
-                'ftp_target_path': ftp_target_path
-            }
-            with open(config_file_path, 'w') as configfile:
-                config.write(configfile)
-            break
-        else:
-            print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
-
-def check_config_exists():
-    script_directory = os.path.dirname(__file__)
-    config_file_path = os.path.join(script_directory, 'ftp_config.ini')
-    if not os.path.exists(config_file_path):
-        print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
-        init_ftp_config()
-    else:
-        print("기존의 FTP 설정을 불러옵니다.")
-
 def start_ffmpeg_recording(output_filename, duration=60):
     command = [
         'ffmpeg',
@@ -77,10 +47,47 @@ def start_ffmpeg_recording(output_filename, duration=60):
         '-t', str(duration),
         output_filename
     ]
-    subprocess.run(command)
+    return subprocess.Popen(command)
 
-queue = Queue()
-lock = Lock()
+def stop_ffmpeg_recording(process):
+    if process:
+        process.terminate()
+
+class CommandServer:
+    def __init__(self, host='localhost', port=5002):
+        self.host = host
+        self.port = port
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind((self.host, self.port))
+        self.server.listen(1)
+        self.recording_process = None
+
+    def handle_client(self, client_socket):
+        while True:
+            data = client_socket.recv(1024).decode('utf-8')
+            if not data:
+                break
+            elif data == 'start':
+                if not self.recording_process:
+                    print("Starting recording...")
+                    current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+                    output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+                    output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
+                    self.recording_process = start_ffmpeg_recording(output_filename)
+            elif data == 'stop':
+                if self.recording_process:
+                    print("Stopping recording...")
+                    stop_ffmpeg_recording(self.recording_process)
+                    self.recording_process = None
+        client_socket.close()
+
+    def run(self):
+        print("Command server running...")
+        while True:
+            client_socket, addr = self.server.accept()
+            print(f"Connected by {addr}")
+            client_thread = threading.Thread(target=self.handle_client, args=(client_socket,))
+            client_thread.start()
 
 def upload_worker():
     while True:
@@ -99,38 +106,13 @@ def upload_worker():
         finally:
             queue.task_done()
 
-def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
+if __name__ == "__main__":
+    cmd_server = CommandServer()
+    server_thread = threading.Thread(target=cmd_server.run)
+    server_thread.start()
 
-    with lock:
-        video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
-        while len(video_files) > 100:
-            file_to_delete = os.path.join(output_directory, video_files.pop(0))
-            os.remove(file_to_delete)
-            print(f"파일 {file_to_delete}가 삭제되었습니다.")
+    queue = Queue()
+    uploader_thread = threading.Thread(target=upload_worker)
+    uploader_thread.start()
 
-def record_and_upload():
-    while True:
-        current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-        output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
-        output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-        
-        print(f"녹화 시작: {current_time}")
-        start_ffmpeg_recording(output_filename)
-        
-        manage_video_files()
-        queue.put(output_filename)
-
-check_config_exists()
-
-uploader_thread = Thread(target=upload_worker)
-uploader_thread.start()
-
-record_thread = Thread(target=record_and_upload)
-record_thread.start()
-
-record_thread.join()
-queue.put(None)
-uploader_thread.join()
+    print("System is ready for commands.")
