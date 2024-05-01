@@ -147,11 +147,11 @@ def record_and_upload():
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
         
         print(f"녹화 시작: {current_time}")
-        recorder.start_recording(output_filename, 3600)  # 녹화 시간을 1시간으로 설정
+        recorder.start_recording(output_filename, 10)  # 녹화 시간을 1시간으로 설정
         
         manage_video_files()
         queue.put(output_filename)
-        time.sleep(3600)  # 녹화 시간이 끝날 때까지 기다림
+        time.sleep(10)  # 녹화 시간이 끝날 때까지 기다림
         recorder.stop_recording()
 
 check_config_exists()
