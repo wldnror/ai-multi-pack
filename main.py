@@ -42,6 +42,7 @@ def run_udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  # 브로드캐스트 옵션 활성화
     sock.bind((udp_ip, udp_port))
     print("UDP server has started. Listening...")
 
@@ -61,6 +62,7 @@ def run_udp_server():
             last_ip_address = raspberry_pi_ip
         
         time.sleep(1)  # Check and send updates every second
+
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
