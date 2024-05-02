@@ -33,25 +33,22 @@ def run_udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP server has started. Listening...")
 
+    last_ip_sent_time = 0
     ip_sent = False
-    last_ip_sent_time = time.time()
 
     while True:
-        current_time = time.time()
-        
-        # Send recording status every second
-        if current_time - last_ip_sent_time >= 1:
-            recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-            send_status(sock, broadcast_ip, udp_port, recording_status)
+        # Check recording status and send every second
+        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+        send_status(sock, broadcast_ip, udp_port, recording_status)
+        time.sleep(1)  # Pause for a second for the next status check
 
-        # Send IP address if not confirmed or on 5-second intervals if not acknowledged
-        if not ip_sent or (current_time - last_ip_sent_time >= 5):
+        # Send IP address every 10 seconds if not confirmed or on initial boot
+        if not ip_sent or (time.time() - last_ip_sent_time >= 10):
             ip_address = get_ip_address()
             if ip_address:
                 send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-                last_ip_sent_time = current_time
-        
-        time.sleep(0.1)  # Adjust the loop delay to manage CPU usage and network traffic
+                last_ip_sent_time = time.time()
+                ip_sent = True
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
