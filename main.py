@@ -4,6 +4,7 @@ import threading
 import os
 import re
 import signal
+import time
 
 def get_ip_address():
     try:
@@ -23,7 +24,6 @@ def process_exists(process_name):
 def start_process():
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
     subprocess.Popen(['python3', script_path])
-    print("Recording process started.")
 
 def stop_process():
     try:
@@ -45,6 +45,8 @@ def run_udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP server has started. Listening...")
 
+    last_sent_status = None
+
     while True:
         data, address = sock.recvfrom(1024)
         message = data.decode().strip()
@@ -60,6 +62,11 @@ def run_udp_server():
                 print("Stopping the recording process...")
                 stop_process()
             send_recording_status(sock, address, False)
+
+        recording_status = process_exists('black_box/main.py')
+        if recording_status != last_sent_status:
+            send_recording_status(sock, address, recording_status)
+            last_sent_status = recording_status
 
         raspberry_pi_ip = get_ip_address()
         if raspberry_pi_ip:
