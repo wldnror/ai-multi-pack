@@ -23,6 +23,7 @@ def process_exists(process_name):
 def start_process():
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
     subprocess.Popen(['python3', script_path])
+    print("Recording process started.")
 
 def stop_process():
     try:
@@ -49,15 +50,16 @@ def run_udp_server():
         message = data.decode().strip()
         print(f"Received message: {message} from {address}")
 
-        if message == "0003":
-            recording = process_exists('black_box/main.py')
-            send_recording_status(sock, address, recording)
-            if not recording:
+        if message == "START_RECORDING":
+            if not process_exists('black_box/main.py'):
                 print("Starting the recording process...")
                 start_process()
-            else:
+            send_recording_status(sock, address, True)
+        elif message == "STOP_RECORDING":
+            if process_exists('black_box/main.py'):
                 print("Stopping the recording process...")
                 stop_process()
+            send_recording_status(sock, address, False)
 
         raspberry_pi_ip = get_ip_address()
         if raspberry_pi_ip:
