@@ -10,7 +10,7 @@ def get_ip_address():
         ip_address = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', result)[0]
         return ip_address
     except Exception as e:
-        print(f"Failed to get IP address: {e}")
+        print(f"IP 주소 가져오기 실패: {e}")
         return None
 
 def process_exists(process_name):
@@ -23,18 +23,27 @@ def process_exists(process_name):
 def start_recording():
     if not process_exists('black_box/main.py'):
         subprocess.Popen(['python3', 'black_box/main.py'])
-        print("Recording started.")
+        print("녹화 시작.")
 
 def stop_recording():
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
-        print("Recording stopped.")
+        print("녹화 중지.")
     except subprocess.CalledProcessError:
-        print("Recording process not found.")
+        print("녹화 프로세스를 찾을 수 없음.")
+        force_stop_camera()
+
+def force_stop_camera():
+    try:
+        # '/dev/video0' 장치를 사용하는 모든 프로세스 강제 종료
+        subprocess.check_output(['fuser', '-k', '/dev/video0'])
+        print("카메라 장치 강제 해제됨.")
+    except subprocess.CalledProcessError:
+        print("카메라 장치 강제 해제 실패.")
 
 def send_status(sock, ip, port, message):
     sock.sendto(message.encode(), (ip, port))
-    print(f"Sent message: {message} to {ip}:{port}")
+    print(f"메시지 전송됨: {message} to {ip}:{port}")
 
 def run_udp_server():
     udp_ip = "0.0.0.0"
@@ -43,7 +52,7 @@ def run_udp_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind((udp_ip, udp_port))
-    print("UDP server has started. Listening...")
+    print("UDP 서버 시작됨. 대기중...")
 
     ip_sent = False
 
@@ -56,7 +65,7 @@ def run_udp_server():
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
-            print(f"Received message: {message} from {addr}")
+            print(f"메시지 수신됨: {message} from {addr}")
 
             if message == "REQUEST_IP" and not ip_sent:
                 ip_address = get_ip_address()
@@ -64,7 +73,7 @@ def run_udp_server():
                     send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
                     ip_sent = True
             elif message == "CONNECTION_SUCCESS":
-                print("Connection confirmed by client. No more IP broadcasts.")
+                print("클라이언트로부터 연결 확인됨. IP 브로드캐스트 중지.")
                 ip_sent = True
             elif message == "START_RECORDING":
                 start_recording()
