@@ -33,7 +33,6 @@ def run_udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP server has started. Listening...")
 
-    last_ip_sent_time = 0
     ip_sent = False
 
     while True:
@@ -42,13 +41,24 @@ def run_udp_server():
         send_status(sock, broadcast_ip, udp_port, recording_status)
         time.sleep(1)  # Pause for a second for the next status check
 
-        # Send IP address every 10 seconds if not confirmed or on initial boot
-        if not ip_sent or (time.time() - last_ip_sent_time >= 10):
-            ip_address = get_ip_address()
-            if ip_address:
-                send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-                last_ip_sent_time = time.time()
+        # Listen for incoming messages to handle IP address requests or confirmations
+        try:
+            sock.settimeout(1)  # Short timeout for regular checking
+            data, addr = sock.recvfrom(1024)
+            message = data.decode().strip()
+            print(f"Received message: {message} from {addr}")
+
+            if message == "REQUEST_IP" and not ip_sent:
+                ip_address = get_ip_address()
+                if ip_address:
+                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+                    ip_sent = True
+            elif message == "CONNECTION_SUCCESS":
+                print("Connection confirmed by client. No more IP broadcasts.")
                 ip_sent = True
+
+        except socket.timeout:
+            continue  # Continue if no message received
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
