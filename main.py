@@ -46,6 +46,13 @@ def force_release_camera():
     except Exception as e:
         print(f"Failed to release camera resource: {e}")
 
+def send_status(sock, ip, port, message):
+    try:
+        sock.sendto(message.encode(), (ip, port))
+        print(f"Sent message: {message} to {ip}:{port}")
+    except Exception as e:
+        print(f"Failed to send message: {e}")
+
 def run_udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
