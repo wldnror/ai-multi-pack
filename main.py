@@ -1,17 +1,16 @@
 import socket
 import subprocess
 import threading
-import os
 import re
-import signal
 import time
 
 def get_ip_address():
     try:
-        result = subprocess.check_output(["hostname", "-I"]).decode("utf-8")
-        ip_addresses = re.findall(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', result)
-        return ip_addresses[0] if ip_addresses else None
-    except subprocess.CalledProcessError:
+        result = subprocess.check_output(["hostname", "-I"]).decode().strip()
+        ip_address = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', result)[0]
+        return ip_address
+    except Exception as e:
+        print(f"Failed to get IP address: {e}")
         return None
 
 def process_exists(process_name):
@@ -21,37 +20,45 @@ def process_exists(process_name):
     except subprocess.CalledProcessError:
         return False
 
-def start_process():
-    script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
-    subprocess.Popen(['python3', script_path])
-
-def stop_process():
-    try:
-        pids = subprocess.check_output(['pgrep', '-f', 'black_box/main.py']).decode().strip().split()
-        for pid in pids:
-            os.kill(int(pid), signal.SIGKILL)
-            print(f"Process {pid} has been forcefully stopped with SIGKILL.")
-    except subprocess.CalledProcessError:
-        print("black_box/main.py is not currently running.")
-
-def send_recording_status(sock, address, is_recording):
-    message = "RECORDING" if is_recording else "NOT_RECORDING"
-    sock.sendto(message.encode(), address)
+def send_status(sock, ip, port, message):
+    sock.sendto(message.encode(), (ip, port))
+    print(f"Sent message: {message} to {ip}:{port}")
 
 def run_udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
+    broadcast_ip = "255.255.255.255"
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind((udp_ip, udp_port))
     print("UDP server has started. Listening...")
-    
+
+    ip_sent = False
+    last_ip_sent_time = 0
+
     while True:
-        current_status = process_exists('black_box/main.py')
-        message = "RECORDING" if current_status else "NOT_RECORDING"
-        sock.sendto(message.encode(), ('255.255.255.255', udp_port))
-        print(f"Sent message: {message}")
-        time.sleep(1)  # 1초마다 상태 전송
+        if not ip_sent or (time.time() - last_ip_sent_time >= 5):
+            ip_address = get_ip_address()
+            if ip_address:
+                send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+                last_ip_sent_time = time.time()
+                ip_sent = True
+        
+        # Check for incoming messages to confirm connection
+        try:
+            sock.settimeout(5)
+            data, addr = sock.recvfrom(1024)
+            message = data.decode().strip()
+            print(f"Received message: {message} from {addr}")
+
+            # If a specific success message is received, stop sending IP
+            if message == "CONNECTION_SUCCESS":
+                print("Connection confirmed by client.")
+                break
+
+        except socket.timeout:
+            print("No response from client, retrying...")
+            ip_sent = False
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
