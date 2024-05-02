@@ -28,22 +28,23 @@ def start_recording():
 def stop_recording():
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
-        print("녹화 중지.")
+        print("Recording stopped.")
+        time.sleep(1)  # 프로세스 종료를 기다림
+        force_release_camera()  # 카메라 자원 해제 시도
     except subprocess.CalledProcessError:
-        print("녹화 프로세스를 찾을 수 없음.")
-        force_stop_camera()
+        print("Recording process not found.")
+        force_release_camera()
 
-def force_stop_camera():
+def force_release_camera():
     try:
-        # '/dev/video0' 장치를 사용하는 모든 프로세스 강제 종료
-        subprocess.check_output(['fuser', '-k', '/dev/video0'])
-        print("카메라 장치 강제 해제됨.")
-    except subprocess.CalledProcessError:
-        print("카메라 장치 강제 해제 실패.")
-
-def send_status(sock, ip, port, message):
-    sock.sendto(message.encode(), (ip, port))
-    print(f"메시지 전송됨: {message} to {ip}:{port}")
+        # /dev/video0를 사용 중인 프로세스 찾기
+        camera_process = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
+        if camera_process:
+            # 카메라를 사용 중인 프로세스 강제 종료
+            subprocess.run(['kill', '-9', camera_process])
+            print("Camera resource forcefully released.")
+    except Exception as e:
+        print(f"Failed to release camera resource: {e}")
 
 def run_udp_server():
     udp_ip = "0.0.0.0"
