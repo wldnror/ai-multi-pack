@@ -50,20 +50,6 @@ def send_udp_broadcast():
         print(f"Sent message: {message}")
         time.sleep(1)  # 1초마다 메시지 전송
 
-    while True:
-        current_status = process_exists('black_box/main.py')
-        if current_status != last_sent_status:
-            send_recording_status(sock, ('<broadcast>', udp_port), current_status)
-            last_sent_status = current_status
-        
-        raspberry_pi_ip = get_ip_address()
-        if raspberry_pi_ip and raspberry_pi_ip != last_ip_address:
-            response = f"{raspberry_pi_ip} 입니다"
-            sock.sendto(response.encode(), ('<broadcast>', udp_port))
-            last_ip_address = raspberry_pi_ip
-        
-        time.sleep(1)  # Check and send updates every second
-
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
