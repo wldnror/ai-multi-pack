@@ -46,32 +46,21 @@ def run_udp_server():
     print("UDP server has started. Listening...")
 
     last_sent_status = None
+    last_ip_address = None
 
     while True:
-        data, address = sock.recvfrom(1024)
-        message = data.decode().strip()
-        print(f"Received message: {message} from {address}")
-
-        if message == "START_RECORDING":
-            if not process_exists('black_box/main.py'):
-                print("Starting the recording process...")
-                start_process()
-            send_recording_status(sock, address, True)
-        elif message == "STOP_RECORDING":
-            if process_exists('black_box/main.py'):
-                print("Stopping the recording process...")
-                stop_process()
-            send_recording_status(sock, address, False)
-
         recording_status = process_exists('black_box/main.py')
         if recording_status != last_sent_status:
-            send_recording_status(sock, address, recording_status)
+            send_recording_status(sock, ('<broadcast>', udp_port), recording_status)
             last_sent_status = recording_status
-
+        
         raspberry_pi_ip = get_ip_address()
-        if raspberry_pi_ip:
+        if raspberry_pi_ip and raspberry_pi_ip != last_ip_address:
             response = f"{raspberry_pi_ip} 입니다"
-            sock.sendto(response.encode(), address)
+            sock.sendto(response.encode(), ('<broadcast>', udp_port))
+            last_ip_address = raspberry_pi_ip
+        
+        time.sleep(1)  # 1초 간격으로 상태 확인 및 전송
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
