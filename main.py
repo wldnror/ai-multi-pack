@@ -38,16 +38,17 @@ def send_recording_status(sock, address, is_recording):
     message = "RECORDING" if is_recording else "NOT_RECORDING"
     sock.sendto(message.encode(), address)
 
-def run_udp_server():
-    udp_ip = "0.0.0.0"
+def send_udp_broadcast():
+    udp_ip = "255.255.255.255"
     udp_port = 12345
+    message = "RECORDING"
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)  # 브로드캐스트 옵션 활성화
-    sock.bind((udp_ip, udp_port))
-    print("UDP server has started. Listening...")
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
 
-    last_sent_status = None
-    last_ip_address = None
+    while True:
+        sock.sendto(message.encode(), (udp_ip, udp_port))
+        print(f"Sent message: {message}")
+        time.sleep(1)  # 1초마다 메시지 전송
 
     while True:
         current_status = process_exists('black_box/main.py')
