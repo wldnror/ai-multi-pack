@@ -15,26 +15,27 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
-        # Check if the process is running by searching for its name with pgrep
         subprocess.check_output(['pgrep', '-f', process_name])
         return True
     except subprocess.CalledProcessError:
         return False
 
 def start_process():
-    # Start the black_box/main.py process
     script_path = os.path.join(os.path.dirname(__file__), 'black_box', 'main.py')
     subprocess.Popen(['python3', script_path])
 
 def stop_process():
     try:
-        # Find the process by name and send SIGKILL to forcefully stop it
         pids = subprocess.check_output(['pgrep', '-f', 'black_box/main.py']).decode().strip().split()
         for pid in pids:
-            os.kill(int(pid), signal.SIGKILL)  # Use SIGKILL to ensure the process is stopped
+            os.kill(int(pid), signal.SIGKILL)
             print(f"Process {pid} has been forcefully stopped with SIGKILL.")
     except subprocess.CalledProcessError:
         print("black_box/main.py is not currently running.")
+
+def send_recording_status(sock, address, is_recording):
+    message = "RECORDING" if is_recording else "NOT_RECORDING"
+    sock.sendto(message.encode(), address)
 
 def run_udp_server():
     udp_ip = "0.0.0.0"
@@ -49,11 +50,13 @@ def run_udp_server():
         print(f"Received message: {message} from {address}")
 
         if message == "0003":
-            if not process_exists('black_box/main.py'):
-                print("black_box/main.py is not running. Starting the process...")
+            recording = process_exists('black_box/main.py')
+            send_recording_status(sock, address, recording)
+            if not recording:
+                print("Starting the recording process...")
                 start_process()
             else:
-                print("black_box/main.py is running. Stopping the process...")
+                print("Stopping the recording process...")
                 stop_process()
 
         raspberry_pi_ip = get_ip_address()
