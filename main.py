@@ -49,10 +49,10 @@ def run_udp_server():
     last_ip_address = None
 
     while True:
-        recording_status = process_exists('black_box/main.py')
-        if recording_status != last_sent_status:
-            send_recording_status(sock, ('<broadcast>', udp_port), recording_status)
-            last_sent_status = recording_status
+        current_status = process_exists('black_box/main.py')
+        if current_status != last_sent_status:
+            send_recording_status(sock, ('<broadcast>', udp_port), current_status)
+            last_sent_status = current_status
         
         raspberry_pi_ip = get_ip_address()
         if raspberry_pi_ip and raspberry_pi_ip != last_ip_address:
@@ -60,7 +60,7 @@ def run_udp_server():
             sock.sendto(response.encode(), ('<broadcast>', udp_port))
             last_ip_address = raspberry_pi_ip
         
-        time.sleep(1)  # 1초 간격으로 상태 확인 및 전송
+        time.sleep(1)  # Check and send updates every second
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
