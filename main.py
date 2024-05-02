@@ -20,6 +20,18 @@ def process_exists(process_name):
     except subprocess.CalledProcessError:
         return False
 
+def start_recording():
+    if not process_exists('black_box/main.py'):
+        subprocess.Popen(['python3', 'black_box/main.py'])
+        print("Recording started.")
+
+def stop_recording():
+    try:
+        subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
+        print("Recording stopped.")
+    except subprocess.CalledProcessError:
+        print("Recording process not found.")
+
 def send_status(sock, ip, port, message):
     sock.sendto(message.encode(), (ip, port))
     print(f"Sent message: {message} to {ip}:{port}")
@@ -36,14 +48,12 @@ def run_udp_server():
     ip_sent = False
 
     while True:
-        # Check recording status and send every second
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
         send_status(sock, broadcast_ip, udp_port, recording_status)
-        time.sleep(1)  # Pause for a second for the next status check
+        time.sleep(1)
 
-        # Listen for incoming messages to handle IP address requests or confirmations
         try:
-            sock.settimeout(1)  # Short timeout for regular checking
+            sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
             print(f"Received message: {message} from {addr}")
@@ -56,9 +66,13 @@ def run_udp_server():
             elif message == "CONNECTION_SUCCESS":
                 print("Connection confirmed by client. No more IP broadcasts.")
                 ip_sent = True
+            elif message == "START_RECORDING":
+                start_recording()
+            elif message == "STOP_RECORDING":
+                stop_recording()
 
         except socket.timeout:
-            continue  # Continue if no message received
+            continue
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
