@@ -37,28 +37,31 @@ def run_udp_server():
     last_ip_sent_time = 0
 
     while True:
+        # Send recording status every second
+        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+        send_status(sock, broadcast_ip, udp_port, recording_status)
+
+        # Send IP address if not confirmed or on 5-second intervals if not acknowledged
         if not ip_sent or (time.time() - last_ip_sent_time >= 5):
             ip_address = get_ip_address()
             if ip_address:
                 send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
                 last_ip_sent_time = time.time()
-                ip_sent = True
         
         # Check for incoming messages to confirm connection
         try:
-            sock.settimeout(5)
+            sock.settimeout(1)  # Short timeout for regular checking
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
             print(f"Received message: {message} from {addr}")
 
-            # If a specific success message is received, stop sending IP
+            # If a specific success message is received, mark IP as confirmed
             if message == "CONNECTION_SUCCESS":
                 print("Connection confirmed by client.")
-                break
+                ip_sent = True
 
         except socket.timeout:
-            print("No response from client, retrying...")
-            ip_sent = False
+            continue  # Continue if no message received
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
