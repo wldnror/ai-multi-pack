@@ -34,34 +34,24 @@ def run_udp_server():
     print("UDP server has started. Listening...")
 
     ip_sent = False
-    last_ip_sent_time = 0
+    last_ip_sent_time = time.time()
 
     while True:
+        current_time = time.time()
+        
         # Send recording status every second
-        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        send_status(sock, broadcast_ip, udp_port, recording_status)
+        if current_time - last_ip_sent_time >= 1:
+            recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+            send_status(sock, broadcast_ip, udp_port, recording_status)
 
         # Send IP address if not confirmed or on 5-second intervals if not acknowledged
-        if not ip_sent or (time.time() - last_ip_sent_time >= 5):
+        if not ip_sent or (current_time - last_ip_sent_time >= 5):
             ip_address = get_ip_address()
             if ip_address:
                 send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-                last_ip_sent_time = time.time()
+                last_ip_sent_time = current_time
         
-        # Check for incoming messages to confirm connection
-        try:
-            sock.settimeout(1)  # Short timeout for regular checking
-            data, addr = sock.recvfrom(1024)
-            message = data.decode().strip()
-            print(f"Received message: {message} from {addr}")
-
-            # If a specific success message is received, mark IP as confirmed
-            if message == "CONNECTION_SUCCESS":
-                print("Connection confirmed by client.")
-                ip_sent = True
-
-        except socket.timeout:
-            continue  # Continue if no message received
+        time.sleep(0.1)  # Adjust the loop delay to manage CPU usage and network traffic
 
 if __name__ == "__main__":
     server_thread = threading.Thread(target=run_udp_server)
