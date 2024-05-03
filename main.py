@@ -24,7 +24,7 @@ def start_recording():
     if not process_exists('black_box/main.py'):
         subprocess.Popen(['python3', 'black_box/main.py'])
         print("녹화 시작.")
-        return "RECORDING"  # 녹화 시작 상태 반환
+        return "RECORDING"
 
 def stop_recording():
     try:
@@ -32,7 +32,7 @@ def stop_recording():
         print("Recording stopped.")
         time.sleep(1)  # 프로세스 종료를 기다림
         force_release_camera()  # 카메라 자원 해제 시도
-        return "NOT_RECORDING"  # 녹화 중지 상태 반환
+        return "NOT_RECORDING"
     except subprocess.CalledProcessError:
         print("Recording process not found.")
         force_release_camera()
@@ -41,12 +41,9 @@ def stop_recording():
 def force_release_camera():
     try:
         camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
-        if camera_process_output:
-            for pid in camera_process_output.split():
-                subprocess.call(['kill', '-9', pid])
-            print("Camera resource forcefully released.")
-    except subprocess.CalledProcessError as e:
-        print(f"No process found using the camera: {e}")
+        for pid in camera_process_output.split():
+            subprocess.call(['kill', '-9', pid])
+        print("Camera resource forcefully released.")
     except Exception as e:
         print(f"Failed to release camera resource: {e}")
 
@@ -78,11 +75,11 @@ def run_udp_server():
                 if ip_address:
                     send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
             elif message == "START_RECORDING":
-                status = start_recording()
-                send_status(sock, broadcast_ip, udp_port, status)  # 녹화 시작 상태 즉시 전송
+                recording_status = start_recording()
+                send_status(sock, broadcast_ip, udp_port, recording_status)
             elif message == "STOP_RECORDING":
-                status = stop_recording()
-                send_status(sock, broadcast_ip, udp_port, status)  # 녹화 중지 상태 즉시 전송
+                recording_status = stop_recording()
+                send_status(sock, broadcast_ip, udp_port, recording_status)
 
         except socket.timeout:
             continue
