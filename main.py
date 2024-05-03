@@ -37,14 +37,22 @@ def stop_recording():
 
 def force_release_camera():
     try:
-        # /dev/video0를 사용 중인 프로세스 찾기
-        camera_process = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
-        if camera_process:
-            # 카메라를 사용 중인 프로세스 강제 종료
-            subprocess.run(['kill', '-9', camera_process])
+        # /dev/video0를 사용 중인 프로세스 ID 가져오기
+        camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
+        if camera_process_output:
+            # 각 프로세스 ID에 대해 강제 종료 실행
+            for pid in camera_process_output.split():
+                result = subprocess.call(['kill', '-9', pid])
+                if result == 0:
+                    print(f"Process {pid} successfully killed.")
+                else:
+                    print(f"Failed to kill process {pid}.")
             print("Camera resource forcefully released.")
+    except subprocess.CalledProcessError as e:
+        print(f"No process found using the camera: {e}")
     except Exception as e:
         print(f"Failed to release camera resource: {e}")
+
 
 def send_status(sock, ip, port, message):
     try:
