@@ -25,6 +25,7 @@ def start_recording():
         subprocess.Popen(['python3', 'black_box/main.py'])
         print("녹화 시작.")
         return "RECORDING"
+    return "RECORDING"  # 이미 녹화 중인 경우에도 "RECORDING" 상태 반환
 
 def stop_recording():
     try:
@@ -32,11 +33,11 @@ def stop_recording():
         print("Recording stopped.")
         time.sleep(1)  # 프로세스 종료를 기다림
         force_release_camera()  # 카메라 자원 해제 시도
-        return "NOT_RECORDING"
     except subprocess.CalledProcessError:
         print("Recording process not found.")
         force_release_camera()
-        return "NOT_RECORDING"
+    finally:
+        return "NOT_RECORDING"  # 어떤 경우에도 "NOT_RECORDING" 상태 반환
 
 def force_release_camera():
     try:
