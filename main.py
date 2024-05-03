@@ -53,7 +53,6 @@ def force_release_camera():
     except Exception as e:
         print(f"Failed to release camera resource: {e}")
 
-
 def send_status(sock, ip, port, message):
     try:
         sock.sendto(message.encode(), (ip, port))
@@ -70,8 +69,6 @@ def run_udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
-    ip_sent = False
-
     while True:
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
         send_status(sock, broadcast_ip, udp_port, recording_status)
@@ -83,14 +80,10 @@ def run_udp_server():
             message = data.decode().strip()
             print(f"메시지 수신됨: {message} from {addr}")
 
-            if message == "REQUEST_IP" and not ip_sent:
+            if message == "REQUEST_IP":
                 ip_address = get_ip_address()
                 if ip_address:
                     send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-                    ip_sent = True
-            elif message == "CONNECTION_SUCCESS":
-                print("클라이언트로부터 연결 확인됨. IP 브로드캐스트 중지.")
-                ip_sent = True
             elif message == "START_RECORDING":
                 start_recording()
             elif message == "STOP_RECORDING":
