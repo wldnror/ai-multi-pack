@@ -24,6 +24,7 @@ def start_recording():
     if not process_exists('black_box/main.py'):
         subprocess.Popen(['python3', 'black_box/main.py'])
         print("녹화 시작.")
+        return "RECORDING"  # 녹화 시작 상태 반환
 
 def stop_recording():
     try:
@@ -31,22 +32,18 @@ def stop_recording():
         print("Recording stopped.")
         time.sleep(1)  # 프로세스 종료를 기다림
         force_release_camera()  # 카메라 자원 해제 시도
+        return "NOT_RECORDING"  # 녹화 중지 상태 반환
     except subprocess.CalledProcessError:
         print("Recording process not found.")
         force_release_camera()
+        return "NOT_RECORDING"
 
 def force_release_camera():
     try:
-        # /dev/video0를 사용 중인 프로세스 ID 가져오기
         camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
         if camera_process_output:
-            # 각 프로세스 ID에 대해 강제 종료 실행
             for pid in camera_process_output.split():
-                result = subprocess.call(['kill', '-9', pid])
-                if result == 0:
-                    print(f"Process {pid} successfully killed.")
-                else:
-                    print(f"Failed to kill process {pid}.")
+                subprocess.call(['kill', '-9', pid])
             print("Camera resource forcefully released.")
     except subprocess.CalledProcessError as e:
         print(f"No process found using the camera: {e}")
@@ -70,10 +67,6 @@ def run_udp_server():
     print("UDP 서버 시작됨. 대기중...")
 
     while True:
-        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        send_status(sock, broadcast_ip, udp_port, recording_status)
-        time.sleep(1)
-
         try:
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
@@ -85,9 +78,11 @@ def run_udp_server():
                 if ip_address:
                     send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
             elif message == "START_RECORDING":
-                start_recording()
+                status = start_recording()
+                send_status(sock, broadcast_ip, udp_port, status)  # 녹화 시작 상태 즉시 전송
             elif message == "STOP_RECORDING":
-                stop_recording()
+                status = stop_recording()
+                send_status(sock, broadcast_ip, udp_port, status)  # 녹화 중지 상태 즉시 전송
 
         except socket.timeout:
             continue
