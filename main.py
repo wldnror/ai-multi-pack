@@ -1,8 +1,18 @@
-import socket
+import asyncio
+import websockets
 import subprocess
-import threading
 import re
 import time
+
+async def notify_status(websocket, path):
+    while True:
+        await asyncio.sleep(1)  # 상태를 1초마다 확인
+        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+        await websocket.send(recording_status)  # 상태를 WebSocket을 통해 전송
+
+async def main():
+    async with websockets.serve(notify_status, "0.0.0.0", 8765):
+        await asyncio.Future()  # 서버가 계속 실행되도록 함
 
 def get_ip_address():
     try:
@@ -24,20 +34,18 @@ def start_recording():
     if not process_exists('black_box/main.py'):
         subprocess.Popen(['python3', 'black_box/main.py'])
         print("녹화 시작.")
-        return "RECORDING"
-    return "RECORDING"  # 이미 녹화 중인 경우에도 "RECORDING" 상태 반환
+    return "RECORDING"
 
 def stop_recording():
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
         print("Recording stopped.")
-        time.sleep(1)  # 프로세스 종료를 기다림
-        force_release_camera()  # 카메라 자원 해제 시도
+        time.sleep(1)
+        force_release_camera()
     except subprocess.CalledProcessError:
         print("Recording process not found.")
         force_release_camera()
-    finally:
-        return "NOT_RECORDING"  # 어떤 경우에도 "NOT_RECORDING" 상태 반환
+    return "NOT_RECORDING"
 
 def force_release_camera():
     try:
@@ -48,44 +56,5 @@ def force_release_camera():
     except Exception as e:
         print(f"Failed to release camera resource: {e}")
 
-def send_status(sock, ip, port, message):
-    try:
-        sock.sendto(message.encode(), (ip, port))
-        print(f"Sent message: {message} to {ip}:{port}")
-    except Exception as e:
-        print(f"Failed to send message: {e}")
-
-def run_udp_server():
-    udp_ip = "0.0.0.0"
-    udp_port = 12345
-    broadcast_ip = "255.255.255.255"
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    sock.bind((udp_ip, udp_port))
-    print("UDP 서버 시작됨. 대기중...")
-
-    while True:
-        try:
-            sock.settimeout(1)
-            data, addr = sock.recvfrom(1024)
-            message = data.decode().strip()
-            print(f"메시지 수신됨: {message} from {addr}")
-
-            if message == "REQUEST_IP":
-                ip_address = get_ip_address()
-                if ip_address:
-                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-            elif message == "START_RECORDING":
-                recording_status = start_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "STOP_RECORDING":
-                recording_status = stop_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-
-        except socket.timeout:
-            continue
-
 if __name__ == "__main__":
-    server_thread = threading.Thread(target=run_udp_server)
-    server_thread.start()
-    server_thread.join()
+    asyncio.run(main())
