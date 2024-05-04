@@ -41,6 +41,9 @@ def udp_server():
             elif message == "STOP_RECORDING":
                 recording_status = stop_recording()
                 send_status(sock, broadcast_ip, udp_port, recording_status)
+            elif message == "REQUEST_RECORDING_STATUS":  # 클라이언트로부터 녹화 상태 요청을 받음
+                recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+                send_status(sock, broadcast_ip, udp_port, recording_status)
 
         except socket.timeout:
             continue
