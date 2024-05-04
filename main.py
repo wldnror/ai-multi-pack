@@ -6,6 +6,14 @@ import threading
 import re
 import time
 
+
+# WebSocket을 통한 실시간 상태 알림
+async def notify_status(websocket, path):
+    while True:
+        await asyncio.sleep(1)  # 상태를 1초마다 확인
+        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+        await websocket.send(recording_status)  # 상태를 WebSocket을 통해 전송
+        
 # UDP 서버 처리를 위한 함수
 def udp_server():
     udp_ip = "0.0.0.0"
@@ -36,13 +44,6 @@ def udp_server():
 
         except socket.timeout:
             continue
-
-# WebSocket을 통한 실시간 상태 알림
-async def notify_status(websocket, path):
-    while True:
-        await asyncio.sleep(1)  # 상태를 1초마다 확인
-        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        await websocket.send(recording_status)  # 상태를 WebSocket을 통해 전송
 
 # IP 주소 가져오기
 def get_ip_address():
@@ -102,11 +103,12 @@ def send_status(sock, ip, port, message):
 
 # 메인 함수에서 두 서버를 병렬로 실행
 def main():
-    # UDP 서버 스레드 실행
+    loop = asyncio.get_event_loop()
     udp_thread = threading.Thread(target=udp_server)
     udp_thread.start()
-    # WebSocket 서버 비동기 실행
-    asyncio.run(websockets.serve(notify_status, "0.0.0.0", 8765))
+    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
+    loop.run_until_complete(websocket_server)
+    loop.run_forever()
 
 if __name__ == "__main__":
     main()
