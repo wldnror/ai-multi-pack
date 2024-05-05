@@ -1,6 +1,7 @@
 import smbus2
 import time
 import RPi.GPIO as GPIO
+import argparse
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
@@ -13,6 +14,11 @@ GPIO.setup(right_led_pin, GPIO.OUT)
 power_mgmt_1 = 0x6b
 device_address = 0x68  # MPU-6050의 기본 I2C 주소
 bus = smbus2.SMBus(1)
+
+# 전역 변수 설정
+manual_mode = False
+left_active = False
+right_active = False
 
 # MPU-6050 초기화
 def init_MPU6050():
@@ -47,23 +53,32 @@ def blink_led(pin, active):
     else:
         GPIO.output(pin, False)
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--manual", help="Enable manual mode", action="store_true")
+    parser.add_argument("--left", help="Turn on the left LED", action="store_true")
+    parser.add_argument("--right", help="Turn on the right LED", action="store_true")
+    return parser.parse_args()
+
 def main():
+    args = parse_args()
+    global manual_mode, left_active, right_active
+
+    if args.manual:
+        manual_mode = True
+        left_active = args.left
+        right_active = args.right
+
     init_MPU6050()
     try:
         while True:
-            accel_x = read_sensor_data(0x3b)
-            gyro_z = read_sensor_data(0x47)
-
-            # 비상등 히스테리시스 적용
-            check_emergency_hysteresis(accel_x, gyro_z, 500, 100, 50)
-
-            if emergency_active:
-                blink_led(left_led_pin, True)
-                blink_led(right_led_pin, True)
-            else:
-                blink_led(left_led_pin, left_active)
-                blink_led(right_led_pin, right_active)
-
+            if not manual_mode:
+                accel_x = read_sensor_data(0x3b)
+                gyro_z = read_sensor_data(0x47)
+                check_emergency_hysteresis(accel_x, gyro_z, 500, 100, 50)
+            blink_led(left_led_pin, left_active)
+            blink_led(right_led_pin, right_active)
+            time.sleep(0.1)
     finally:
         GPIO.cleanup()
 
