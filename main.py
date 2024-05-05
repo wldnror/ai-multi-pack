@@ -45,9 +45,11 @@ def udp_server():
                 send_status(sock, broadcast_ip, udp_port, recording_status)
             elif message == "Right Blinker Activated":
                 print("오른쪽 블링커 활성화됨")
+                subprocess.call(['python3', 'led/gyro_led_steering.py', 'right_on'])
                 send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
             elif message == "Left Blinker Activated":
                 print("왼쪽 블링커 활성화됨")
+                subprocess.call(['python3', 'led/gyro_led_steering.py', 'left_on'])
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
 
         except socket.timeout:
