@@ -6,7 +6,6 @@ import threading
 import re
 import time
 
-
 # WebSocket을 통한 실시간 상태 알림
 async def notify_status(websocket, path):
     while True:
@@ -44,6 +43,12 @@ def udp_server():
             elif message == "REQUEST_RECORDING_STATUS":  # 클라이언트로부터 녹화 상태 요청을 받음
                 recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
                 send_status(sock, broadcast_ip, udp_port, recording_status)
+            elif message == "Right Blinker Activated":
+                print("오른쪽 블링커 활성화됨")
+                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
+            elif message == "Left Blinker Activated":
+                print("왼쪽 블링커 활성화됨")
+                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
 
         except socket.timeout:
             continue
