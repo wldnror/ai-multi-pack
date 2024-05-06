@@ -84,23 +84,24 @@ def start_recording():
 
 
 # 녹화 중지
-async def stop_recording():
+def stop_recording():
     print("Attempting to stop recording...")
     try:
         output = subprocess.check_output(['pgrep', '-f', 'black_box/main.py'])
         print(f"Process found with PID: {output.decode().strip()}")
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
         print("Recording stopped.")
-        await asyncio.sleep(1)  # 프로세스 종료를 기다림
-        await force_release_camera()  # 카메라 자원 해제를 비동기로 처리
+        time.sleep(1)  # 프로세스 종료를 기다림
+        force_release_camera()  # 카메라 자원 해제 시도
         return "NOT_RECORDING"
     except subprocess.CalledProcessError as e:
         print(f"No recording process found: {e}")
-        await force_release_camera()
+        force_release_camera()
         return "NOT_RECORDING"
     except Exception as e:
         print(f"Error while stopping recording: {e}")
         return "ERROR_STOPPING"
+
 
 
 
