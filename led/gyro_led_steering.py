@@ -5,7 +5,7 @@ import argparse
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
-right_led_pin = 27 # 우회전 LED
+right_led_pin = 26 # 우회전 LED
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(left_led_pin, GPIO.OUT)
 GPIO.setup(right_led_pin, GPIO.OUT)
