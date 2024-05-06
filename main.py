@@ -7,9 +7,11 @@ import re
 import time
 from queue import Queue
 
-command_queue = Queue()  # 명령을 저장할 큐
+# 명령 처리 큐 생성
+command_queue = Queue()
 
 def command_processor():
+    """ 명령을 처리하는 함수 """
     while True:
         command = command_queue.get()
         if command == "START_RECORDING":
@@ -18,18 +20,17 @@ def command_processor():
             stop_recording()
         command_queue.task_done()
 
-# WebSocket을 통한 실시간 상태 알림
 async def notify_status(websocket, path):
+    """ WebSocket을 통해 녹화 상태를 실시간으로 알림 """
     while True:
         await asyncio.sleep(1)
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
         await websocket.send(recording_status)
 
-# UDP 서버 처리를 위한 함수
 def udp_server():
+    """ UDP 서버를 통해 외부 명령을 수신하는 함수 """
     udp_ip = "0.0.0.0"
     udp_port = 12345
-    broadcast_ip = "255.255.255.255"
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind((udp_ip, udp_port))
@@ -41,12 +42,12 @@ def udp_server():
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
             print(f"메시지 수신됨: {message} from {addr}")
-            command_queue.put(message)  # 명령을 큐에 추가
+            command_queue.put(message)  # 수신된 메시지를 명령 큐에 추가
         except socket.timeout:
             continue
 
-# IP 주소 가져오기
 def get_ip_address():
+    """ IP 주소를 가져오는 함수 """
     try:
         result = subprocess.check_output(["hostname", "-I"]).decode().strip()
         ip_address = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', result)[0]
@@ -55,53 +56,32 @@ def get_ip_address():
         print(f"IP 주소 가져오기 실패: {e}")
         return None
 
-# 프로세스 존재 확인
 def process_exists(process_name):
+    """ 특정 프로세스가 실행 중인지 확인하는 함수 """
     try:
         subprocess.check_output(['pgrep', '-f', process_name])
         return True
     except subprocess.CalledProcessError:
         return False
 
-# 녹화 시작
 def start_recording():
+    """ 녹화를 시작하는 함수 """
     if not process_exists('black_box/main.py'):
         subprocess.Popen(['python3', 'black_box/main.py'])
         print("녹화 시작.")
     return "RECORDING"
 
-# 녹화 중지
 def stop_recording():
+    """ 녹화를 중지하는 함수 """
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
         print("Recording stopped.")
         time.sleep(1)  # 프로세스 종료를 기다림
-        force_release_camera()  # 카메라 자원 해제 시도
     except subprocess.CalledProcessError:
         print("Recording process not found.")
-        force_release_camera()
-    finally:
-        return "NOT_RECORDING"
 
-# 카메라 자원 해제
-def force_release_camera():
-    try:
-        camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
-        for pid in camera_process_output.split():
-            subprocess.call(['kill', '-9', pid])
-        print("Camera resource forcefully released.")
-    except Exception as e:
-        print(f"Failed to release camera resource: {e}")
-
-# 상태 메시지 전송
-def send_status(sock, ip, port, message):
-    try:
-        sock.sendto(message.encode(), (ip, port))
-        print(f"Sent message: {message} to {ip}:{port}")
-    except Exception as e:
-        print(f"Failed to send message: {e}")
-# 메인 함수에서 서버와 명령 처리기를 병렬로 실행
 def main():
+    """ 메인 함수에서 WebSocket 서버와 UDP 서버를 실행 """
     loop = asyncio.get_event_loop()
     udp_thread = threading.Thread(target=udp_server)
     udp_thread.start()
