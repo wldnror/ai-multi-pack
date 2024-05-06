@@ -3,7 +3,7 @@ import time
 
 # GPIO 핀 번호 설정
 pin = 17
-pin = 26
+# pin = 26
 
 # GPIO 모드 설정
 GPIO.setmode(GPIO.BCM)
