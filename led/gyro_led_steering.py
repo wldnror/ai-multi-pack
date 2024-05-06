@@ -2,6 +2,7 @@ import smbus2
 import time
 import RPi.GPIO as GPIO
 import argparse
+import math
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
@@ -34,6 +35,11 @@ def read_sensor_data(addr):
     else:
         return value
 
+def calculate_angle(acc_x, acc_y, acc_z):
+    angle_x = math.atan2(acc_x, math.sqrt(acc_y**2 + acc_z**2)) * 180 / math.pi
+    angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
+    return angle_x, angle_y
+
 # 히스테리시스 적용 상태
 emergency_active = False
 
@@ -47,9 +53,9 @@ def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold,
 def blink_led(pin, active):
     if active:
         GPIO.output(pin, True)
-        time.sleep(0.5)  # LED가 켜져 있는 시간
+        time.sleep(1.5)  # LED가 켜져 있는 시간
         GPIO.output(pin, False)
-        time.sleep(0.5)  # LED가 꺼져 있는 시간
+        time.sleep(1.5)  # LED가 꺼져 있는 시간
     else:
         GPIO.output(pin, False)
 
@@ -74,8 +80,21 @@ def main():
         while True:
             if not manual_mode:
                 accel_x = read_sensor_data(0x3b)
-                gyro_z = read_sensor_data(0x47)
-                check_emergency_hysteresis(accel_x, gyro_z, 500, 100, 50)
+                accel_y = read_sensor_data(0x3d)
+                accel_z = read_sensor_data(0x3f)
+                gyro_y = read_sensor_data(0x45)
+                _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
+
+                if angle_y > 20:
+                    right_active = True
+                    left_active = False
+                elif angle_y < -20:
+                    right_active = False
+                    left_active = True
+                else:
+                    right_active = False
+                    left_active = False
+
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
             time.sleep(0.1)
