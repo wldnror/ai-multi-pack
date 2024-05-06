@@ -107,12 +107,21 @@ async def stop_recording():
 # 카메라 자원 해제
 async def force_release_camera():
     try:
+        # 카메라 점유 프로세스 조회
         camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
-        for pid in camera_process_output.split():
-            subprocess.call(['kill', '-9', pid])
-        print("Camera resource forcefully released.")
+        if camera_process_output:
+            print(f"Camera is currently used by PID: {camera_process_output}")
+            # 각 PID에 대해 강제 종료 시도
+            for pid in camera_process_output.split():
+                subprocess.run(['kill', '-9', pid], check=True)
+            print("Camera resource forcefully released.")
+        else:
+            print("No process is currently using the camera.")
+    except subprocess.CalledProcessError as e:
+        print(f"Failed to find or kill the process using the camera: {e}")
     except Exception as e:
-        print(f"Failed to release camera resource: {e}")
+        print(f"Unexpected error during camera release: {e}")
+
 
 # 상태 메시지 전송
 def send_status(sock, ip, port, message):
