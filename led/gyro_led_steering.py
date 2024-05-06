@@ -53,9 +53,9 @@ def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold,
 def blink_led(pin, active):
     if active:
         GPIO.output(pin, True)
-        time.sleep(1.5)  # LED가 켜져 있는 시간
+        time.sleep(1.0)  # LED가 켜져 있는 시간
         GPIO.output(pin, False)
-        time.sleep(1.5)  # LED가 꺼져 있는 시간
+        time.sleep(1.0)  # LED가 꺼져 있는 시간
     else:
         GPIO.output(pin, False)
 
