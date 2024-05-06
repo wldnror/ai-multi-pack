@@ -88,7 +88,7 @@ def main():
                 print(f"Gyro Y-axis speed: {gyro_y}, Tilt angle Y-axis: {angle_y}")
 
                 # 추가된 로직: 가만히 있을 때 비상등처럼 양쪽 LED를 깜박이기
-                if abs(gyro_y) < 10:  # 각속도가 매우 낮으면 비상등 활성화
+                if abs(gyro_y) < 5:  # 각속도가 매우 낮으면 비상등 활성화
                     left_active = True
                     right_active = True
                 elif angle_y > 20:
