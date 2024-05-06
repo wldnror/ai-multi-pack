@@ -55,7 +55,7 @@ def blink_led(pin, active):
         GPIO.output(pin, True)
         time.sleep(0.5)  # LED가 켜져 있는 시간
         GPIO.output(pin, False)
-        time.sleep(1.0)  # LED가 꺼져 있는 시간
+        time.sleep(0.5)  # LED가 꺼져 있는 시간
     else:
         GPIO.output(pin, False)
 
