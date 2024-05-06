@@ -5,14 +5,26 @@ import subprocess
 import threading
 import re
 import time
+from queue import Queue
+
+command_queue = Queue()  # 명령을 저장할 큐
+
+def command_processor():
+    while True:
+        command = command_queue.get()
+        if command == "START_RECORDING":
+            start_recording()
+        elif command == "STOP_RECORDING":
+            stop_recording()
+        command_queue.task_done()
 
 # WebSocket을 통한 실시간 상태 알림
 async def notify_status(websocket, path):
     while True:
-        await asyncio.sleep(1)  # 상태를 1초마다 확인
+        await asyncio.sleep(1)
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        await websocket.send(recording_status)  # 상태를 WebSocket을 통해 전송
-        
+        await websocket.send(recording_status)
+
 # UDP 서버 처리를 위한 함수
 def udp_server():
     udp_ip = "0.0.0.0"
@@ -29,29 +41,7 @@ def udp_server():
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
             print(f"메시지 수신됨: {message} from {addr}")
-
-            if message == "REQUEST_IP":
-                ip_address = get_ip_address()
-                if ip_address:
-                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-            elif message == "START_RECORDING":
-                recording_status = start_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "STOP_RECORDING":
-                recording_status = stop_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "REQUEST_RECORDING_STATUS":  # 클라이언트로부터 녹화 상태 요청을 받음
-                recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "Right Blinker Activated":
-                print("오른쪽 블링커 활성화됨")
-                subprocess.call(['python3', 'led/gyro_led_steering.py', 'right_on'])
-                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
-            elif message == "Left Blinker Activated":
-                print("왼쪽 블링커 활성화됨")
-                subprocess.call(['python3', 'led/gyro_led_steering.py', 'left_on'])
-                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-
+            command_queue.put(message)  # 명령을 큐에 추가
         except socket.timeout:
             continue
 
@@ -110,12 +100,13 @@ def send_status(sock, ip, port, message):
         print(f"Sent message: {message} to {ip}:{port}")
     except Exception as e:
         print(f"Failed to send message: {e}")
-
-# 메인 함수에서 두 서버를 병렬로 실행
+# 메인 함수에서 서버와 명령 처리기를 병렬로 실행
 def main():
     loop = asyncio.get_event_loop()
     udp_thread = threading.Thread(target=udp_server)
     udp_thread.start()
+    command_thread = threading.Thread(target=command_processor)
+    command_thread.start()
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
     loop.run_forever()
