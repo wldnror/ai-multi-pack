@@ -6,7 +6,6 @@ import threading
 import re
 import time
 
-
 # WebSocket을 통한 실시간 상태 알림
 async def notify_status(websocket, path):
     while True:
@@ -81,48 +80,28 @@ def start_recording():
         print("녹화 시작.")
     return "RECORDING"
 
-
-
 # 녹화 중지
 def stop_recording():
-    print("Attempting to stop recording...")
     try:
-        output = subprocess.check_output(['pgrep', '-f', 'black_box/main.py'])
-        print(f"Process found with PID: {output.decode().strip()}")
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
         print("Recording stopped.")
         time.sleep(1)  # 프로세스 종료를 기다림
         force_release_camera()  # 카메라 자원 해제 시도
-        return "NOT_RECORDING"
-    except subprocess.CalledProcessError as e:
-        print(f"No recording process found: {e}")
+    except subprocess.CalledProcessError:
+        print("Recording process not found.")
         force_release_camera()
+    finally:
         return "NOT_RECORDING"
-    except Exception as e:
-        print(f"Error while stopping recording: {e}")
-        return "ERROR_STOPPING"
-
-
-
 
 # 카메라 자원 해제
-async def force_release_camera():
+def force_release_camera():
     try:
-        # 카메라 점유 프로세스 조회
         camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
-        if camera_process_output:
-            print(f"Camera is currently used by PID: {camera_process_output}")
-            # 각 PID에 대해 강제 종료 시도
-            for pid in camera_process_output.split():
-                subprocess.run(['kill', '-9', pid], check=True)
-            print("Camera resource forcefully released.")
-        else:
-            print("No process is currently using the camera.")
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to find or kill the process using the camera: {e}")
+        for pid in camera_process_output.split():
+            subprocess.call(['kill', '-9', pid])
+        print("Camera resource forcefully released.")
     except Exception as e:
-        print(f"Unexpected error during camera release: {e}")
-
+        print(f"Failed to release camera resource: {e}")
 
 # 상태 메시지 전송
 def send_status(sock, ip, port, message):
