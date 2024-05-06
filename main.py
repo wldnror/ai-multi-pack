@@ -6,6 +6,7 @@ import threading
 import re
 import time
 
+
 # WebSocket을 통한 실시간 상태 알림
 async def notify_status(websocket, path):
     while True:
@@ -80,21 +81,23 @@ def start_recording():
         print("녹화 시작.")
     return "RECORDING"
 
+
+
 # 녹화 중지
-def stop_recording():
+async def stop_recording():
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
         print("Recording stopped.")
-        time.sleep(1)  # 프로세스 종료를 기다림
-        force_release_camera()  # 카메라 자원 해제 시도
+        await asyncio.sleep(1)  # 프로세스 종료를 기다림
+        await force_release_camera()  # 카메라 자원 해제를 비동기로 처리
     except subprocess.CalledProcessError:
         print("Recording process not found.")
-        force_release_camera()
+        await force_release_camera()
     finally:
         return "NOT_RECORDING"
 
 # 카메라 자원 해제
-def force_release_camera():
+async def force_release_camera():
     try:
         camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
         for pid in camera_process_output.split():
