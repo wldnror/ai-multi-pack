@@ -153,7 +153,7 @@ def send_message(sock, ip, port, message):
         print(f"메시지 전송 실패: {e}")
 
 def udp_client():
-    server_ip = "127.0.0.1"  # 서버 IP 주소
+    server_ip = "10.0.0.34"  # 서버 IP 주소
     server_port = 12345  # 서버 포트
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     messages = [
