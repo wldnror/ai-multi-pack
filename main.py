@@ -17,8 +17,9 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
-        subprocess.check_output(['pgrep', '-f', process_name])
-        return True
+        # 전체 명령어 라인을 확인하고 정확한 경로가 포함되었는지 검사합니다.
+        output = subprocess.check_output(['pgrep', '-fl', process_name]).decode()
+        return any("black_box/main.py" in line for line in output.splitlines())
     except subprocess.CalledProcessError:
         return False
 
