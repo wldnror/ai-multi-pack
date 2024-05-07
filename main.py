@@ -17,10 +17,13 @@ def get_ip_address():
 
 def process_exists(process_name):
     try:
-        # 전체 명령어 라인을 확인하고 정확한 경로가 포함되었는지 검사합니다.
-        output = subprocess.check_output(['pgrep', '-fl', process_name]).decode()
-        return any("black_box/main.py" in line for line in output.splitlines())
-    except subprocess.CalledProcessError:
+        process_list = subprocess.check_output(['ps', 'aux']).decode()
+        for process in process_list.splitlines():
+            if process_name in process:
+                return True
+        return False
+    except Exception as e:
+        print(f"Error checking processes: {e}")
         return False
 
 def start_recording():
