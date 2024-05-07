@@ -55,8 +55,13 @@ def force_release_camera():
 
 def send_status(sock, ip, port, message):
     try:
-        sock.sendto(message.encode(), (ip, port))
-        print(f"Sent message: {message} to {ip}:{port}")
+        ip_address = get_ip_address()
+        if ip_address:
+            message_with_ip = f"IP:{ip_address} - {message}"
+            sock.sendto(message_with_ip.encode(), (ip, port))
+            print(f"Sent message with IP: {message_with_ip} to {ip}:{port}")
+        else:
+            print("Failed to get IP address.")
     except Exception as e:
         print(f"Failed to send message: {e}")
 
