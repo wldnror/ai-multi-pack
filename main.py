@@ -57,10 +57,14 @@ def send_status(sock, ip, port, message):
         print(f"Failed to send message: {e}")
 
 async def notify_status(websocket, path):
+    last_status = None
     while True:
-        await asyncio.sleep(1)
+        await asyncio.sleep(1)  # 상태를 확인하는 간격을 1초로 설정
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        await websocket.send(recording_status)
+        if recording_status != last_status:
+            await websocket.send(recording_status)
+            print(f"상태 업데이트 전송: {recording_status}")
+            last_status = recording_status
 
 def udp_server():
     udp_ip = "0.0.0.0"
