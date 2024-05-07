@@ -102,8 +102,11 @@ def udp_server():
                 recording_status = stop_recording()
                 send_status(sock, broadcast_ip, udp_port, recording_status)
             elif message == "REQUEST_RECORDING_STATUS":
+                ip_address = get_ip_address()  # 서버의 IP 주소를 가져옵니다.
                 recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-                send_status(sock, broadcast_ip, udp_port, recording_status)
+                combined_message = f"IP:{ip_address} - {recording_status}"  # IP 주소와 녹화 상태를 조합합니다.
+                send_status(sock, broadcast_ip, udp_port, combined_message)  # 수정된 메시지를 전송합니다.
+
             elif message == "Right Blinker Activated":
                 print("오른쪽 블링커 활성화됨")
                 subprocess.call(['python3', 'led/gyro_led_steering.py', 'right_on'])
