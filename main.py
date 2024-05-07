@@ -132,7 +132,7 @@ import socket
 import time
 
 def request_ip_and_send_messages():
-    server_ip = "0.0.0.0"  # 서버 IP 주소
+    server_ip = "10.0.0.34"  # 서버 IP 주소
     server_port = 12345  # 서버 포트
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
