@@ -128,36 +128,27 @@
 #     main()
 
 
-
-import asyncio
 import socket
-import subprocess
-import threading
-import re
 import time
 
-def get_ip_address():
-    try:
-        result = subprocess.check_output(["hostname", "-I"]).decode().strip()
-        ip_address = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', result)[0]
-        return ip_address
-    except Exception as e:
-        print(f"IP 주소 가져오기 실패: {e}")
-        return None
-
-def send_message(sock, ip, port, message):
-    try:
-        sock.sendto(message.encode(), (ip, port))
-        print(f"메시지 '{message}' 가 {ip}:{port} 로 전송되었습니다.")
-    except Exception as e:
-        print(f"메시지 전송 실패: {e}")
-
-def udp_client():
+def request_ip_and_send_messages():
     server_ip = "0.0.0.0"  # 서버 IP 주소
     server_port = 12345  # 서버 포트
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    # 서버에게 IP 주소 요청
+    sock.sendto("REQUEST_IP".encode(), (server_ip, server_port))
+    try:
+        sock.settimeout(5)
+        data, addr = sock.recvfrom(1024)  # 서버로부터 응답 수신
+        my_ip = data.decode()
+        print(f"서버로부터 받은 IP 주소: {my_ip}")
+    except socket.timeout:
+        print("서버로부터 응답이 없습니다.")
+        return
+
     messages = [
-        "REQUEST_IP", "START_RECORDING", "STOP_RECORDING",
+        "START_RECORDING", "STOP_RECORDING",
         "REQUEST_RECORDING_STATUS", "Right Blinker Activated",
         "Left Blinker Activated"
     ]
@@ -172,10 +163,10 @@ def udp_client():
             break
         if choice.isdigit() and 1 <= int(choice) <= len(messages):
             selected_message = messages[int(choice) - 1]
-            send_message(sock, server_ip, server_port, selected_message)
+            sock.sendto(selected_message.encode(), (server_ip, server_port))
+            print(f"메시지 '{selected_message}' 가 {server_ip}:{server_port} 로 전송되었습니다.")
         else:
             print("잘못된 선택입니다. 다시 시도하세요.")
 
 if __name__ == "__main__":
-    udp_client()
-
+    request_ip_and_send_messages()
