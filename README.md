@@ -162,6 +162,51 @@ wget https://raw.githubusercontent.com/pjreddie/darknet/master/data/coco.names -
 ```
 </details>
 
+
+## 어플 연동 방법
+
+### 1. 서비스 파일 생성
+시스템의 systemd 서비스 매니저를 사용하여 어플리케이션과 라즈베리파이를 연동합니다. 먼저 사용자의 systemd 디렉터리에 서비스 파일을 생성합니다.
+```bash
+sudo nano /etc/systemd/system/my_script.service
+```
+
+### 2. 서비스 파일 내용 작성
+생성한 파일에 다음 내용을 입력합니다. 이 구성은 파이썬 스크립트를 서비스로 실행하며, 네트워크가 준비된 후에 서비스가 시작되도록 설정합니다.
+
+```ini
+[Unit]
+Description=My Python Script Service
+After=network.target
+
+[Service]
+Type=simple
+User=user
+WorkingDirectory=/home/user/ai-multi-pack
+ExecStart=/usr/bin/python3 /home/user/ai-multi-pack/main.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 3. 서비스 활성화 및 시작
+생성한 서비스 파일을 저장하고 나면, 시스템의 systemd 관리 도구를 통해 서비스를 활성화하고 시작할 수 있습니다.
+
+```bash
+sudo systemctl daemon-reload  # systemd 설정 리로드
+sudo systemctl enable my_script.service  # 서비스를 활성화하여 부팅 시 자동 시작되게 함
+sudo systemctl start my_script.service   # 서비스를 시작
+```
+
+### 4. 서비스 상태 및 로그 확인
+서비스의 상태를 확인하거나 문제 해결을 위해 로그를 확인할 필요가 있을 때 사용할 수 있는 명령어입니다.
+
+```bash
+sudo systemctl status my_script.service  # 서비스 상태 확인
+sudo journalctl -u my_script.service     # 서비스 로그 확인
+```
+
 ## 각종 문제 해결 방안
 
 - 라이브러리 설치 실패 시
