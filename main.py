@@ -3,9 +3,9 @@ import websockets
 import socket
 import subprocess
 import threading
+import RPi.GPIO as GPIO
 import re
 import time
-import RPi.GPIO as GPIO
 
 # GPIO 핀 설정 및 초기화
 def setup_gpio():
@@ -126,7 +126,7 @@ def setup_gpio_listeners():
     setup_gpio()
     GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
     GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-    
+
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -172,8 +172,6 @@ def handle_udp_messages(sock, message, addr):
     elif message == "ENABLE_AUTO_MODE":
         enable_mode("auto")
         send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
-        except socket.timeout:
-            continue
 
 def main():
     try:
