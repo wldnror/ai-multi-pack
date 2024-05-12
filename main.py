@@ -64,6 +64,29 @@ def send_status(sock, ip, port, message):
     except Exception as e:
         print(f"메시지 전송 실패: {e}")
 
+def terminate_mode_process(mode_script):
+    try:
+        output = subprocess.check_output(['pgrep', '-f', mode_script]).decode().strip()
+        if output:
+            pids = output.split()
+            for pid in pids:
+                subprocess.call(['kill', '-9', pid])
+            print(f"{mode_script} 프로세스 종료됨.")
+    except subprocess.CalledProcessError:
+        print(f"{mode_script} 프로세스를 찾을 수 없습니다.")
+    except Exception as e:
+        print(f"프로세스 종료 중 오류 발생: {e}")
+
+def enable_mode(mode):
+    if mode == "manual":
+        terminate_mode_process('led/gyro_led_steering.py --auto')
+        subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual'])
+        print("수동 모드 활성화됨")
+    elif mode == "auto":
+        terminate_mode_process('led/gyro_led_steering.py --manual')
+        subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--auto'])
+        print("자동 모드 활성화됨")
+
 async def notify_status(websocket, path):
     last_status = None
     while True:
@@ -112,12 +135,10 @@ def udp_server():
                 subprocess.Popen(['python3', 'led/gyro_led_steering.py', 'left_on'])
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
             elif message == "ENABLE_MANUAL_MODE":
-                print("수동 모드 활성화됨")
-                subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual'])
+                enable_mode("manual")
                 send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
             elif message == "ENABLE_AUTO_MODE":
-                print("자동 모드 활성화됨")
-                subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--auto'])
+                enable_mode("auto")
                 send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
         except socket.timeout:
             continue
