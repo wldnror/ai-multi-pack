@@ -8,10 +8,12 @@ import time
 import RPi.GPIO as GPIO
 
 # GPIO 핀 설정 및 초기화
-GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)  # 경고 메시지 비활성화
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+def setup_gpio():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+    GPIO.cleanup()  # 이전에 설정된 GPIO 설정을 청소
+    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
 current_mode = 'manual'  # 초기 모드 설정
 
@@ -90,11 +92,9 @@ def enable_mode(mode):
     if mode == "manual" and current_mode != 'manual':
         terminate_and_restart_blinker(script, '--manual')
         current_mode = 'manual'
-        print("수동 모드로 변경됨")
     elif mode == "auto" and current_mode != 'auto':
         terminate_and_restart_blinker(script, '--auto')
         current_mode = 'auto'
-        print("자동 모드로 변경됨")
 
 async def notify_status(websocket, path):
     last_status = None
@@ -103,20 +103,11 @@ async def notify_status(websocket, path):
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
         if recording_status != last_status:
             await websocket.send(recording_status)
-            print(f"상태 업데이트 전송: {recording_status}")
             last_status = recording_status
 
 def gpio_callback(channel):
     state = "HIGH" if GPIO.input(channel) else "LOW"
     asyncio.run(broadcast_message(f"GPIO {channel} changed to {state}"))
-
-async def broadcast_message(message):
-    if connected_clients:
-        await asyncio.wait([client.send(message) for client in connected_clients])
-
-def setup_gpio_listeners():
-    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
 
 connected_clients = set()
 
@@ -127,6 +118,15 @@ async def handler(websocket, path):
     finally:
         connected_clients.remove(websocket)
 
+async def broadcast_message(message):
+    if connected_clients:
+        await asyncio.wait([client.send(message) for client in connected_clients])
+
+def setup_gpio_listeners():
+    setup_gpio()
+    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -141,13 +141,18 @@ def udp_server():
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
+            handle_udp_messages(sock, message, addr)
+        except socket.timeout:
+            continue
 
-            if message == "Right Blinker Activated" and current_mode == 'manual':
-                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
-                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
-            elif message == "Left Blinker Activated" and current_mode == 'manual':
-                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
-                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
+def handle_udp_messages(sock, message, addr):
+    global current_mode
+    if message == "Right Blinker Activated" and current_mode == 'manual':
+        terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
+        send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
+    elif message == "Left Blinker Activated" and current_mode == 'manual':
+        terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
+        send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
             elif message == "REQUEST_IP":
                 ip_address = get_ip_address()
                 if ip_address:
@@ -171,18 +176,22 @@ def udp_server():
             continue
 
 def main():
-    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
-    enable_mode("auto")  # 자동 모드 설정
-    start_recording()  # 블랙박스 레코딩 시작
-    setup_gpio_listeners()  # GPIO 감지 설정
+    try:
+        setup_gpio_listeners()  # GPIO 감지 설정
+        enable_mode("auto")  # 자동 모드 설정
+        start_recording()  # 블랙박스 레코딩 시작
 
-    loop = asyncio.get_event_loop()
-    udp_thread = threading.Thread(target=udp_server, daemon=True)
-    udp_thread.start()
-    websocket_server = websockets.serve(handler, "0.0.0.0", 8765)
+        loop = asyncio.get_event_loop()
+        udp_thread = threading.Thread(target=udp_server, daemon=True)
+        udp_thread.start()
+        websocket_server = websockets.serve(handler, "0.0.0.0", 8765)
+        loop.run_until_complete(websocket_server)
+        loop.run_forever()
 
-    loop.run_until_complete(websocket_server)
-    loop.run_forever()
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+    finally:
+        GPIO.cleanup()  # 프로그램 종료 시 GPIO 설정 청소
 
 if __name__ == "__main__":
     main()
