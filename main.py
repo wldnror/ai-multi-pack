@@ -9,9 +9,9 @@ import time
 
 # GPIO 핀 설정 및 초기화
 def setup_gpio():
-    GPIO.cleanup()  # 모든 설정 청소
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
+    # GPIO.cleanup() 제거, 설정된 상태 유지
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
@@ -105,9 +105,17 @@ async def notify_status(websocket, path):
             await websocket.send(recording_status)
             last_status = recording_status
 
-def gpio_callback(channel):
-    state = "HIGH" if GPIO.input(channel) else "LOW"
-    asyncio.run(broadcast_message(f"GPIO {channel} changed to {state}"))
+async def report_gpio_status():
+    while True:
+        pin_17_status = "HIGH" if GPIO.input(17) else "LOW"
+        pin_26_status = "HIGH" if GPIO.input(26) else "LOW"
+        message = f"Pin 17: {pin_17_status}, Pin 26: {pin_26_status}"
+        await broadcast_message(message)
+        await asyncio.sleep(1)  # Report every second
+
+async def broadcast_message(message):
+    if connected_clients:
+        await asyncio.wait([client.send(message) for client in connected_clients])
 
 connected_clients = set()
 
@@ -123,14 +131,9 @@ async def broadcast_message(message):
         await asyncio.wait([client.send(message) for client in connected_clients])
 
 def setup_gpio_listeners():
-    try:
-        setup_gpio()
-        GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-        GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-    except RuntimeError as e:
-        print(f"RuntimeError: {e}")
-        GPIO.cleanup()
-        raise RuntimeError("Failed to setup GPIO listeners. Try restarting the Raspberry Pi.")
+    setup_gpio()
+    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
 
 def udp_server():
     udp_ip = "0.0.0.0"
@@ -179,6 +182,8 @@ def handle_udp_messages(sock, message, addr):
         send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
 
 def main():
+    setup_gpio()  # Setup GPIO without listeners to just report state
+    loop = asyncio.get_event_loop()
     try:
         setup_gpio_listeners()  # GPIO 감지 설정
         enable_mode("auto")  # 자동 모드 설정
@@ -194,7 +199,7 @@ def main():
     except Exception as e:
         print(f"Unexpected error: {e}")
     finally:
-        GPIO.cleanup()  # 프로그램 종료 시 GPIO 설정 청소
+        GPIO.cleanup()
 
 if __name__ == "__main__":
     main()
