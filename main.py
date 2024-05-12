@@ -6,11 +6,6 @@ import threading
 import re
 import time
 
-blinker_status = {
-    'right': False,
-    'left': False
-}
-
 def get_ip_address():
     try:
         result = subprocess.check_output(["hostname", "-I"]).decode().strip()
@@ -69,28 +64,23 @@ def send_status(sock, ip, port, message):
     except Exception as e:
         print(f"메시지 전송 실패: {e}")
 
-def terminate_mode_process(mode_script):
+def terminate_and_restart_blinker(mode_script, additional_args=""):
     try:
-        output = subprocess.check_output(['pgrep', '-f', mode_script]).decode().strip()
-        if output:
-            pids = output.split()
-            for pid in pids:
-                subprocess.call(['kill', '-9', pid])
-            print(f"{mode_script} 프로세스 종료됨.")
-    except subprocess.CalledProcessError:
-        print(f"{mode_script} 프로세스를 찾을 수 없습니다.")
+        # Terminate existing processes
+        subprocess.call(['pkill', '-f', mode_script])
+        print(f"{mode_script} 프로세스 종료됨.")
+        # Start new process
+        subprocess.Popen(['python3', mode_script] + additional_args.split())
+        print(f"{mode_script} with {additional_args} 시작됨.")
     except Exception as e:
-        print(f"프로세스 종료 중 오류 발생: {e}")
+        print(f"{mode_script} 실행 중 오류 발생: {e}")
 
 def enable_mode(mode):
+    script = 'led/gyro_led_steering.py'
     if mode == "manual":
-        terminate_mode_process('led/gyro_led_steering.py --auto')
-        subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual'])
-        print("수동 모드 활성화됨")
+        terminate_and_restart_blinker(script, '--manual')
     elif mode == "auto":
-        terminate_mode_process('led/gyro_led_steering.py --manual')
-        subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--auto'])
-        print("자동 모드 활성화됨")
+        terminate_and_restart_blinker(script, '--auto')
 
 async def notify_status(websocket, path):
     last_status = None
@@ -111,8 +101,6 @@ def udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
-    global blinker_status
-
     while True:
         try:
             sock.settimeout(1)
@@ -120,17 +108,11 @@ def udp_server():
             message = data.decode().strip()
 
             if message == "Right Blinker Activated":
-                if not blinker_status['right']:
-                    print("오른쪽 블링커 활성화됨")
-                    subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual', '--right'])
-                    blinker_status['right'] = True
-                    send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
+                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
             elif message == "Left Blinker Activated":
-                if not blinker_status['left']:
-                    print("왼쪽 블링커 활성화됨")
-                    subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual', '--left'])
-                    blinker_status['left'] = True
-                    send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
+                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
             # 다른 메시지 처리
             elif message == "REQUEST_IP":
                 ip_address = get_ip_address()
