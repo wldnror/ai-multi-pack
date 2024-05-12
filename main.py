@@ -5,38 +5,9 @@ import subprocess
 import threading
 import re
 import time
-import RPi.GPIO as GPIO
 
 current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
-# GPIO 핀 설정
-def initialize_gpio():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    print(f"Initial GPIO 17 State: {GPIO.input(17)}")
-    print(f"Initial GPIO 26 State: {GPIO.input(26)}")
-
-# GPIO 상태 저장을 위한 딕셔너리, 이 부분은 함수 내에서 초기화됩니다.
-last_state = {}
-
-# 상태 저장을 위한 딕셔너리
-last_state = {
-    17: GPIO.input(17),
-    26: GPIO.input(26)
-}
-
-def check_gpio_changes(sock):
-    global last_state
-    while True:
-        time.sleep(1)
-        for pin in last_state:
-            current_state = GPIO.input(pin)
-            if current_state != last_state[pin]:
-                last_state[pin] = current_state
-                message = f"GPIO {pin} {'HIGH' if current_state else 'LOW'}"
-                print(message)
-                send_status(sock, "255.255.255.255", 12345, message)
 def get_ip_address():
     try:
         result = subprocess.check_output(["hostname", "-I"]).decode().strip()
@@ -90,7 +61,6 @@ def send_status(sock, ip, port, message):
         ip_address = get_ip_address()
         if ip_address:
             message_with_ip = f"IP:{ip_address} - {message}"
-            print(f"Sending message: {message_with_ip}")  # 메시지 전송 로그 추가
             sock.sendto(message_with_ip.encode(), (ip, port))
         else:
             print("IP 주소를 가져오는 데 실패했습니다.")
@@ -177,8 +147,6 @@ def udp_server():
             continue
 
 def main():
-
-    initialize_gpio()
     # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
     enable_mode("auto")  # 자동 모드 설정
     start_recording()  # 블랙박스 레코딩 시작
