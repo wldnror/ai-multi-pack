@@ -6,7 +6,7 @@ import threading
 import re
 import time
 
-current_mode = 'auto'  # 자동 모드로 기본 설정
+current_mode = 'auto'  # 초기 모드를 자동으로 설정
 
 def get_ip_address():
     try:
@@ -31,6 +31,8 @@ def start_recording():
     if not process_exists('black_box/main.py'):
         subprocess.Popen(['python3', 'black_box/main.py'])
         print("녹화 시작.")
+    else:
+        print("녹화 이미 진행 중.")
     return "RECORDING"
 
 def stop_recording():
@@ -151,6 +153,10 @@ def main():
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
     loop.run_forever()
+
+    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
+    enable_mode("auto")
+    start_recording()
 
 if __name__ == "__main__":
     main()
