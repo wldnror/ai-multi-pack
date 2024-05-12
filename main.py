@@ -87,8 +87,8 @@ def send_status(sock, ip, port, message):
         ip_address = get_ip_address()
         if ip_address:
             message_with_ip = f"IP:{ip_address} - {message}"
+            print(f"Sending message: {message_with_ip}")  # 메시지 전송 로그 추가
             sock.sendto(message_with_ip.encode(), (ip, port))
-            print(f"Sent to {ip}:{port} - {message_with_ip}")  # 로그 추가
         else:
             print("IP 주소를 가져오는 데 실패했습니다.")
     except Exception as e:
