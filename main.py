@@ -6,7 +6,7 @@ import threading
 import re
 import time
 
-current_mode = 'auto'  # 초기 모드를 자동으로 설정
+current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
 def get_ip_address():
     try:
@@ -80,15 +80,16 @@ def terminate_and_restart_blinker(mode_script, additional_args=""):
 
 def enable_mode(mode):
     global current_mode
+    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")  # 현재 모드와 요청 모드 로깅
     script = 'led/gyro_led_steering.py'
-    if mode == "manual":
-        if current_mode != 'manual':
-            terminate_and_restart_blinker(script, '--manual')
-            current_mode = 'manual'
-    elif mode == "auto":
-        if current_mode != 'auto':
-            terminate_and_restart_blinker(script, '--auto')
-            current_mode = 'auto'
+    if mode == "manual" and current_mode != 'manual':
+        terminate_and_restart_blinker(script, '--manual')
+        current_mode = 'manual'
+        print("수동 모드로 변경됨")
+    elif mode == "auto" and current_mode != 'auto':
+        terminate_and_restart_blinker(script, '--auto')
+        current_mode = 'auto'
+        print("자동 모드로 변경됨")
 
 async def notify_status(websocket, path):
     last_status = None
