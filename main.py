@@ -105,13 +105,9 @@ async def notify_status(websocket, path):
             await websocket.send(recording_status)
             last_status = recording_status
 
-async def report_gpio_status():
-    while True:
-        pin_17_status = "HIGH" if GPIO.input(17) else "LOW"
-        pin_26_status = "HIGH" if GPIO.input(26) else "LOW"
-        message = f"Pin 17: {pin_17_status}, Pin 26: {pin_26_status}"
-        await broadcast_message(message)
-        await asyncio.sleep(1)  # Report every second
+def gpio_callback(channel):
+    state = "HIGH" if GPIO.input(channel) else "LOW"
+    asyncio.run(broadcast_message(f"GPIO {channel} changed to {state}"))
 
 connected_clients = set()
 
@@ -125,6 +121,11 @@ async def handler(websocket, path):
 async def broadcast_message(message):
     if connected_clients:
         await asyncio.wait([client.send(message) for client in connected_clients])
+
+def setup_gpio_listeners():
+    setup_gpio()
+    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
 
 def udp_server():
     udp_ip = "0.0.0.0"
@@ -173,8 +174,6 @@ def handle_udp_messages(sock, message, addr):
         send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
 
 def main():
-    setup_gpio()  # Setup GPIO without listeners to just report state
-    loop = asyncio.get_event_loop()
     try:
         setup_gpio_listeners()  # GPIO 감지 설정
         enable_mode("auto")  # 자동 모드 설정
@@ -186,10 +185,11 @@ def main():
         websocket_server = websockets.serve(handler, "0.0.0.0", 8765)
         loop.run_until_complete(websocket_server)
         loop.run_forever()
+
     except Exception as e:
         print(f"Unexpected error: {e}")
     finally:
-        GPIO.cleanup()
+        GPIO.cleanup()  # 프로그램 종료 시 GPIO 설정 청소
 
 if __name__ == "__main__":
     main()
