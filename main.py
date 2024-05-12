@@ -153,25 +153,25 @@ def handle_udp_messages(sock, message, addr):
     elif message == "Left Blinker Activated" and current_mode == 'manual':
         terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
         send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            elif message == "REQUEST_IP":
-                ip_address = get_ip_address()
-                if ip_address:
-                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-            elif message == "START_RECORDING":
-                recording_status = start_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "STOP_RECORDING":
-                recording_status = stop_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "REQUEST_RECORDING_STATUS":
-                recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "ENABLE_MANUAL_MODE":
-                enable_mode("manual")
-                send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
-            elif message == "ENABLE_AUTO_MODE":
-                enable_mode("auto")
-                send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
+    elif message == "REQUEST_IP":
+        ip_address = get_ip_address()
+        if ip_address:
+            send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+    elif message == "START_RECORDING":
+        recording_status = start_recording()
+        send_status(sock, broadcast_ip, udp_port, recording_status)
+    elif message == "STOP_RECORDING":
+        recording_status = stop_recording()
+        send_status(sock, broadcast_ip, udp_port, recording_status)
+    elif message == "REQUEST_RECORDING_STATUS":
+        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+        send_status(sock, broadcast_ip, udp_port, recording_status)
+    elif message == "ENABLE_MANUAL_MODE":
+        enable_mode("manual")
+        send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
+    elif message == "ENABLE_AUTO_MODE":
+        enable_mode("auto")
+        send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
         except socket.timeout:
             continue
 
