@@ -117,6 +117,10 @@ async def broadcast_message(message):
         await asyncio.wait([client.send(message) for client in connected_clients])
 
 def setup_gpio_listeners():
+    # GPIO 핀 상태 확인 및 이벤트 감지 설정
+    GPIO.cleanup()  # 이전 설정 클리어
+    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
     GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
 
@@ -187,6 +191,8 @@ def main():
 
     loop.run_until_complete(websocket_server)
     loop.run_forever()
+    finally:
+        GPIO.cleanup()  # 프로그램 종료 시 GPIO 클리어
 
 if __name__ == "__main__":
     main()
