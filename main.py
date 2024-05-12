@@ -69,20 +69,22 @@ def send_status(sock, ip, port, message):
     except Exception as e:
         print(f"메시지 전송 실패: {e}")
 
-def terminate_mode_process(mode_script):
+def terminate_existing_process():
+    # 기존의 수동 모드 실행 중인지 확인하고 종료
     try:
-        output = subprocess.check_output(['pgrep', '-f', mode_script]).decode().strip()
+        output = subprocess.check_output(['pgrep', '-f', 'led/gyro_led_steering.py --manual']).decode().strip()
         if output:
             pids = output.split()
             for pid in pids:
                 subprocess.call(['kill', '-9', pid])
-            print(f"{mode_script} 프로세스 종료됨.")
+            print("기존 수동 모드 프로세스 종료됨.")
     except subprocess.CalledProcessError:
-        print(f"{mode_script} 프로세스를 찾을 수 없습니다.")
+        print("기존 수동 모드 프로세스를 찾을 수 없습니다.")
     except Exception as e:
         print(f"프로세스 종료 중 오류 발생: {e}")
 
 def enable_mode(mode):
+    terminate_existing_process()
     if mode == "manual":
         terminate_mode_process('led/gyro_led_steering.py --auto')
         subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual'])
@@ -102,6 +104,16 @@ async def notify_status(websocket, path):
             print(f"상태 업데이트 전송: {recording_status}")
             last_status = recording_status
 
+def start_blinker(mode):
+    terminate_existing_process()
+    command = ['python3', 'led/gyro_led_steering.py', '--manual']
+    if mode == 'right':
+        command.append('--right')
+    elif mode == 'left':
+        command.append('--left')
+    subprocess.Popen(command)
+    print(f"{mode} 블링커 활성화됨.")
+
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -119,18 +131,18 @@ def udp_server():
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
 
-            if message == "Right Blinker Activated":
-                if not blinker_status['right']:
+            if message == "Right Blinker Activated" and not blinker_status['right']:
+                start_blinker('right')
                     print("오른쪽 블링커 활성화됨")
                     subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual', '--right'])
-                    blinker_status['right'] = True
-                    send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
-            elif message == "Left Blinker Activated":
-                if not blinker_status['left']:
+                blinker_status['right'] = True
+                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
+            elif message == "Left Blinker Activated" and not blinker_status['left']:
+                start_blinker('left')
                     print("왼쪽 블링커 활성화됨")
                     subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual', '--left'])
-                    blinker_status['left'] = True
-                    send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
+                blinker_status['left'] = True
+                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
             # 다른 메시지 처리
             elif message == "REQUEST_IP":
                 ip_address = get_ip_address()
