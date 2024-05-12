@@ -5,7 +5,6 @@ from ftplib import FTP
 import subprocess
 from threading import Thread, Lock
 from queue import Queue
-current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
