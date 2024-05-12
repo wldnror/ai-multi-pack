@@ -91,9 +91,20 @@ def send_status(sock, ip, port, message):
     except Exception as e:
         print(f"메시지 전송 실패: {e}")
 
+def terminate_and_restart_blinker(mode_script, additional_args=""):
+    try:
+        # Terminate existing processes
+        subprocess.call(['pkill', '-f', mode_script])
+        print(f"{mode_script} 프로세스 종료됨.")
+        # Start new process
+        subprocess.Popen(['python3', mode_script] + additional_args.split())
+        print(f"{mode_script} with {additional_args} 시작됨.")
+    except Exception as e:
+        print(f"{mode_script} 실행 중 오류 발생: {e}")
+
 def enable_mode(mode):
     global current_mode
-    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")
+    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")  # 현재 모드와 요청 모드 로깅
     script = 'led/gyro_led_steering.py'
     if mode == "manual" and current_mode != 'manual':
         terminate_and_restart_blinker(script, '--manual')
@@ -160,7 +171,7 @@ def udp_server():
             continue
 
 def main():
-    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 레코딩 시작
+    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
     enable_mode("auto")  # 자동 모드 설정
     start_recording()  # 블랙박스 레코딩 시작
 
