@@ -23,7 +23,7 @@ def process_exists(process_name):
                 return True
         return False
     except Exception as e:
-        print(f"Error checking processes: {e}")
+        print(f"프로세스 확인 중 오류 발생: {e}")
         return False
 
 def start_recording():
@@ -35,11 +35,11 @@ def start_recording():
 def stop_recording():
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
-        print("Recording stopped.")
-        time.sleep(1)  # 프로세스 종료를 기다림
-        force_release_camera()  # 카메라 자원 해제 시도
+        print("녹화 중지.")
+        time.sleep(1)
+        force_release_camera()
     except subprocess.CalledProcessError:
-        print("Recording process not found.")
+        print("녹화 프로세스를 찾을 수 없습니다.")
         force_release_camera()
     finally:
         return "NOT_RECORDING"
@@ -49,9 +49,9 @@ def force_release_camera():
         camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
         for pid in camera_process_output.split():
             subprocess.call(['kill', '-9', pid])
-        print("Camera resource forcefully released.")
+        print("카메라 자원 강제 해제.")
     except Exception as e:
-        print(f"Failed to release camera resource: {e}")
+        print(f"카메라 자원 해제 실패: {e}")
 
 def send_status(sock, ip, port, message):
     try:
@@ -59,16 +59,15 @@ def send_status(sock, ip, port, message):
         if ip_address:
             message_with_ip = f"IP:{ip_address} - {message}"
             sock.sendto(message_with_ip.encode(), (ip, port))
-            # print(f"Sent message with IP: {message_with_ip} to {ip}:{port}")
         else:
-            print("Failed to get IP address.")
+            print("IP 주소를 가져오는 데 실패했습니다.")
     except Exception as e:
-        print(f"Failed to send message: {e}")
+        print(f"메시지 전송 실패: {e}")
 
 async def notify_status(websocket, path):
     last_status = None
     while True:
-        await asyncio.sleep(1)  # 상태를 확인하는 간격을 1초로 설정
+        await asyncio.sleep(1)
         recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
         if recording_status != last_status:
             await websocket.send(recording_status)
@@ -89,7 +88,7 @@ def udp_server():
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
-            print(f"메시지 수신됨: {message} from {addr}")
+            print(f"수신된 메시지: {message} from {addr}")
 
             if message == "REQUEST_IP":
                 ip_address = get_ip_address()
@@ -106,15 +105,23 @@ def udp_server():
                 send_status(sock, broadcast_ip, udp_port, recording_status)
             elif message == "Right Blinker Activated":
                 print("오른쪽 블링커 활성화됨")
-                subprocess.call(['python3', 'led/gyro_led_steering.py', 'right_on'])
+                subprocess.Popen(['python3', 'led/gyro_led_steering.py', 'right_on'])
                 send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
             elif message == "Left Blinker Activated":
                 print("왼쪽 블링커 활성화됨")
-                subprocess.call(['python3', 'led/gyro_led_steering.py', 'left_on'])
+                subprocess.Popen(['python3', 'led/gyro_led_steering.py', 'left_on'])
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            
+            elif message == "ENABLE_MANUAL_MODE":
+                print("수동 모드 활성화됨")
+                subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual'])
+                send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
+            elif message == "ENABLE_AUTO_MODE":
+                print("자동 모드 활성화됨")
+                subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--auto'])
+                send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
         except socket.timeout:
             continue
+
 def main():
     loop = asyncio.get_event_loop()
     udp_thread = threading.Thread(target=udp_server)
