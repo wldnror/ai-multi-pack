@@ -51,12 +51,12 @@ def calculate_angle(acc_x, acc_y, acc_z):
 # 히스테리시스 적용 상태
 emergency_active = False
 
-def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold, offset):
-    global emergency_active
-    if abs(accel_x) < accel_threshold + offset and abs(gyro_z) < gyro_threshold + offset:
-        emergency_active = True
-    elif abs(accel_x) > accel_threshold + offset or abs(gyro_z) > gyro_threshold + offset:
-        emergency_active = False
+# def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold, offset):
+#     global emergency_active
+#     if abs(accel_x) < accel_threshold + offset and abs(gyro_z) < gyro_threshold + offset:
+#         emergency_active = True
+#     elif abs(accel_x) > accel_threshold + offset or abs(gyro_z) > gyro_threshold + offset:
+#         emergency_active = False
 
 def blink_led(pin, active):
     if active:
