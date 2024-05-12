@@ -5,32 +5,6 @@ import subprocess
 import threading
 import re
 import time
-import RPi.GPIO as GPIO
-
-# GPIO 핀 설정
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-
-# 상태 저장을 위한 딕셔너리
-last_state = {
-    17: GPIO.input(17),
-    26: GPIO.input(26)
-}
-
-def check_gpio_changes():
-    global last_state
-    while True:
-        time.sleep(1)  # 상태 체크 주기
-        for pin in last_state:
-            current_state = GPIO.input(pin)
-            if current_state != last_state[pin]:
-                last_state[pin] = current_state
-                message = f"GPIO {pin} {'HIGH' if current_state else 'LOW'}"
-                print(message)
-                ip = "255.255.255.255"
-                port = 12345
-                send_status(sock, ip, port, message)
 
 current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
@@ -173,19 +147,7 @@ def udp_server():
             continue
 
 def main():
-    global sock
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-    udp_ip = "0.0.0.0"
-    udp_port = 12345
-    sock.bind((udp_ip, udp_port))
-    print("UDP 서버 시작됨. 대기중...")
-
-    gpio_thread = threading.Thread(target=check_gpio_changes, daemon=True)
-    gpio_thread.start()
-    
-
-    # 기존 네트워크 및 서버 코드
+    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
     enable_mode("auto")  # 자동 모드 설정
     start_recording()  # 블랙박스 레코딩 시작
 
@@ -199,4 +161,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
