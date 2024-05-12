@@ -8,24 +8,29 @@ import time
 import RPi.GPIO as GPIO
 
 # GPIO 핀 설정
-def initialize_gpio():
-    GPIO.setmode(GPIO.BCM)  # BCM 모드 사용
-    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # 핀 17을 입력으로 설정, 기본값은 LOW
-    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # 핀 26을 입력으로 설정, 기본값은 LOW
-    
-    # 이벤트 감지 설정
-    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)  # 핀 17의 상태 변화 감지
-    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)  # 핀 26의 상태 변화 감지
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
-def gpio_callback(channel):
-    # GPIO 상태 변경 콜백 함수
-    state = GPIO.input(channel)
-    message = f"GPIO {channel} {'HIGH' if state else 'LOW'}"
-    print(message)
-    # 여기에 UDP 메시지 전송 로직을 추가
-    ip = "255.255.255.255"  # 예제 IP 주소
-    port = 12345  # 예제 포트
-    send_status(sock, ip, port, message)
+# 상태 저장을 위한 딕셔너리
+last_state = {
+    17: GPIO.input(17),
+    26: GPIO.input(26)
+}
+
+def check_gpio_changes():
+    global last_state
+    while True:
+        time.sleep(1)  # 상태 체크 주기
+        for pin in last_state:
+            current_state = GPIO.input(pin)
+            if current_state != last_state[pin]:
+                last_state[pin] = current_state
+                message = f"GPIO {pin} {'HIGH' if current_state else 'LOW'}"
+                print(message)
+                ip = "255.255.255.255"
+                port = 12345
+                send_status(sock, ip, port, message)
 
 current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
