@@ -113,10 +113,6 @@ async def report_gpio_status():
         await broadcast_message(message)
         await asyncio.sleep(1)  # Report every second
 
-async def broadcast_message(message):
-    if connected_clients:
-        await asyncio.wait([client.send(message) for client in connected_clients])
-
 connected_clients = set()
 
 async def handler(websocket, path):
@@ -129,11 +125,6 @@ async def handler(websocket, path):
 async def broadcast_message(message):
     if connected_clients:
         await asyncio.wait([client.send(message) for client in connected_clients])
-
-def setup_gpio_listeners():
-    setup_gpio()
-    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
 
 def udp_server():
     udp_ip = "0.0.0.0"
