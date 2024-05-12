@@ -113,8 +113,7 @@ def main():
 
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
-            time.sleep(0.1)
-    finally:
+
     except KeyboardInterrupt:
         GPIO.cleanup()
         sys.exit()
