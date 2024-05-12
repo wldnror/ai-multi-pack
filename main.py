@@ -5,6 +5,26 @@ import subprocess
 import threading
 import re
 import time
+import RPi.GPIO as GPIO
+
+# GPIO 핀 설정
+GPIO.setmode(GPIO.BCM)  # BCM 모드 사용
+GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # 핀 17을 입력으로 설정, 기본값은 LOW
+GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)  # 핀 26을 입력으로 설정, 기본값은 LOW
+
+def gpio_callback(channel):
+    # GPIO 상태 변경 콜백 함수
+    state = GPIO.input(channel)
+    message = f"GPIO {channel} {'HIGH' if state else 'LOW'}"
+    print(message)
+    # 여기에 UDP 메시지 전송 로직을 추가
+    ip = "255.255.255.255"  # 예제 IP 주소
+    port = 12345  # 예제 포트
+    send_status(sock, ip, port, message)
+
+# 이벤트 감지 설정
+GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)  # 핀 17의 상태 변화 감지
+GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)  # 핀 26의 상태 변화 감지
 
 current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
@@ -147,7 +167,10 @@ def udp_server():
             continue
 
 def main():
-    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
+    # GPIO 초기화 및 감지 시작
+    initialize_gpio()
+
+    # 기존 네트워크 및 서버 코드
     enable_mode("auto")  # 자동 모드 설정
     start_recording()  # 블랙박스 레코딩 시작
 
