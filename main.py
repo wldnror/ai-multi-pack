@@ -9,9 +9,9 @@ import time
 
 # GPIO 핀 설정 및 초기화
 def setup_gpio():
+    GPIO.cleanup()  # 모든 설정 청소
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
-    GPIO.cleanup()  # 이전에 설정된 GPIO 설정을 청소
     GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 
@@ -123,9 +123,14 @@ async def broadcast_message(message):
         await asyncio.wait([client.send(message) for client in connected_clients])
 
 def setup_gpio_listeners():
-    setup_gpio()
-    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    try:
+        setup_gpio()
+        GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+        GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    except RuntimeError as e:
+        print(f"RuntimeError: {e}")
+        GPIO.cleanup()
+        raise RuntimeError("Failed to setup GPIO listeners. Try restarting the Raspberry Pi.")
 
 def udp_server():
     udp_ip = "0.0.0.0"
