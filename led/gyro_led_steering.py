@@ -40,30 +40,16 @@ def calculate_angle(acc_x, acc_y, acc_z):
     angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
     return angle_x, angle_y
 
-# 히스테리시스 적용 상태
-emergency_active = False
-
-def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold, offset):
-    global emergency_active
-    if abs(accel_x) < accel_threshold + offset and abs(gyro_z) < gyro_threshold + offset:
-        emergency_active = True
-    elif abs(accel_x) > accel_threshold + offset or abs(gyro_z) > gyro_threshold + offset:
-        emergency_active = False
-
 def blink_led(pin, active):
-    if active:
-        GPIO.output(pin, True)
-        time.sleep(0.4)  # LED가 켜져 있는 시간
-        GPIO.output(pin, False)
-        time.sleep(0.4)  # LED가 꺼져 있는 시간
-    else:
-        GPIO.output(pin, False)
+    GPIO.output(pin, active)
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
-    parser.add_argument("--left", help="Turn on the left LED", action="store_true")
-    parser.add_argument("--right", help="Turn on the right LED", action="store_true")
+    parser.add_argument("--left_on", help="Turn on the left LED", action="store_true")
+    parser.add_argument("--left_off", help="Turn off the left LED", action="store_true")
+    parser.add_argument("--right_on", help="Turn on the right LED", action="store_true")
+    parser.add_argument("--right_off", help="Turn off the right LED", action="store_true")
     return parser.parse_args()
 
 def main():
@@ -72,8 +58,14 @@ def main():
 
     if args.manual:
         manual_mode = True
-        left_active = args.left
-        right_active = args.right
+        if args.left_on:
+            left_active = True
+        elif args.left_off:
+            left_active = False
+        if args.right_on:
+            right_active = True
+        elif args.right_off:
+            right_active = False
 
     init_MPU6050()
     try:
@@ -84,8 +76,6 @@ def main():
                 accel_z = read_sensor_data(0x3f)
                 gyro_y = read_sensor_data(0x45)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
-
-                print(f"Gyro Y-axis speed: {gyro_y}, Tilt angle Y-axis: {angle_y}")
 
                 if angle_y > 20:
                     right_active = True
