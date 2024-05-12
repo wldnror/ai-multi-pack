@@ -123,7 +123,6 @@ def udp_server():
             elif message == "Left Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            # 다른 메시지 처리
             elif message == "REQUEST_IP":
                 ip_address = get_ip_address()
                 if ip_address:
@@ -147,16 +146,16 @@ def udp_server():
             continue
 
 def main():
+    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
+    enable_mode("auto")
+    start_recording()
+
     loop = asyncio.get_event_loop()
     udp_thread = threading.Thread(target=udp_server)
     udp_thread.start()
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
     loop.run_forever()
-
-    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
-    enable_mode("auto")
-    start_recording()
 
 if __name__ == "__main__":
     main()
