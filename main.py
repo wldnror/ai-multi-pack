@@ -88,7 +88,7 @@ def udp_server():
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
-            print(f"수신된 메시지: {message} from {addr}")
+            # print(f"수신된 메시지: {message} from {addr}")
 
             if message == "REQUEST_IP":
                 ip_address = get_ip_address()
