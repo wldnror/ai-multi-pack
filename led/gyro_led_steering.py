@@ -72,6 +72,7 @@ def parse_args():
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
     parser.add_argument("--left", help="Turn on the left LED", action="store_true")
     parser.add_argument("--right", help="Turn on the right LED", action="store_true")
+    parser.add_argument("--auto", help="Enable automatic mode", action="store_true")
     return parser.parse_args()
 
 def main():
