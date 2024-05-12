@@ -191,8 +191,6 @@ def main():
 
     loop.run_until_complete(websocket_server)
     loop.run_forever()
-    finally:
-        GPIO.cleanup()  # 프로그램 종료 시 GPIO 클리어
-
+   
 if __name__ == "__main__":
     main()
