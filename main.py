@@ -142,14 +142,12 @@ def udp_server():
         except socket.timeout:
             continue
 
-def handle_udp_messages(sock, message, addr):
-    global current_mode
-    if message == "Right Blinker Activated" and current_mode == 'manual':
-        terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
-        send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
-    elif message == "Left Blinker Activated" and current_mode == 'manual':
-        terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
-        send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
+            if message == "Right Blinker Activated" and current_mode == 'manual':
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
+                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
+            elif message == "Left Blinker Activated" and current_mode == 'manual':
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
+                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
             elif message == "REQUEST_IP":
                 ip_address = get_ip_address()
                 if ip_address:
