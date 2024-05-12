@@ -6,6 +6,8 @@ import threading
 import re
 import time
 
+current_mode = 'auto'  # 자동 모드로 기본 설정
+
 def get_ip_address():
     try:
         result = subprocess.check_output(["hostname", "-I"]).decode().strip()
@@ -18,9 +20,8 @@ def get_ip_address():
 def process_exists(process_name):
     try:
         process_list = subprocess.check_output(['ps', 'aux']).decode()
-        for process in process_list.splitlines():
-            if process_name in process:
-                return True
+        if process_name in process_list:
+            return True
         return False
     except Exception as e:
         print(f"프로세스 확인 중 오류 발생: {e}")
@@ -76,11 +77,16 @@ def terminate_and_restart_blinker(mode_script, additional_args=""):
         print(f"{mode_script} 실행 중 오류 발생: {e}")
 
 def enable_mode(mode):
+    global current_mode
     script = 'led/gyro_led_steering.py'
     if mode == "manual":
-        terminate_and_restart_blinker(script, '--manual')
+        if current_mode != 'manual':
+            terminate_and_restart_blinker(script, '--manual')
+            current_mode = 'manual'
     elif mode == "auto":
-        terminate_and_restart_blinker(script, '--auto')
+        if current_mode != 'auto':
+            terminate_and_restart_blinker(script, '--auto')
+            current_mode = 'auto'
 
 async def notify_status(websocket, path):
     last_status = None
@@ -101,16 +107,18 @@ def udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
+    global current_mode
+
     while True:
         try:
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
 
-            if message == "Right Blinker Activated":
+            if message == "Right Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
                 send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
-            elif message == "Left Blinker Activated":
+            elif message == "Left Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
             # 다른 메시지 처리
