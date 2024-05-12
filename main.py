@@ -10,9 +10,12 @@ import RPi.GPIO as GPIO
 current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
 # GPIO 핀 설정
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+def initialize_gpio():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(26, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+    print(f"Initial GPIO 17 State: {GPIO.input(17)}")
+    print(f"Initial GPIO 26 State: {GPIO.input(26)}")
 
 # 상태 저장을 위한 딕셔너리
 last_state = {
