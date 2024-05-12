@@ -48,16 +48,6 @@ def calculate_angle(acc_x, acc_y, acc_z):
     angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
     return angle_x, angle_y
 
-# 히스테리시스 적용 상태
-emergency_active = False
-
-def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold, offset):
-    global emergency_active
-    if abs(accel_x) < accel_threshold + offset and abs(gyro_z) < gyro_threshold + offset:
-        emergency_active = True
-    elif abs(accel_x) > accel_threshold + offset or abs(gyro_z) > gyro_threshold + offset:
-        emergency_active = False
-
 def blink_led(pin, active):
     if active:
         GPIO.output(pin, True)
@@ -83,8 +73,11 @@ def main():
         manual_mode = True
         left_active = args.left
         right_active = args.right
-    else:
+    elif args.auto:
+        manual_mode = False
         init_MPU6050()
+
+    init_GPIO()
 
     try:
         while True:
@@ -94,8 +87,6 @@ def main():
                 accel_z = read_sensor_data(0x3f)
                 gyro_y = read_sensor_data(0x45)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
-
-                # print(f"Gyro Y-axis speed: {gyro_y}, Tilt angle Y-axis: {angle_y}")
 
                 if angle_y > 20:
                     right_active = True
