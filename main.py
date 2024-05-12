@@ -20,7 +20,7 @@ last_state = {
     26: GPIO.input(26)
 }
 
-def check_gpio_changes(sock):
+def check_gpio_changes():
     global last_state
     while True:
         time.sleep(1)  # 상태 체크 주기
