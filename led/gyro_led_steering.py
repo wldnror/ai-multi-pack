@@ -95,7 +95,7 @@ def main():
                 gyro_y = read_sensor_data(0x45)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
 
-                print(f"Gyro Y-axis speed: {gyro_y}, Tilt angle Y-axis: {angle_y}")
+                # print(f"Gyro Y-axis speed: {gyro_y}, Tilt angle Y-axis: {angle_y}")
 
                 if angle_y > 20:
                     right_active = True
