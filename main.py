@@ -63,7 +63,7 @@ def send_status(sock, ip, port, message):
         else:
             print("Failed to get IP address.")
     except Exception as e:
-        # print(f"Failed to send message: {e}")
+        print(f"Failed to send message: {e}")
 
 async def notify_status(websocket, path):
     last_status = None
