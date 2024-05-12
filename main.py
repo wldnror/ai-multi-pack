@@ -173,8 +173,17 @@ def udp_server():
             continue
 
 def main():
-    # GPIO 초기화 및 감지 시작
-    initialize_gpio()
+    global sock
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    udp_ip = "0.0.0.0"
+    udp_port = 12345
+    sock.bind((udp_ip, udp_port))
+    print("UDP 서버 시작됨. 대기중...")
+
+    gpio_thread = threading.Thread(target=check_gpio_changes, daemon=True)
+    gpio_thread.start()
+    
 
     # 기존 네트워크 및 서버 코드
     enable_mode("auto")  # 자동 모드 설정
