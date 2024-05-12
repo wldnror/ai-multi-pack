@@ -59,11 +59,11 @@ def send_status(sock, ip, port, message):
         if ip_address:
             message_with_ip = f"IP:{ip_address} - {message}"
             sock.sendto(message_with_ip.encode(), (ip, port))
-            print(f"Sent message with IP: {message_with_ip} to {ip}:{port}")
+            # print(f"Sent message with IP: {message_with_ip} to {ip}:{port}")
         else:
             print("Failed to get IP address.")
     except Exception as e:
-        print(f"Failed to send message: {e}")
+        # print(f"Failed to send message: {e}")
 
 async def notify_status(websocket, path):
     last_status = None
@@ -89,7 +89,7 @@ def udp_server():
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
-            print(f"메시지 수신됨: {message} from {addr}")
+            # print(f"메시지 수신됨: {message} from {addr}")
 
             if message == "REQUEST_IP":
                 ip_address = get_ip_address()
