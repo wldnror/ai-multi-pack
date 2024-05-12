@@ -7,7 +7,10 @@ import re
 import time
 import RPi.GPIO as GPIO
 
-current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
+current_mode = 'manual'  # 초기 모드 설정
+
+# 클라이언트 세션 저장을 위한 집합
+connected_clients = set()
 
 def get_ip_address():
     try:
@@ -81,7 +84,7 @@ def terminate_and_restart_blinker(mode_script, additional_args=""):
 
 def enable_mode(mode):
     global current_mode
-    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")  # 현재 모드와 요청 모드 로깅
+    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")
     script = 'led/gyro_led_steering.py'
     if mode == "manual" and current_mode != 'manual':
         terminate_and_restart_blinker(script, '--manual')
@@ -93,14 +96,19 @@ def enable_mode(mode):
         print("자동 모드로 변경됨")
 
 async def notify_status(websocket, path):
-    last_status = None
-    while True:
-        await asyncio.sleep(1)
-        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        if recording_status != last_status:
-            await websocket.send(recording_status)
-            print(f"상태 업데이트 전송: {recording_status}")
-            last_status = recording_status
+    global connected_clients
+    connected_clients.add(websocket)
+    try:
+        last_status = None
+        while True:
+            await asyncio.sleep(1)
+            recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+            if recording_status != last_status:
+                await websocket.send(recording_status)
+                print(f"상태 업데이트 전송: {recording_status}")
+                last_status = recording_status
+    finally:
+        connected_clients.remove(websocket)
 
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
@@ -109,19 +117,23 @@ def gpio_monitor():
     pins = [17, 26]
     for pin in pins:
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-    
+
     def pin_callback(channel):
-        message = f"Pin {channel} Activated"
-        print(message)  # 이벤트 감지 시 로그를 출력하거나 다른 동작을 수행
+        state = "HIGH" if GPIO.input(channel) else "LOW"
+        message = f"Pin {channel} is {state}"
+        print(message)
+        asyncio.run_coroutine_threadsafe(
+            broadcast_message(message), asyncio.get_event_loop()
+        )
 
     for pin in pins:
         GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
 
-    try:
-        while True:
-            time.sleep(0.1)
-    finally:
-        GPIO.cleanup()
+async def broadcast_message(message):
+    global connected_clients
+    for client in connected_clients:
+        await client.send(message)
+        print(f"메시지 전송됨: {message}")
 
 def udp_server():
     udp_ip = "0.0.0.0"
@@ -169,17 +181,14 @@ def udp_server():
             continue
 
 def main():
-    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
-    enable_mode("auto")  # 자동 모드 설정
-    start_recording()  # 블랙박스 레코딩 시작
-
+    enable_mode("auto")
+    start_recording()
     loop = asyncio.get_event_loop()
     gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
     gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
-
     loop.run_until_complete(websocket_server)
     loop.run_forever()
 
