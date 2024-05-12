@@ -5,6 +5,7 @@ import subprocess
 import threading
 import re
 import time
+import RPi.GPIO as GPIO
 
 current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
 
@@ -101,6 +102,27 @@ async def notify_status(websocket, path):
             print(f"상태 업데이트 전송: {recording_status}")
             last_status = recording_status
 
+def gpio_monitor():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
+
+    pins = [17, 26]
+    for pin in pins:
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    
+    def pin_callback(channel):
+        message = f"Pin {channel} Activated"
+        print(message)  # 이벤트 감지 시 로그를 출력하거나 다른 동작을 수행
+
+    for pin in pins:
+        GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+
+    try:
+        while True:
+            time.sleep(0.1)
+    finally:
+        GPIO.cleanup()
+
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -152,6 +174,8 @@ def main():
     start_recording()  # 블랙박스 레코딩 시작
 
     loop = asyncio.get_event_loop()
+    gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
+    gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
