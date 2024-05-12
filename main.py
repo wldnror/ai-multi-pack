@@ -121,12 +121,18 @@ def udp_server():
 
             if message == "Right Blinker Activated":
                 if not blinker_status['right']:
+                    if blinker_status['left']:
+                        terminate_mode_process('led/gyro_led_steering.py --left')
+                        blinker_status['left'] = False
                     print("오른쪽 블링커 활성화됨")
                     subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual', '--right'])
                     blinker_status['right'] = True
                     send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
             elif message == "Left Blinker Activated":
                 if not blinker_status['left']:
+                    if blinker_status['right']:
+                        terminate_mode_process('led/gyro_led_steering.py --right')
+                        blinker_status['right'] = False
                     print("왼쪽 블링커 활성화됨")
                     subprocess.Popen(['python3', 'led/gyro_led_steering.py', '--manual', '--left'])
                     blinker_status['left'] = True
