@@ -112,14 +112,7 @@ def udp_server():
                 print("왼쪽 블링커 활성화됨")
                 subprocess.call(['python3', 'led/gyro_led_steering.py', 'left_on'])
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            elif message == "ENABLE_MANUAL_MODE":
-                print("수동 모드 활성화됨")
-                subprocess.call(['python3', 'led/gyro_led_steering.py', '--manual'])
-                send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
-            elif message == "ENABLE_AUTO_MODE":
-                print("자동 모드 활성화됨")
-                subprocess.call(['python3', 'led/gyro_led_steering.py', '--auto'])
-                send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
+            
         except socket.timeout:
             continue
 def main():
