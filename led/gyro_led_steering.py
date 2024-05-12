@@ -23,6 +23,12 @@ manual_mode = False
 left_active = False
 right_active = False
 
+def init_GPIO():
+    GPIO.cleanup()  # 기존 설정 클린업
+    GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
+    GPIO.setup(left_led_pin, GPIO.OUT)
+    GPIO.setup(right_led_pin, GPIO.OUT)
+
 # MPU-6050 초기화
 def init_MPU6050():
     bus.write_byte_data(device_address, power_mgmt_1, 0)
