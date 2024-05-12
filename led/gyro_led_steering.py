@@ -12,27 +12,7 @@ left_led_pin = 17  # 좌회전 LED
 right_led_pin = 26 # 우회전 LED
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
-GPIO.setup(left_led_pin, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
-GPIO.setup(right_led_pin, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
-
-# 네트워크 설정
-udp_ip = "localhost"  # 메시지를 보낼 주소
-udp_port = 12345  # 메시지를 보낼 포트
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-def send_message(message):
-    sock.sendto(message.encode(), (udp_ip, udp_port))
-
-def gpio_callback(channel):
-    if channel == left_led_pin:
-        send_message("Left Blinker Activated")
-    elif channel == right_led_pin:
-        send_message("Right Blinker Activated")
-
-# 이벤트 콜백 설정
-GPIO.add_event_detect(left_led_pin, GPIO.RISING, callback=gpio_callback, bouncetime=200)
-GPIO.add_event_detect(right_led_pin, GPIO.RISING, callback=gpio_callback, bouncetime=200)
-        
+     
 # MPU-6050 설정
 power_mgmt_1 = 0x6b
 device_address = 0x68  # MPU-6050의 기본 I2C 주소
