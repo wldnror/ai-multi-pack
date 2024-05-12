@@ -20,7 +20,7 @@ last_state = {
     26: GPIO.input(26)
 }
 
-def check_gpio_changes():
+def check_gpio_changes(sock):
     global last_state
     while True:
         time.sleep(1)  # 상태 체크 주기
@@ -29,9 +29,8 @@ def check_gpio_changes():
             if current_state != last_state[pin]:
                 last_state[pin] = current_state
                 message = f"GPIO {pin} {'HIGH' if current_state else 'LOW'}"
-                print(message)
+                print(f"Detected change on GPIO {pin}: {message}")  # 상태 변경 감지 로그 추가
                 send_status(sock, "255.255.255.255", 12345, message)
-
 def get_ip_address():
     try:
         result = subprocess.check_output(["hostname", "-I"]).decode().strip()
