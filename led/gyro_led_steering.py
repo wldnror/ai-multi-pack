@@ -3,6 +3,7 @@ import time
 import RPi.GPIO as GPIO
 import argparse
 import math
+import sys
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
@@ -40,34 +41,43 @@ def calculate_angle(acc_x, acc_y, acc_z):
     angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
     return angle_x, angle_y
 
+# 히스테리시스 적용 상태
+emergency_active = False
+
+def check_emergency_hysteresis(accel_x, gyro_z, accel_threshold, gyro_threshold, offset):
+    global emergency_active
+    if abs(accel_x) < accel_threshold + offset and abs(gyro_z) < gyro_threshold + offset:
+        emergency_active = True
+    elif abs(accel_x) > accel_threshold + offset or abs(gyro_z) > gyro_threshold + offset:
+        emergency_active = False
+
 def blink_led(pin, active):
-    GPIO.output(pin, active)
+    if active:
+        GPIO.output(pin, True)
+        time.sleep(0.4)  # LED가 켜져 있는 시간
+        GPIO.output(pin, False)
+        time.sleep(0.4)  # LED가 꺼져 있는 시간
+    else:
+        GPIO.output(pin, False)
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
-    parser.add_argument("--left_on", help="Turn on the left LED", action="store_true")
-    parser.add_argument("--left_off", help="Turn off the left LED", action="store_true")
-    parser.add_argument("--right_on", help="Turn on the right LED", action="store_true")
-    parser.add_argument("--right_off", help="Turn off the right LED", action="store_true")
+    parser.add_argument("--left", help="Turn on the left LED", action="store_true")
+    parser.add_argument("--right", help="Turn on the right LED", action="store_true")
     return parser.parse_args()
 
 def main():
-    args = parse_args()
     global manual_mode, left_active, right_active
+    args = parse_args()
 
     if args.manual:
         manual_mode = True
-        if args.left_on:
-            left_active = True
-        elif args.left_off:
-            left_active = False
-        if args.right_on:
-            right_active = True
-        elif args.right_off:
-            right_active = False
+        left_active = args.left
+        right_active = args.right
+    else:
+        init_MPU6050()
 
-    init_MPU6050()
     try:
         while True:
             if not manual_mode:
@@ -76,6 +86,8 @@ def main():
                 accel_z = read_sensor_data(0x3f)
                 gyro_y = read_sensor_data(0x45)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
+
+                print(f"Gyro Y-axis speed: {gyro_y}, Tilt angle Y-axis: {angle_y}")
 
                 if angle_y > 20:
                     right_active = True
@@ -86,12 +98,17 @@ def main():
                 else:
                     right_active = False
                     left_active = False
+            else:
+                # 수동 모드에서는 외부 명령에 의해서만 LED 상태가 변경되므로
+                # 추가적인 로직 없이 대기
+                time.sleep(0.1)
 
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
-            time.sleep(0.1)
-    finally:
+
+    except KeyboardInterrupt:
         GPIO.cleanup()
+        sys.exit()
 
 if __name__ == '__main__':
     main()
