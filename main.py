@@ -17,6 +17,9 @@ def initialize_gpio():
     print(f"Initial GPIO 17 State: {GPIO.input(17)}")
     print(f"Initial GPIO 26 State: {GPIO.input(26)}")
 
+# GPIO 상태 저장을 위한 딕셔너리, 이 부분은 함수 내에서 초기화됩니다.
+last_state = {}
+
 # 상태 저장을 위한 딕셔너리
 last_state = {
     17: GPIO.input(17),
@@ -26,13 +29,13 @@ last_state = {
 def check_gpio_changes(sock):
     global last_state
     while True:
-        time.sleep(1)  # 상태 체크 주기
+        time.sleep(1)
         for pin in last_state:
             current_state = GPIO.input(pin)
             if current_state != last_state[pin]:
                 last_state[pin] = current_state
                 message = f"GPIO {pin} {'HIGH' if current_state else 'LOW'}"
-                print(f"Detected change on GPIO {pin}: {message}")  # 상태 변경 감지 로그 추가
+                print(message)
                 send_status(sock, "255.255.255.255", 12345, message)
 def get_ip_address():
     try:
@@ -174,6 +177,8 @@ def udp_server():
             continue
 
 def main():
+
+    initialize_gpio()
     # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
     enable_mode("auto")  # 자동 모드 설정
     start_recording()  # 블랙박스 레코딩 시작
