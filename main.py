@@ -76,10 +76,8 @@ def send_status(sock, ip, port, message):
 
 def terminate_and_restart_blinker(mode_script, additional_args=""):
     try:
-        # Terminate existing processes
         subprocess.call(['pkill', '-f', mode_script])
         print(f"{mode_script} 프로세스 종료됨.")
-        # Start new process
         subprocess.Popen(['python3', mode_script] + additional_args.split())
         print(f"{mode_script} with {additional_args} 시작됨.")
     except Exception as e:
@@ -87,7 +85,7 @@ def terminate_and_restart_blinker(mode_script, additional_args=""):
 
 def enable_mode(mode):
     global current_mode
-    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")  # 현재 모드와 요청 모드 로깅
+    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")
     script = 'led/gyro_led_steering.py'
     if mode == "manual" and current_mode != 'manual':
         terminate_and_restart_blinker(script, '--manual')
@@ -110,8 +108,15 @@ async def notify_status(websocket, path):
 
 def gpio_callback(channel):
     state = "HIGH" if GPIO.input(channel) else "LOW"
-    message = f"GPIO {channel} changed to {state}"
-    asyncio.run(broadcast_message(message))
+    asyncio.run(broadcast_message(f"GPIO {channel} changed to {state}"))
+
+async def broadcast_message(message):
+    if connected_clients:
+        await asyncio.wait([client.send(message) for client in connected_clients])
+
+def setup_gpio_listeners():
+    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
+    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
 
 connected_clients = set()
 
@@ -122,14 +127,6 @@ async def handler(websocket, path):
     finally:
         connected_clients.remove(websocket)
 
-async def broadcast_message(message):
-    if connected_clients:
-        await asyncio.wait([client.send(message) for client in connected_clients])
-
-def setup_gpio_listeners():
-    GPIO.add_event_detect(17, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-    GPIO.add_event_detect(26, GPIO.BOTH, callback=gpio_callback, bouncetime=200)
-
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -139,16 +136,11 @@ def udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
-    global current_mode
-
     while True:
         try:
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
-            handle_udp_messages(sock, message, addr)
-        except socket.timeout:
-            continue
 
             if message == "Right Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
@@ -179,7 +171,7 @@ def udp_server():
             continue
 
 def main():
-    setup_gpio_listeners()  # GPIO 감지 설정
+    # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
     enable_mode("auto")  # 자동 모드 설정
     start_recording()  # 블랙박스 레코딩 시작
     setup_gpio_listeners()  # GPIO 감지 설정
