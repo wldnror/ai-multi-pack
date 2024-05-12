@@ -5,8 +5,16 @@ import subprocess
 import threading
 import re
 import time
+import RPi.GPIO as GPIO
 
-current_mode = 'manual'  # 자동 모드 강제 활성화를 위해 초기 모드 변경
+current_mode = 'manual'  # 초기 모드 설정
+
+GPIO.setmode(GPIO.BCM)
+pins = [17, 26]  # 모니터링할 GPIO 핀 번호
+for pin in pins:
+    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
+
+connected_clients = set()  # 연결된 웹소켓 클라이언트 집합
 
 def get_ip_address():
     try:
@@ -67,7 +75,20 @@ def send_status(sock, ip, port, message):
     except Exception as e:
         print(f"메시지 전송 실패: {e}")
 
-def terminate_and_restart_blinker(mode_script, additional_args=""):
+def gpio_callback(channel):
+    state = "HIGH" if GPIO.input(channel) else "LOW"
+    asyncio.run(broadcast(f"GPIO Pin {channel} is {state}"))
+
+async def broadcast(message):
+    if connected_clients:
+        await asyncio.wait([client.send(message) for client in connected_clients])
+
+def setup_gpio():
+    for pin in pins:
+        GPIO.add_event_detect(pin, GPIO.BOTH, callback=gpio_callback, bouncetime=100)
+
+async def handler(websocket, path):
+    connected_clients.add(websocket)
     try:
         # Terminate existing processes
         subprocess.call(['pkill', '-f', mode_script])
@@ -110,8 +131,6 @@ def udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
-    global current_mode
-
     while True:
         try:
             sock.settimeout(1)
@@ -148,13 +167,10 @@ def udp_server():
 
 def main():
     # 스크립트 시작 시 자동 모드 활성화 및 블랙박스 녹화 시작
-    enable_mode("auto")  # 자동 모드 설정
-    start_recording()  # 블랙박스 레코딩 시작
-
     loop = asyncio.get_event_loop()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
-    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
+    websocket_server = websockets.serve(handler, "0.0.0.0", 8765)
 
     loop.run_until_complete(websocket_server)
     loop.run_forever()
