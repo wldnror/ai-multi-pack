@@ -65,11 +65,11 @@ def blink_led(pin, active):
         GPIO.output(pin, True)
         send_udp_message(f"LED on pin {pin} is ON")
         print(f"LED on pin {pin} is ON")
-        time.sleep(0.4)
+        time.sleep(1.4)
         GPIO.output(pin, False)
         send_udp_message(f"LED on pin {pin} is OFF")
         print(f"LED on pin {pin} is OFF")
-        time.sleep(0.4)
+        time.sleep(1.4)
     else:
         GPIO.output(pin, False)
 
