@@ -38,9 +38,11 @@ def init_GPIO():
     GPIO.setup(left_led_pin, GPIO.OUT)
     GPIO.setup(right_led_pin, GPIO.OUT)
 
+# MPU-6050 초기화
 def init_MPU6050():
     bus.write_byte_data(device_address, power_mgmt_1, 0)
 
+# 센서 데이터 읽기
 def read_sensor_data(addr):
     high = bus.read_byte_data(device_address, addr)
     low = bus.read_byte_data(device_address, addr + 1)
@@ -56,12 +58,15 @@ def calculate_angle(acc_x, acc_y, acc_z):
     return angle_x, angle_y
 
 def blink_led(pin, active):
-    GPIO.output(pin, active)
-    status = "ON" if active else "OFF"
-    print(f"LED on pin {pin} is {status}")
-    message = f"{get_ip_address()} {pin} {status}"
-    sock.sendto(message.encode(), (broadcast_ip, udp_port))
-    time.sleep(0.4)
+    if active:
+        GPIO.output(pin, True)
+        print(f"LED on pin {pin} is ON")  # LED 상태 출력
+        time.sleep(0.4)  # LED가 켜져 있는 시간
+        GPIO.output(pin, False)
+        print(f"LED on pin {pin} is OFF")  # LED 상태 출력
+        time.sleep(0.4)  # LED가 꺼져 있는 시간
+    else:
+        GPIO.output(pin, False)
 
 def parse_args():
     parser = argparse.ArgumentParser()
