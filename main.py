@@ -116,7 +116,7 @@ def gpio_monitor():
 
     pins = [17, 26]
     for pin in pins:
-        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(pin, GPIO.OUT, pull_up_down=GPIO.PUD_UP)
 
     def pin_callback(channel):
         state = "HIGH" if GPIO.input(channel) else "LOW"
