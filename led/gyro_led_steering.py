@@ -18,6 +18,16 @@ power_mgmt_1 = 0x6b
 device_address = 0x68  # MPU-6050의 기본 I2C 주소
 bus = smbus2.SMBus(1)
 
+# 소켓 설정
+host = '127.0.0.1'
+port = 12345
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((host, port))
+server_socket.listen(1)
+print("서버 시작, 클라이언트의 연결을 기다립니다.")
+conn, addr = server_socket.accept()
+print(f"{addr}에서 연결되었습니다.")
+
 # 전역 변수 설정
 manual_mode = False
 left_active = False
@@ -56,6 +66,10 @@ def blink_led(pin, active):
         time.sleep(0.4)  # LED가 꺼져 있는 시간
     else:
         GPIO.output(pin, False)
+
+def send_led_status(led, status):
+    message = f"{led} LED {'ON' if status else 'OFF'}"
+    conn.send(message.encode())
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -101,6 +115,8 @@ def main():
             time.sleep(0.1)  # 상태 갱신 속도 조절
 
     except KeyboardInterrupt:
+        conn.close()
+        server_socket.close()
         GPIO.cleanup()
         sys.exit()
 
