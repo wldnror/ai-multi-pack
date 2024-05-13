@@ -8,9 +8,7 @@ import time
 import RPi.GPIO as GPIO
 
 current_mode = 'manual'  # 초기 모드 설정
-
-# 클라이언트 세션 저장을 위한 집합
-connected_clients = set()
+connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
 
 def get_ip_address():
     try:
@@ -125,7 +123,10 @@ def gpio_monitor():
         )
 
     for pin in pins:
-        GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        try:
+            GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        except RuntimeError as e:
+            print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
 async def broadcast_message(message):
     global connected_clients
