@@ -18,10 +18,19 @@ power_mgmt_1 = 0x6b
 device_address = 0x68  # MPU-6050의 기본 I2C 주소
 bus = smbus2.SMBus(1)
 
+# UDP 소켓 설정
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+broadcast_ip = '255.255.255.255'  # 브로드캐스트 IP
+udp_port = 5005  # UDP 포트
+
 # 전역 변수 설정
 manual_mode = False
 left_active = False
 right_active = False
+
+def get_ip_address():
+    return subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
 
 def init_GPIO():
     GPIO.cleanup()  # 기존 설정 클린업
@@ -29,11 +38,9 @@ def init_GPIO():
     GPIO.setup(left_led_pin, GPIO.OUT)
     GPIO.setup(right_led_pin, GPIO.OUT)
 
-# MPU-6050 초기화
 def init_MPU6050():
     bus.write_byte_data(device_address, power_mgmt_1, 0)
 
-# 센서 데이터 읽기
 def read_sensor_data(addr):
     high = bus.read_byte_data(device_address, addr)
     low = bus.read_byte_data(device_address, addr + 1)
@@ -49,15 +56,12 @@ def calculate_angle(acc_x, acc_y, acc_z):
     return angle_x, angle_y
 
 def blink_led(pin, active):
-    if active:
-        GPIO.output(pin, True)
-        print(f"LED on pin {pin} is ON")  # LED 상태 출력
-        time.sleep(0.4)  # LED가 켜져 있는 시간
-        GPIO.output(pin, False)
-        print(f"LED on pin {pin} is OFF")  # LED 상태 출력
-        time.sleep(0.4)  # LED가 꺼져 있는 시간
-    else:
-        GPIO.output(pin, False)
+    GPIO.output(pin, active)
+    status = "ON" if active else "OFF"
+    print(f"LED on pin {pin} is {status}")
+    message = f"{get_ip_address()} {pin} {status}"
+    sock.sendto(message.encode(), (broadcast_ip, udp_port))
+    time.sleep(0.4)
 
 def parse_args():
     parser = argparse.ArgumentParser()
