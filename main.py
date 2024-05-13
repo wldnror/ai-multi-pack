@@ -73,12 +73,10 @@ def send_status(sock, ip, port, message):
 
 def terminate_and_restart_blinker(mode_script, additional_args=""):
     try:
-        # Terminate existing processes
         subprocess.call(['pkill', '-f', mode_script])
         print(f"{mode_script} 프로세스 종료됨.")
-        # Start new process
         subprocess.Popen(['python3', mode_script] + additional_args.split())
-        print(f"{mode_script} with {additional_args} 시작됨.")
+        print(f"{mode_script} 시작됨.")
     except Exception as e:
         print(f"{mode_script} 실행 중 오류 발생: {e}")
 
@@ -116,11 +114,11 @@ def gpio_monitor():
 
     pins = [17, 26]
     for pin in pins:
-        GPIO.setup(pin, GPIO.OUT, pull_up_down=GPIO.PUD_UP)
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def pin_callback(channel):
-        state = "HIGH" if GPIO.input(channel) else "LOW"
-        message = f"Pin {channel} is {state}"
+        state = GPIO.input(channel)
+        message = f"Pin {channel} is {'on' if state else 'off'}"
         print(message)
         asyncio.run_coroutine_threadsafe(
             broadcast_message(message), asyncio.get_event_loop()
