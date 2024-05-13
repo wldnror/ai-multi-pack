@@ -157,10 +157,10 @@ def udp_server():
             elif message == "Left Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            elif message == "REQUEST_IP":
-                ip_address = get_ip_address()
-                if ip_address:
-                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+            # elif message == "REQUEST_IP":
+            #     ip_address = get_ip_address()
+            #     if ip_address:
+            #         send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
             elif message == "START_RECORDING":
                 recording_status = start_recording()
                 send_status(sock, broadcast_ip, udp_port, recording_status)
