@@ -1,35 +1,108 @@
-import socket
+import smbus2
 import time
 import RPi.GPIO as GPIO
+import argparse
+import socket
+import subprocess
+import math
+import sys
 
 # GPIO 설정
-LED_PIN = 17
+left_led_pin = 17  # 좌회전 LED
+right_led_pin = 26 # 우회전 LED
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(LED_PIN, GPIO.OUT)
+GPIO.setwarnings(False)  # GPIO 경고 비활성화
 
-def toggle_led(state):
-    GPIO.output(LED_PIN, state)
+# MPU-6050 설정
+power_mgmt_1 = 0x6b
+device_address = 0x68  # MPU-6050의 기본 I2C 주소
+bus = smbus2.SMBus(1)
 
-# 소켓 객체 생성
-server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-host = '127.0.0.1'
-port = 12345
-server_socket.bind((host, port))
-server_socket.listen(1)
+# 전역 변수 설정
+manual_mode = False
+left_active = False
+right_active = False
 
-print("서버 시작, 클라이언트의 연결을 기다립니다.")
-conn, addr = server_socket.accept()
-print(f"{addr}에서 연결되었습니다.")
+def init_GPIO():
+    GPIO.cleanup()  # 기존 설정 클린업
+    GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
+    GPIO.setup(left_led_pin, GPIO.OUT)
+    GPIO.setup(right_led_pin, GPIO.OUT)
 
-try:
-    for i in range(5):
-        # LED 상태 토글
-        led_state = i % 2 == 0
-        toggle_led(led_state)
-        # LED 상태를 전송
-        conn.send(b'LED ON' if led_state else b'LED OFF')
-        time.sleep(1)  # 1초 대기
-finally:
-    conn.close()
-    server_socket.close()
-    GPIO.cleanup()
+# MPU-6050 초기화
+def init_MPU6050():
+    bus.write_byte_data(device_address, power_mgmt_1, 0)
+
+# 센서 데이터 읽기
+def read_sensor_data(addr):
+    high = bus.read_byte_data(device_address, addr)
+    low = bus.read_byte_data(device_address, addr + 1)
+    value = (high << 8) + low
+    if value >= 0x8000:
+        return -((65535 - value) + 1)
+    else:
+        return value
+
+def calculate_angle(acc_x, acc_y, acc_z):
+    angle_x = math.atan2(acc_x, math.sqrt(acc_y**2 + acc_z**2)) * 180 / math.pi
+    angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
+    return angle_x, angle_y
+
+def blink_led(pin, active):
+    if active:
+        GPIO.output(pin, True)
+        time.sleep(0.4)  # LED가 켜져 있는 시간
+        GPIO.output(pin, False)
+        time.sleep(0.4)  # LED가 꺼져 있는 시간
+    else:
+        GPIO.output(pin, False)
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--manual", help="Enable manual mode", action="store_true")
+    parser.add_argument("--left", "--left_on", help="Turn on the left LED", action="store_true", dest='left')
+    parser.add_argument("--right", "--right_on", help="Turn on the right LED", action="store_true", dest='right')
+    parser.add_argument("--auto", help="Enable automatic mode", action="store_true")
+    return parser.parse_args()
+
+def main():
+    global manual_mode, left_active, right_active
+    args = parse_args()
+
+    if args.manual:
+        manual_mode = True
+        left_active = args.left
+        right_active = args.right
+    elif args.auto:
+        manual_mode = False
+        init_MPU6050()
+
+    init_GPIO()
+
+    try:
+        while True:
+            if not manual_mode:
+                accel_x = read_sensor_data(0x3b)
+                accel_y = read_sensor_data(0x3d)
+                accel_z = read_sensor_data(0x3f)
+                _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
+
+                new_right_active = angle_y > 20
+                new_left_active = angle_y < -20
+
+                if new_right_active != right_active or new_left_active != left_active:
+                    right_active = new_right_active
+                    left_active = new_left_active
+                    send_led_status('Right', right_active)
+                    send_led_status('Left', left_active)
+
+            blink_led(left_led_pin, left_active)
+            blink_led(right_led_pin, right_active)
+            time.sleep(0.1)  # 상태 갱신 속도 조절
+
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        sys.exit()
+
+if __name__ == '__main__':
+    main()
