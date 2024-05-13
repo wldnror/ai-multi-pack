@@ -65,11 +65,11 @@ def blink_led(pin, active):
         GPIO.output(pin, True)
         send_udp_message(f"LED on pin {pin} is ON")
         print(f"LED on pin {pin} is ON")
-        time.sleep(10)
+        time.sleep(0.4)
         GPIO.output(pin, False)
         send_udp_message(f"LED on pin {pin} is OFF")
         print(f"LED on pin {pin} is OFF")
-        time.sleep(1.4)
+        time.sleep(0.4)
     else:
         GPIO.output(pin, False)
 
@@ -112,7 +112,7 @@ def main():
 
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
-            time.sleep(0.5)
+            time.sleep(0.1)
 
     except KeyboardInterrupt:
         GPIO.cleanup()
