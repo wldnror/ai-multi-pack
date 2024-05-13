@@ -57,14 +57,19 @@ def calculate_angle(acc_x, acc_y, acc_z):
     angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
     return angle_x, angle_y
 
+def send_udp_message(message):
+    sock.sendto(message.encode(), (broadcast_ip, udp_port))
+
 def blink_led(pin, active):
     if active:
         GPIO.output(pin, True)
-        print(f"LED on pin {pin} is ON")  # LED 상태 출력
-        time.sleep(0.4)  # LED가 켜져 있는 시간
+        send_udp_message(f"LED on pin {pin} is ON")
+        print(f"LED on pin {pin} is ON")
+        time.sleep(0.4)
         GPIO.output(pin, False)
-        print(f"LED on pin {pin} is OFF")  # LED 상태 출력
-        time.sleep(0.4)  # LED가 꺼져 있는 시간
+        send_udp_message(f"LED on pin {pin} is OFF")
+        print(f"LED on pin {pin} is OFF")
+        time.sleep(0.4)
     else:
         GPIO.output(pin, False)
 
@@ -107,7 +112,7 @@ def main():
 
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
-            time.sleep(0.1)  # 상태 갱신 속도 조절
+            time.sleep(0.1)
 
     except KeyboardInterrupt:
         GPIO.cleanup()
