@@ -57,10 +57,6 @@ def blink_led(pin, active):
     else:
         GPIO.output(pin, False)
 
-def send_led_status(pin, status):
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-        sock.sendto(f"{pin} is {'on' if status else 'off'}".encode(), ('localhost', 12345))
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
