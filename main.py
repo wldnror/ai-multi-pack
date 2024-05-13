@@ -109,16 +109,24 @@ async def notify_status(websocket, path):
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
+
     pins = [17, 26]
     for pin in pins:
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
     def pin_callback(channel):
         state = GPIO.input(channel)
-        message = f"Pin {channel} is {'HIGH' if state == GPIO.HIGH else 'LOW'}"
+        message = f"Pin {channel} is {'on' if state else 'off'}"
         print(message)
-        asyncio.run_coroutine_threadsafe(broadcast_message(message), asyncio.get_event_loop())
+        asyncio.run_coroutine_threadsafe(
+            broadcast_message(message), asyncio.get_event_loop()
+        )
+
     for pin in pins:
-        GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        try:
+            GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        except RuntimeError as e:
+            print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
 async def broadcast_message(message):
     global connected_clients
@@ -134,12 +142,15 @@ def udp_server():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
+
     global current_mode
+
     while True:
         try:
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
+
             if message == "Right Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
                 send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
@@ -182,5 +193,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
