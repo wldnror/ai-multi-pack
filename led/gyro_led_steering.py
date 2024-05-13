@@ -58,17 +58,19 @@ def calculate_angle(acc_x, acc_y, acc_z):
     return angle_x, angle_y
 
 def send_udp_message(message):
-    sock.sendto(message.encode(), (broadcast_ip, udp_port))
+    mode_status = "manual" if manual_mode else "auto"
+    full_message = f"{mode_status.upper()} MODE: {message}"
+    sock.sendto(full_message.encode(), (broadcast_ip, udp_port))
 
 def blink_led(pin, active):
     if active:
         GPIO.output(pin, True)
         send_udp_message(f"LED on pin {pin} is ON")
-        print(f"LED on pin {pin} is ON")
+        print(f"LED on pin {pin} is ON, Mode: {'Manual' if manual_mode else 'Auto'}")
         time.sleep(0.4)
         GPIO.output(pin, False)
         send_udp_message(f"LED on pin {pin} is OFF")
-        print(f"LED on pin {pin} is OFF")
+        print(f"LED on pin {pin} is OFF, Mode: {'Manual' if manual_mode else 'Auto'}")
         time.sleep(0.4)
     else:
         GPIO.output(pin, False)
