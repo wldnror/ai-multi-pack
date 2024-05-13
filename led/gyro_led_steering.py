@@ -12,7 +12,7 @@ left_led_pin = 17  # 좌회전 LED
 right_led_pin = 26 # 우회전 LED
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
-     
+
 # MPU-6050 설정
 power_mgmt_1 = 0x6b
 device_address = 0x68  # MPU-6050의 기본 I2C 주소
@@ -57,6 +57,10 @@ def blink_led(pin, active):
     else:
         GPIO.output(pin, False)
 
+def send_led_status(pin, status):
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
+        sock.sendto(f"{pin} is {'on' if status else 'off'}".encode(), ('localhost', 5000))
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
@@ -85,25 +89,20 @@ def main():
                 accel_x = read_sensor_data(0x3b)
                 accel_y = read_sensor_data(0x3d)
                 accel_z = read_sensor_data(0x3f)
-                gyro_y = read_sensor_data(0x45)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
 
-                if angle_y > 20:
-                    right_active = True
-                    left_active = False
-                elif angle_y < -20:
-                    right_active = False
-                    left_active = True
-                else:
-                    right_active = False
-                    left_active = False
-            else:
-                # 수동 모드에서는 외부 명령에 의해서만 LED 상태가 변경되므로
-                # 추가적인 로직 없이 대기
-                time.sleep(0.1)
+                new_right_active = angle_y > 20
+                new_left_active = angle_y < -20
+
+                if new_right_active != right_active or new_left_active != left_active:
+                    right_active = new_right_active
+                    left_active = new_left_active
+                    send_led_status('Right', right_active)
+                    send_led_status('Left', left_active)
 
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
+            time.sleep(0.1)  # 상태 갱신 속도 조절
 
     except KeyboardInterrupt:
         GPIO.cleanup()
