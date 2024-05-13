@@ -51,8 +51,10 @@ def calculate_angle(acc_x, acc_y, acc_z):
 def blink_led(pin, active):
     if active:
         GPIO.output(pin, True)
+        print(f"LED on pin {pin} is ON")  # LED 상태 출력
         time.sleep(0.4)  # LED가 켜져 있는 시간
         GPIO.output(pin, False)
+        print(f"LED on pin {pin} is OFF")  # LED 상태 출력
         time.sleep(0.4)  # LED가 꺼져 있는 시간
     else:
         GPIO.output(pin, False)
@@ -93,8 +95,6 @@ def main():
                 if new_right_active != right_active or new_left_active != left_active:
                     right_active = new_right_active
                     left_active = new_left_active
-                    send_led_status('Right', right_active)
-                    send_led_status('Left', left_active)
 
             blink_led(left_led_pin, left_active)
             blink_led(right_led_pin, right_active)
