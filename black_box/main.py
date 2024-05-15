@@ -11,6 +11,7 @@ from queue import Queue
 import asyncio
 import websockets
 import RPi.GPIO as GPIO
+import socket
 
 # MPU-6050 설정
 bus = smbus.SMBus(1)  # Raspberry Pi의 I2C 인터페이스 사용
