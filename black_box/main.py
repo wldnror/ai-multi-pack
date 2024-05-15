@@ -331,9 +331,13 @@ def udp_server():
             if message == "START_RECORDING":
                 print("녹화 시작 명령 수신")
                 recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
+                sock.sendto("RECORDING".encode(), addr)
+                print("녹화 상태 응답 전송: RECORDING")
             elif message == "STOP_RECORDING":
                 print("녹화 중지 명령 수신")
                 recorder.stop_recording()
+                sock.sendto("NOT_RECORDING".encode(), addr)
+                print("녹화 상태 응답 전송: NOT_RECORDING")
             elif message == "REQUEST_RECORDING_STATUS":
                 print("녹화 상태 요청 수신")
                 response_message = "RECORDING" if recorder.process else "NOT_RECORDING"
