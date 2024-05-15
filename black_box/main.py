@@ -2,7 +2,6 @@ import os
 import time
 import shutil
 import smbus
-import unidecode
 import configparser
 from ftplib import FTP
 import cv2
