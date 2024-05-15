@@ -107,8 +107,8 @@ class Recorder:
             command = [
                 'ffmpeg',
                 '-f', 'v4l2',
-                '-framerate', '30',
-                '-video_size', '1920x1080',
+                '-framerate', '60',  # 프레임률 설정
+                '-video_size', '1280x720',  # 해상도를 720p로 설정
                 '-i', '/dev/video0',
                 '-c:v', 'libx264',
                 '-preset', 'veryfast',
