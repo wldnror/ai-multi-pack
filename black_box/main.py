@@ -71,23 +71,39 @@ class Recorder:
     def start_recording(self, output_filename, duration=60, fps=30):
         self.recording = True
         cap = cv2.VideoCapture(0)  # Use the first camera
+
+        # Check if camera opened successfully
+        if not cap.isOpened():
+            print("Error: Could not open video device.")
+            return
+
         cap.set(cv2.CAP_PROP_FPS, fps)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
-        
+
         fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
         out = cv2.VideoWriter(output_filename, fourcc, fps, (1920, 1080))
 
+        # Check if VideoWriter initialized successfully
+        if not out.isOpened():
+            print("Error: Could not open video writer.")
+            cap.release()
+            return
+
         start_time = time.time()
+        frame_count = 0
         while self.recording and (time.time() - start_time) < duration:
             ret, frame = cap.read()
             if ret:
                 out.write(frame)
+                frame_count += 1
             else:
+                print("Error: Frame capture failed.")
                 break
 
         cap.release()
         out.release()
+        print(f"Recorded {frame_count} frames.")
 
     def stop_recording(self):
         self.recording = False
