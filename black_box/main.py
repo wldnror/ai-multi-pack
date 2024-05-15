@@ -2,6 +2,7 @@ import os
 import time
 import shutil
 import smbus
+import unidecode
 import configparser
 from ftplib import FTP
 import cv2
@@ -125,6 +126,10 @@ class Recorder:
             print("녹화가 종료되었습니다.")
 
 recorder = Recorder()
+def sanitize_filename(filename):
+    # 한글을 로마자로 변환하고, 특수 문자를 제거합니다.
+    sanitized_filename = unidecode.unidecode(filename)
+    return sanitized_filename
 
 def upload_worker():
     while True:
