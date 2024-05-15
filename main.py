@@ -1,4 +1,5 @@
 import asyncio
+import websockets
 import socket
 import subprocess
 import threading
@@ -181,10 +182,14 @@ def udp_server():
 def main():
     enable_mode("auto")
     start_recording()
+    loop = asyncio.get_event_loop()
     gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
     gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
+    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
+    loop.run_until_complete(websocket_server)
+    loop.run_forever()
 
 if __name__ == "__main__":
     main()
