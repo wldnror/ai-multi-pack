@@ -334,6 +334,11 @@ def udp_server():
             elif message == "STOP_RECORDING":
                 print("녹화 중지 명령 수신")
                 recorder.stop_recording()
+            elif message == "REQUEST_RECORDING_STATUS":
+                print("녹화 상태 요청 수신")
+                response_message = "RECORDING" if recorder.process else "NOT_RECORDING"
+                sock.sendto(response_message.encode(), addr)
+                print(f"녹화 상태 응답 전송: {response_message}")
             else:
                 print(f"알 수 없는 메시지: {message}")
         except socket.timeout:
@@ -343,7 +348,6 @@ def udp_server():
             print(f"예외 발생: {e}")
 
 def main():
-    # 기존 녹화 시작 코드 제거 (녹화 시작 명령 수신 시에만 시작)
     check_config_exists()
 
     # 스레드 시작
@@ -370,4 +374,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
