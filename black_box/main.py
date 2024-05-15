@@ -156,7 +156,7 @@ def upload_worker():
         queue.task_done()
 
 def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+    output_directory = os.path.join(os.path.dirname(__file__), 'black_box/상시녹화')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -206,9 +206,6 @@ def is_file_ready(filepath, timeout=10):
     return False
 
 def copy_last_two_videos(input_directory, output_directory, impact_time):
-    input_directory = os.path.abspath(input_directory)
-    output_directory = os.path.abspath(output_directory)
-
     if not os.path.exists(input_directory):
         print(f"입력 디렉토리가 존재하지 않습니다: {input_directory}")
         return
@@ -241,12 +238,6 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
             queue.put(dst)
 
 def monitor_impact(threshold, input_directory, output_directory):
-    input_directory = os.path.abspath(input_directory)
-    output_directory = os.path.abspath(output_directory)
-
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
     init_sensor()
     try:
         while True:
@@ -259,11 +250,12 @@ def monitor_impact(threshold, input_directory, output_directory):
         print("모니터링 중단")
 
 def record_and_upload():
-    input_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+    input_directory = os.path.join(os.path.dirname(__file__), 'black_box/상시녹화')
     if not os.path.exists(input_directory):
         os.makedirs(input_directory)
     
     while True:
+        start_time = time.time()
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
         output_filename = os.path.join(input_directory, f'video_{current_time}.avi')
 
@@ -272,6 +264,8 @@ def record_and_upload():
 
         time.sleep(60)
         recorder.stop_recording()
+        elapsed_time = time.time() - start_time
+        print(f"녹화 종료: {current_time}, 경과 시간: {elapsed_time:.2f}초")
 
         manage_video_files()
 
@@ -283,7 +277,7 @@ uploader_thread.start()
 record_thread = Thread(target=record_and_upload)
 record_thread.start()
 
-impact_monitor_thread = Thread(target=monitor_impact, args=(2000, '상시녹화', '충격녹화'))
+impact_monitor_thread = Thread(target=monitor_impact, args=(2000, 'black_box/상시녹화', 'black_box/충격녹화'))
 impact_monitor_thread.start()
 
 record_thread.join()
