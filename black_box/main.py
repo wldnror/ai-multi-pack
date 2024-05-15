@@ -1,7 +1,5 @@
 import os
 import time
-import shutil
-import smbus
 import configparser
 from ftplib import FTP
 import cv2
@@ -23,7 +21,6 @@ lock = Lock()
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
         with FTP(ftp_address) as ftp:
-            ftp.encoding = 'utf-8'  # FTP 서버와의 통신 인코딩 설정
             ftp.login(ftp_username, ftp_password)
             try:
                 ftp.cwd(ftp_target_path)
@@ -125,10 +122,6 @@ class Recorder:
             print("녹화가 종료되었습니다.")
 
 recorder = Recorder()
-def sanitize_filename(filename):
-    # 한글을 로마자로 변환하고, 특수 문자를 제거합니다.
-    sanitized_filename = unidecode.unidecode(filename)
-    return sanitized_filenam
 
 def upload_worker():
     while True:
@@ -150,8 +143,9 @@ def upload_worker():
                 ftp_info = read_ftp_config()
                 with FTP(ftp_info['ftp_address']) as ftp:
                     ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
+                    target_path = f"{ftp_info['ftp_target_path']}/{os.path.basename(file_path)}"
                     with open(file_path, 'rb') as file:
-                        ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+                        ftp.storbinary(f"STOR {target_path}", file)
                     print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
             except Exception as e:
                 print(f"파일 업로드 중 오류 발생: {e}")
@@ -159,7 +153,6 @@ def upload_worker():
             print(f"파일 {file_path} 생성 실패 후 여러 차례 시도 끝에 포기했습니다.")
 
         queue.task_done()
-
 
 def manage_video_files():
     output_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
