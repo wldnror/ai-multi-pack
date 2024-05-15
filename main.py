@@ -102,7 +102,7 @@ def send_status(sock, ip, port, message):
 
 def udp_server():
     udp_ip = "0.0.0.0"
-    udp_port = 12345
+    udp_port = 5000
     broadcast_ip = "255.255.255.255"
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
