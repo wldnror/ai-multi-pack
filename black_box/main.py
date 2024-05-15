@@ -68,7 +68,7 @@ class Recorder:
     def __init__(self):
         self.recording = False
 
-    def start_recording(self, output_filename, duration=60, fps=30):
+    def start_recording(self, output_filename, duration=60, fps=15):
         self.recording = True
         cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # Use V4L2 directly
 
@@ -78,11 +78,14 @@ class Recorder:
             return
 
         cap.set(cv2.CAP_PROP_FPS, fps)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+
+        actual_fps = cap.get(cv2.CAP_PROP_FPS)
+        print(f"Set FPS: {fps}, Actual FPS: {actual_fps}")
 
         fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
-        out = cv2.VideoWriter(output_filename, fourcc, fps, (1920, 1080))
+        out = cv2.VideoWriter(output_filename, fourcc, actual_fps, (1280, 720))
 
         # Check if VideoWriter initialized successfully
         if not out.isOpened():
@@ -97,6 +100,7 @@ class Recorder:
             if ret:
                 out.write(frame)
                 frame_count += 1
+                print(f"Captured frame {frame_count}")
             else:
                 print("Error: Frame capture failed.")
                 break
