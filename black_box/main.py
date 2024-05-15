@@ -146,7 +146,7 @@ def upload_worker():
                 with FTP(ftp_info['ftp_address']) as ftp:
                     ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
                     with open(file_path, 'rb') as file:
-                        ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+                        ftp.storbinary(f"STOR {os.path.basename(file_path)}", file)
                     print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
             except Exception as e:
                 print(f"파일 업로드 중 오류 발생: {e}")
@@ -156,7 +156,7 @@ def upload_worker():
         queue.task_done()
 
 def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), 'black_box/상시녹화')
+    output_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -250,7 +250,7 @@ def monitor_impact(threshold, input_directory, output_directory):
         print("모니터링 중단")
 
 def record_and_upload():
-    input_directory = os.path.join(os.path.dirname(__file__), 'black_box/상시녹화')
+    input_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
     if not os.path.exists(input_directory):
         os.makedirs(input_directory)
     
