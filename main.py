@@ -37,17 +37,19 @@ def start_recording():
         print("녹화 이미 진행 중.")
     return "RECORDING"
 
-def stop_recording():
+async def stop_recording():
     try:
-        subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
-        print("녹화 중지.")
-        time.sleep(1)
-        force_release_camera()
-    except subprocess.CalledProcessError:
-        print("녹화 프로세스를 찾을 수 없습니다.")
-        force_release_camera()
+        await send_stop_recording_command()
+        print("녹화 중지 요청 전송.")
+    except Exception as e:
+        print(f"녹화 중지 요청 중 오류 발생: {e}")
     finally:
         return "NOT_RECORDING"
+
+async def send_stop_recording_command():
+    uri = "ws://localhost:8765"
+    async with websockets.connect(uri) as websocket:
+        await websocket.send("STOP_RECORDING")
 
 def force_release_camera():
     try:
@@ -165,7 +167,7 @@ def udp_server():
                 recording_status = start_recording()
                 send_status(sock, broadcast_ip, udp_port, recording_status)
             elif message == "STOP_RECORDING":
-                recording_status = stop_recording()
+                recording_status = await stop_recording()
                 send_status(sock, broadcast_ip, udp_port, recording_status)
             elif message == "REQUEST_RECORDING_STATUS":
                 recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
