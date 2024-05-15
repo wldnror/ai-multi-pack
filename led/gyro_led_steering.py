@@ -66,16 +66,19 @@ def send_udp_message(message):
     }
     sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
-def blink_led(pin, active):
+def blink_led(pin, active, last_state):
     if active:
         GPIO.output(pin, True)
-        send_udp_message({"pin": pin, "state": "ON"})
+        if not last_state:
+            send_udp_message({"pin": pin, "state": "ON"})
         time.sleep(0.4)
         GPIO.output(pin, False)
         send_udp_message({"pin": pin, "state": "OFF"})
         time.sleep(0.4)
     else:
         GPIO.output(pin, False)
+        if last_state:
+            send_udp_message({"pin": pin, "state": "OFF"})
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -117,13 +120,11 @@ def main():
                     right_active = new_right_active
                     left_active = new_left_active
 
-            if left_active != last_left_active:
-                blink_led(left_led_pin, left_active)
-                last_left_active = left_active
+            blink_led(left_led_pin, left_active, last_left_active)
+            blink_led(right_led_pin, right_active, last_right_active)
 
-            if right_active != last_right_active:
-                blink_led(right_led_pin, right_active)
-                last_right_active = right_active
+            last_left_active = left_active
+            last_right_active = right_active
 
             time.sleep(0.1)
 
