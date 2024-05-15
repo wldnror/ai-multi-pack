@@ -1,300 +1,138 @@
-package com.example.ssh_led
+import smbus2
+import time
+import RPi.GPIO as GPIO
+import argparse
+import socket
+import subprocess
+import math
+import sys
+import json
 
-import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.Service
-import android.content.Context
-import android.content.Intent
-import android.os.Build
-import android.os.Handler
-import android.os.HandlerThread
-import android.os.IBinder
-import android.util.Log
-import androidx.localbroadcastmanager.content.LocalBroadcastManager
-import org.json.JSONObject
-import java.io.*
-import java.net.DatagramPacket
-import java.net.DatagramSocket
-import java.net.InetAddress
-import java.util.*
-import java.util.concurrent.ConcurrentHashMap
+# GPIO 설정
+left_led_pin = 17  # 좌회전 LED
+right_led_pin = 26 # 우회전 LED
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)  # GPIO 경고 비활성화
 
-class NetworkScanService : Service() {
-    private val udpPort = 12345
-    private val secondaryUdpPort = 5005
+# MPU-6050 설정
+power_mgmt_1 = 0x6b
+device_address = 0x68  # MPU-6050의 기본 I2C 주소
+bus = smbus2.SMBus(1)
 
-    private val handlerThread = HandlerThread("NetworkThread")
-    private lateinit var handler: Handler
-    private var lastIpNotification: String? = null
-    private var lastUpdateTime: Long = 0L
-    private var timer: Timer? = null
-    private var isDisconnected = false
-    private var lastBlinkerState: String? = null
-    private val receivedMessages = ConcurrentHashMap<String, Long>()
+# UDP 소켓 설정
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+broadcast_ip = '255.255.255.255'  # 브로드캐스트 IP
+udp_port = 5005  # UDP 포트
 
-    override fun onCreate() {
-        super.onCreate()
-        handlerThread.start()
-        handler = Handler(handlerThread.looper)
-        createNotificationChannel()
+# 전역 변수 설정
+manual_mode = False
+left_active = False
+right_active = False
+
+def get_ip_address():
+    return subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
+
+def init_GPIO():
+    GPIO.cleanup()  # 기존 설정 클린업
+    GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
+    GPIO.setup(left_led_pin, GPIO.OUT)
+    GPIO.setup(right_led_pin, GPIO.OUT)
+
+# MPU-6050 초기화
+def init_MPU6050():
+    bus.write_byte_data(device_address, power_mgmt_1, 0)
+
+# 센서 데이터 읽기
+def read_sensor_data(addr):
+    high = bus.read_byte_data(device_address, addr)
+    low = bus.read_byte_data(device_address, addr + 1)
+    value = (high << 8) + low
+    if value >= 0x8000:
+        return -((65535 - value) + 1)
+    else:
+        return value
+
+def calculate_angle(acc_x, acc_y, acc_z):
+    angle_x = math.atan2(acc_x, math.sqrt(acc_y**2 + acc_z**2)) * 180 / math.pi
+    angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
+    return angle_x, angle_y
+
+def send_udp_message(message):
+    mode_status = "manual" if manual_mode else "auto"
+    full_message = {
+        "mode": mode_status,
+        "message": message
     }
+    sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
-    override fun onStartCommand(intent: Intent, flags: Int, startId: Int): Int {
-        val userAction = intent.getBooleanExtra("userAction", false)
-        val modeChange = intent.getStringExtra("modeChange")
+def blink_led(pin, active, last_state):
+    if active:
+        GPIO.output(pin, True)
+        if not last_state:
+            send_udp_message({"pin": pin, "state": "ON"})
+        time.sleep(0.4)
+        GPIO.output(pin, False)
+        send_udp_message({"pin": pin, "state": "OFF"})
+        time.sleep(0.4)
+    else:
+        GPIO.output(pin, False)
+        if last_state:
+            send_udp_message({"pin": pin, "state": "OFF"})
 
-        modeChange?.let { handleModeChange(it) }
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--manual", help="Enable manual mode", action="store_true")
+    parser.add_argument("--left", "--left_on", help="Turn on the left LED", action="store_true", dest='left')
+    parser.add_argument("--right", "--right_on", help="Turn on the right LED", action="store_true", dest='right')
+    parser.add_argument("--auto", help="Enable automatic mode", action="store_true")
+    return parser.parse_args()
 
-        if (!userAction) {
-            startForegroundServiceWithNotification()
-            startSignalSending()
-            listenForUdpBroadcast()
-        }
+def main():
+    global manual_mode, left_active, right_active
+    args = parse_args()
 
-        val signal = intent.getStringExtra("signal") ?: "REQUEST_IP"
-        handleSignal(signal, userAction)
+    if args.manual:
+        manual_mode = True
+        left_active = args.left
+        right_active = args.right
+    elif args.auto:
+        manual_mode = False
+        init_MPU6050()
 
-        return START_NOT_STICKY
-    }
+    init_GPIO()
 
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                "service_channel",
-                "Service Channel",
-                NotificationManager.IMPORTANCE_DEFAULT
-            )
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
-        }
-    }
+    last_left_active = False
+    last_right_active = False
 
-    private fun handleModeChange(mode: String) {
-        when (mode) {
-            "manual" -> sendSignal("ENABLE_MANUAL_MODE")
-            "auto" -> sendSignal("ENABLE_AUTO_MODE")
-        }
-    }
+    try:
+        while True:
+            if not manual_mode:
+                accel_x = read_sensor_data(0x3b)
+                accel_y = read_sensor_data(0x3d)
+                accel_z = read_sensor_data(0x3f)
+                _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
 
-    private fun startForegroundServiceWithNotification() {
-        val lastKnownIP = readIpFromCache()
-        if (!lastKnownIP.isNullOrEmpty() && isServerReachable(lastKnownIP)) {
-            updateNotification("연결된 IP: $lastKnownIP", "CONNECTED")
-            lastIpNotification = "CONNECTED"
-        } else {
-            handleDisconnectedState()
-        }
-    }
+                new_right_active = angle_y > 20
+                new_left_active = angle_y < -20
 
-    private fun handleDisconnectedState() {
-        updateNotification("용굴라이더와 연결되지 않았습니다.", "DISCONNECTED")
-        lastIpNotification = "DISCONNECTED"
-    }
+                if new_right_active != right_active or new_left_active != left_active:
+                    right_active = new_right_active
+                    left_active = new_left_active
 
-    private fun startSignalSending() {
-        handler.postDelayed({
-            sendSignal("REQUEST_IP")
-            sendSignal("REQUEST_RECORDING_STATUS")
-            startSignalSending()
-        }, 5000)  // 주기 변경
-    }
+            if left_active != last_left_active or left_active:
+                blink_led(left_led_pin, left_active, last_left_active)
+                last_left_active = left_active
 
-    private fun sendSignal(signal: String) {
-        handler.post {
-            try {
-                DatagramSocket().use { socket ->
-                    socket.broadcast = true
-                    val sendData = signal.toByteArray()
-                    val packet = DatagramPacket(sendData, sendData.size, InetAddress.getByName("255.255.255.255"), udpPort)
-                    socket.send(packet)
-                }
-            } catch (e: IOException) {
-                Log.e("NetworkScanService", "신호 전송 중 오류 발생: ", e)
-            }
-        }
-    }
+            if right_active != last_right_active or right_active:
+                blink_led(right_led_pin, right_active, last_right_active)
+                last_right_active = right_active
 
-    private fun listenForUdpBroadcast() {
-        arrayOf(udpPort, secondaryUdpPort).forEach { port ->
-            Thread {
-                try {
-                    DatagramSocket(null).apply {
-                        reuseAddress = true
-                        bind(java.net.InetSocketAddress(port))
-                    }.use { socket ->
-                        val buffer = ByteArray(1024)
-                        while (true) {
-                            val packet = DatagramPacket(buffer, buffer.size)
-                            socket.receive(packet)
-                            resetTimer()
-                            if (port == udpPort) handleReceivedPacket(packet) else handleReceivedPacketSecondary(packet)
-                        }
-                    }
-                } catch (e: IOException) {
-                    Log.e("NetworkScanService", "UDP 브로드캐스트 수신 중 오류 발생: ", e)
-                }
-            }.start()
-        }
-    }
+            time.sleep(0.1)
 
-    private fun resetTimer() {
-        synchronized(this) {
-            timer?.cancel()
-            timer?.purge()
-        }
-        timer = Timer().apply {
-            schedule(object : TimerTask() {
-                override fun run() {
-                    if (System.currentTimeMillis() - lastUpdateTime >= 5000) {
-                        isDisconnected = true
-                        updateConnectionStatus(false)
-                    }
-                }
-            }, 1000)
-        }
-    }
+    except KeyboardInterrupt:
+        GPIO.cleanup()
+        sys.exit()
 
-    private fun updateConnectionStatus(isConnected: Boolean) {
-        val ipIntent = Intent("UPDATE_IP_ADDRESS").apply {
-            putExtra("ip_address", if (isConnected) readIpFromCache() ?: "Unknown IP" else "DISCONNECTED")
-        }
-        LocalBroadcastManager.getInstance(this).sendBroadcast(ipIntent)
-
-        val lastKnownIP = readIpFromCache()
-        if (isConnected && !lastKnownIP.isNullOrEmpty()) {
-            updateNotification("연결된 IP: $lastKnownIP", "CONNECTED")
-        } else if (!isConnected && lastIpNotification != "DISCONNECTED") {
-            updateNotification("용굴라이더와 연결되지 않았습니다.", "DISCONNECTED")
-        }
-    }
-
-    private fun handleReceivedPacket(packet: DatagramPacket) {
-        val receivedText = String(packet.data, 0, packet.length).trim()
-        Log.d("NetworkScanService", "Received UDP packet: $receivedText")
-        val parts = receivedText.split(" - ")
-        if (parts.size == 2) {
-            val ipInfo = parts[0].substring(3).trim()
-            val status = parts[1].trim()
-            saveIpToCache(ipInfo)
-            updateNotification("연결된 IP: $ipInfo", "CONNECTED")
-            broadcastUpdate("UPDATE_IP_ADDRESS", "ip_address", ipInfo)
-            broadcastUpdate("UPDATE_RECORDING_STATUS", "recording_status", status)
-        }
-    }
-
-    private fun handleReceivedPacketSecondary(packet: DatagramPacket) {
-        val receivedText = String(packet.data, 0, packet.length).trim()
-        Log.d("NetworkScanService", "Received UDP packet on port 5005: $receivedText")
-
-        synchronized(this) {
-            val currentTime = System.currentTimeMillis()
-            if (receivedMessages[receivedText] == null || currentTime - receivedMessages[receivedText]!! > 1000) {
-                receivedMessages[receivedText] = currentTime
-                parseAndHandleJson(receivedText)
-            }
-        }
-    }
-
-    private fun parseAndHandleJson(receivedText: String) {
-        try {
-            val json = JSONObject(receivedText)
-            val mode = json.getString("mode")
-            val message = json.getJSONObject("message")
-            val pin = message.getInt("pin")
-            val state = message.getString("state")
-
-            Log.d("NetworkScanService", "Mode: $mode, Pin: $pin, State: $state")
-
-            val status = when {
-                pin == 26 && state == "ON" -> "RIGHT_ON"
-                pin == 26 && state == "OFF" -> "RIGHT_OFF"
-                pin == 17 && state == "ON" -> "LEFT_ON"
-                pin == 17 && state == "OFF" -> "LEFT_OFF"
-                else -> null
-            }
-
-            if (status != null && status != lastBlinkerState) {
-                lastBlinkerState = status
-                broadcastUpdate("UPDATE_BLINKER_STATUS", "blinker_status", status)
-            }
-
-        } catch (e: Exception) {
-            Log.e("NetworkScanService", "Error parsing JSON: ", e)
-        }
-    }
-
-    private fun broadcastUpdate(action: String, key: String, value: String) {
-        val intent = Intent(action).apply {
-            putExtra(key, value)
-        }
-        LocalBroadcastManager.getInstance(this).sendBroadcast(intent)
-    }
-
-    private fun updateNotification(contentText: String, connectionStatus: String) {
-        val currentTime = System.currentTimeMillis()
-        if (currentTime - lastUpdateTime < 1000) return
-        lastUpdateTime = currentTime
-
-        if (lastIpNotification == connectionStatus) return
-        lastIpNotification = connectionStatus
-
-        val notificationBuilder = Notification.Builder(this, "service_channel").apply {
-            setContentTitle("용굴라이더와 연결됨")
-            setContentText(contentText)
-            setSmallIcon(android.R.drawable.stat_notify_sync)
-        }
-        startForeground(1, notificationBuilder.build())
-    }
-
-    private fun saveIpToCache(ipAddress: String) {
-        File(cacheDir, "last_ip_address").writeText(ipAddress)
-    }
-
-    private fun readIpFromCache(): String? {
-        return try {
-            File(cacheDir, "last_ip_address").readText()
-        } catch (e: IOException) {
-            Log.e("NetworkScanService", "Error reading IP from cache", e)
-            null
-        }
-    }
-
-    private fun isServerReachable(ipAddress: String): Boolean {
-        return try {
-            val process = Runtime.getRuntime().exec("/system/bin/ping -c 1 $ipAddress")
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            val output = reader.readText()
-            reader.close()
-            Log.d("Ping", "Ping output: $output")
-            process.waitFor() == 0
-        } catch (e: Exception) {
-            Log.e("NetworkScanService", "Error checking server reachability", e)
-            false
-        }
-    }
-
-    private fun handleSignal(signal: String, userAction: Boolean) {
-        handler.post {
-            when (signal) {
-                "Right Blinker Activated", "Left Blinker Activated",
-                "REQUEST_RECORDING_STATUS" -> {
-                    sendSignal(signal)
-                    if (!userAction) resetTimer()
-                }
-                else -> {
-                    sendSignal(signal)
-                    sendSignal("REQUEST_RECORDING_STATUS")
-                    if (!userAction) resetTimer()
-                }
-            }
-        }
-    }
-
-    override fun onBind(intent: Intent?): IBinder? = null
-
-    override fun onDestroy() {
-        super.onDestroy()
-        handler.removeCallbacksAndMessages(null)
-        handlerThread.quitSafely()
-    }
-}
+if __name__ == '__main__':
+    main()
