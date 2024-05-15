@@ -1,5 +1,4 @@
 import asyncio
-import websockets
 import socket
 import subprocess
 import threading
@@ -8,7 +7,6 @@ import time
 import RPi.GPIO as GPIO
 
 current_mode = 'manual'  # 초기 모드 설정
-connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
 
 def get_ip_address():
     try:
@@ -91,21 +89,6 @@ def enable_mode(mode):
         current_mode = 'auto'
         print("자동 모드로 변경됨")
 
-async def notify_status(websocket, path):
-    global connected_clients
-    connected_clients.add(websocket)
-    try:
-        last_status = None
-        while True:
-            await asyncio.sleep(1)
-            recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-            if recording_status != last_status:
-                await websocket.send(recording_status)
-                print(f"상태 업데이트 전송: {recording_status}")
-                last_status = recording_status
-    finally:
-        connected_clients.remove(websocket)
-
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
@@ -118,21 +101,12 @@ def gpio_monitor():
         state = GPIO.input(channel)
         message = f"Pin {channel} is {'on' if state else 'off'}"
         print(message)
-        asyncio.run_coroutine_threadsafe(
-            broadcast_message(message), asyncio.get_event_loop()
-        )
 
     for pin in pins:
         try:
             GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
-
-async def broadcast_message(message):
-    global connected_clients
-    for client in connected_clients:
-        await client.send(message)
-        print(f"메시지 전송됨: {message}")
 
 def udp_server():
     udp_ip = "0.0.0.0"
@@ -182,14 +156,10 @@ def udp_server():
 def main():
     enable_mode("auto")
     start_recording()
-    loop = asyncio.get_event_loop()
     gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
     gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
-    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
-    loop.run_until_complete(websocket_server)
-    loop.run_forever()
 
 if __name__ == "__main__":
     main()
