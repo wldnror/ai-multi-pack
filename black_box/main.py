@@ -23,7 +23,6 @@ copied_files_list = set()  # 복사된 파일 목록 관리
 # 녹화 및 업로드 관리
 queue = Queue()
 lock = Lock()
-current_mode = 'manual'  # 초기 모드 설정
 connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
@@ -313,28 +312,6 @@ def gpio_monitor():
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
-def terminate_and_restart_blinker(mode_script, additional_args=""):
-    try:
-        subprocess.call(['pkill', '-f', mode_script])
-        print(f"{mode_script} 프로세스 종료됨.")
-        subprocess.Popen(['python3', mode_script] + additional_args.split())
-        print(f"{mode_script} 시작됨.")
-    except Exception as e:
-        print(f"{mode_script} 실행 중 오류 발생: {e}")
-
-def enable_mode(mode):
-    global current_mode
-    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")
-    script = 'led/gyro_led_steering.py'
-    if mode == "manual" and current_mode != 'manual':
-        terminate_and_restart_blinker(script, '--manual')
-        current_mode = 'manual'
-        print("수동 모드로 변경됨")
-    elif mode == "auto" and current_mode != 'auto':
-        terminate_and_restart_blinker(script, '--auto')
-        current_mode = 'auto'
-        print("자동 모드로 변경됨")
-
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -343,31 +320,20 @@ def udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
-    global current_mode
-
     while True:
         try:
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
 
-            if message == "Right Blinker Activated" and current_mode == 'manual':
-                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
-            elif message == "Left Blinker Activated" and current_mode == 'manual':
-                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
-            elif message == "START_RECORDING":
+            if message == "START_RECORDING":
                 recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
             elif message == "STOP_RECORDING":
                 recorder.stop_recording()
-            elif message == "ENABLE_MANUAL_MODE":
-                enable_mode("manual")
-            elif message == "ENABLE_AUTO_MODE":
-                enable_mode("auto")
         except socket.timeout:
             continue
 
 def main():
-    enable_mode("auto")
     recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
     check_config_exists()
 
