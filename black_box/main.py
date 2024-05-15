@@ -23,6 +23,7 @@ lock = Lock()
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
         with FTP(ftp_address) as ftp:
+            ftp.encoding = 'latin-1'  # FTP 서버와의 통신 인코딩 설정
             ftp.login(ftp_username, ftp_password)
             try:
                 ftp.cwd(ftp_target_path)
@@ -144,6 +145,7 @@ def upload_worker():
             try:
                 ftp_info = read_ftp_config()
                 with FTP(ftp_info['ftp_address']) as ftp:
+                    ftp.encoding = 'latin-1'  # FTP 서버와의 통신 인코딩 설정
                     ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
                     with open(file_path, 'rb') as file:
                         ftp.storbinary(f"STOR {os.path.basename(file_path)}", file)
