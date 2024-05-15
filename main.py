@@ -37,19 +37,17 @@ def start_recording():
         print("녹화 이미 진행 중.")
     return "RECORDING"
 
-async def stop_recording():
+def stop_recording():
     try:
-        await send_stop_recording_command()
-        print("녹화 중지 요청 전송.")
-    except Exception as e:
-        print(f"녹화 중지 요청 중 오류 발생: {e}")
+        subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
+        print("녹화 중지.")
+        time.sleep(1)
+        force_release_camera()
+    except subprocess.CalledProcessError:
+        print("녹화 프로세스를 찾을 수 없습니다.")
+        force_release_camera()
     finally:
         return "NOT_RECORDING"
-
-async def send_stop_recording_command():
-    uri = "ws://localhost:8765"
-    async with websockets.connect(uri) as websocket:
-        await websocket.send("STOP_RECORDING")
 
 def force_release_camera():
     try:
@@ -136,34 +134,7 @@ async def broadcast_message(message):
         await client.send(message)
         print(f"메시지 전송됨: {message}")
 
-async def handle_udp_message(sock, message, addr, broadcast_ip, udp_port):
-    if message == "Right Blinker Activated" and current_mode == 'manual':
-        terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
-        send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
-    elif message == "Left Blinker Activated" and current_mode == 'manual':
-        terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
-        send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-    elif message == "REQUEST_IP":
-        ip_address = get_ip_address()
-        if ip_address:
-            send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-    elif message == "START_RECORDING":
-        recording_status = start_recording()
-        send_status(sock, broadcast_ip, udp_port, recording_status)
-    elif message == "STOP_RECORDING":
-        recording_status = await stop_recording()
-        send_status(sock, broadcast_ip, udp_port, recording_status)
-    elif message == "REQUEST_RECORDING_STATUS":
-        recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-        send_status(sock, broadcast_ip, udp_port, recording_status)
-    elif message == "ENABLE_MANUAL_MODE":
-        enable_mode("manual")
-        send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
-    elif message == "ENABLE_AUTO_MODE":
-        enable_mode("auto")
-        send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
-
-async def udp_server():
+def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
     broadcast_ip = "255.255.255.255"
@@ -172,12 +143,39 @@ async def udp_server():
     sock.bind((udp_ip, udp_port))
     print("UDP 서버 시작됨. 대기중...")
 
+    global current_mode
+
     while True:
         try:
             sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
-            await handle_udp_message(sock, message, addr, broadcast_ip, udp_port)
+
+            if message == "Right Blinker Activated" and current_mode == 'manual':
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
+                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
+            elif message == "Left Blinker Activated" and current_mode == 'manual':
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
+                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
+            elif message == "REQUEST_IP":
+                ip_address = get_ip_address()
+                if ip_address:
+                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+            elif message == "START_RECORDING":
+                recording_status = start_recording()
+                send_status(sock, broadcast_ip, udp_port, recording_status)
+            elif message == "STOP_RECORDING":
+                recording_status = stop_recording()
+                send_status(sock, broadcast_ip, udp_port, recording_status)
+            elif message == "REQUEST_RECORDING_STATUS":
+                recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+                send_status(sock, broadcast_ip, udp_port, recording_status)
+            elif message == "ENABLE_MANUAL_MODE":
+                enable_mode("manual")
+                send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
+            elif message == "ENABLE_AUTO_MODE":
+                enable_mode("auto")
+                send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
         except socket.timeout:
             continue
 
@@ -187,7 +185,7 @@ def main():
     loop = asyncio.get_event_loop()
     gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
     gpio_thread.start()
-    udp_thread = threading.Thread(target=lambda: asyncio.run(udp_server()), daemon=True)
+    udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
