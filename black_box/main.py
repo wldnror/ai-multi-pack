@@ -174,6 +174,9 @@ def read_acceleration(addr):
     x = (raw_data[0] << 8) + raw_data[1]
     y = (raw_data[2] << 8) + raw_data[3]
     z = (raw_data[4] << 8) + raw_data[5]
+    if x > 32767: x -= 65536
+    if y > 32767: y -= 65536
+    if z > 32767: z -= 65536
     return x, y, z
 
 def init_sensor():
@@ -185,7 +188,10 @@ def detect_impact(x, y, z, threshold):
     delta_y = abs(y - last_y)
     delta_z = abs(z - last_z)
     last_x, last_y, last_z = x, y, z
-    return (delta_x + delta_y + delta_z) > threshold
+    impact_detected = (delta_x + delta_y + delta_z) > threshold
+    if impact_detected:
+        print(f"충격 감지: Δx={delta_x}, Δy={delta_y}, Δz={delta_z}")
+    return impact_detected
 
 def is_file_ready(filepath, timeout=10):
     initial_size = os.path.getsize(filepath)
@@ -233,7 +239,6 @@ def monitor_impact(threshold, input_directory, output_directory):
             x, y, z = read_acceleration(address)
             if detect_impact(x, y, z, threshold):
                 current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-                print(f"충격 감지: {current_time}")
                 copy_last_two_videos(input_directory, output_directory, current_time)
             time.sleep(1)
     except KeyboardInterrupt:
@@ -264,7 +269,7 @@ uploader_thread.start()
 record_thread = Thread(target=record_and_upload)
 record_thread.start()
 
-impact_monitor_thread = Thread(target=monitor_impact, args=(80000, '상시녹화', '충격녹화'))
+impact_monitor_thread = Thread(target=monitor_impact, args=(2000, '상시녹화', '충격녹화'))  # 임계값 조정
 impact_monitor_thread.start()
 
 record_thread.join()
