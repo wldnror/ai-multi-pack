@@ -69,8 +69,7 @@ def send_udp_message(message):
 def blink_led(pin, active, last_state):
     if active:
         GPIO.output(pin, True)
-        if not last_state:
-            send_udp_message({"pin": pin, "state": "ON"})
+        send_udp_message({"pin": pin, "state": "ON"})  # "ON" 상태 주기적으로 전송
         time.sleep(0.4)
         GPIO.output(pin, False)
         send_udp_message({"pin": pin, "state": "OFF"})
