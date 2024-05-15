@@ -70,7 +70,7 @@ class Recorder:
 
     def start_recording(self, output_filename, duration=60, fps=30):
         self.recording = True
-        cap = cv2.VideoCapture(0)  # Use the first camera
+        cap = cv2.VideoCapture(0, cv2.CAP_V4L2)  # Use V4L2 directly
 
         # Check if camera opened successfully
         if not cap.isOpened():
