@@ -206,6 +206,9 @@ def is_file_ready(filepath, timeout=10):
     return False
 
 def copy_last_two_videos(input_directory, output_directory, impact_time):
+    input_directory = os.path.abspath(input_directory)
+    output_directory = os.path.abspath(output_directory)
+
     if not os.path.exists(input_directory):
         print(f"입력 디렉토리가 존재하지 않습니다: {input_directory}")
         return
@@ -238,6 +241,12 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
             queue.put(dst)
 
 def monitor_impact(threshold, input_directory, output_directory):
+    input_directory = os.path.abspath(input_directory)
+    output_directory = os.path.abspath(output_directory)
+
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
     init_sensor()
     try:
         while True:
