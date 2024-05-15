@@ -285,21 +285,6 @@ async def notify_status(websocket, path):
     finally:
         connected_clients.remove(websocket)
 
-async def handle_websocket(websocket, path):
-    async for message in websocket:
-        if message == "START_RECORDING":
-            print("WebSocket: 녹화 시작 명령 수신")
-            recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
-            await websocket.send("RECORDING")
-        elif message == "STOP_RECORDING":
-            print("WebSocket: 녹화 중지 명령 수신")
-            recorder.stop_recording()
-            await websocket.send("NOT_RECORDING")
-        elif message == "REQUEST_RECORDING_STATUS":
-            print("WebSocket: 녹화 상태 요청 수신")
-            response_message = "RECORDING" if recorder.process else "NOT_RECORDING"
-            await websocket.send(response_message)
-
 async def broadcast_message(message):
     global connected_clients
     for client in connected_clients:
@@ -383,7 +368,7 @@ def main():
 
     # 웹소켓 서버 시작
     loop = asyncio.get_event_loop()
-    websocket_server = websockets.serve(handle_websocket, "0.0.0.0", 5001)
+    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
     loop.run_forever()
 
