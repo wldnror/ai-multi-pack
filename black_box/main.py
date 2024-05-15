@@ -89,6 +89,8 @@ class Recorder:
         self.process = None
         self.recording_thread = None
         self.should_stop = False
+        self.recording_duration = 60  # 1분 녹화
+        self.segment_duration = 10    # 10초 단위로 녹화
 
     def _monitor_recording(self):
         while True:
@@ -101,29 +103,45 @@ class Recorder:
                 self.process.terminate()
                 break
 
-    def start_recording(self, output_filename, duration=60):
+    def start_segment_recording(self, output_filename):
+        command = [
+            'ffmpeg',
+            '-f', 'v4l2',
+            '-framerate', '30',
+            '-video_size', '1920x1080',
+            '-i', '/dev/video0',
+            '-c:v', 'libx264',
+            '-preset', 'veryfast',
+            '-crf', '18',
+            '-t', str(self.segment_duration),
+            output_filename
+        ]
+        self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
+        self.recording_thread = Thread(target=self._monitor_recording)
+        self.recording_thread.start()
+        asyncio.run(notify_status_change("RECORDING"))
+
+    def start_recording(self, base_output_filename):
         self.should_stop = False
-        if not self.process:
-            command = [
-                'ffmpeg',
-                '-f', 'v4l2',
-                '-framerate', '30',
-                '-video_size', '1920x1080',
-                '-i', '/dev/video0',
-                '-c:v', 'libx264',
-                '-preset', 'veryfast',
-                '-crf', '18',
-                '-t', str(duration),
-                output_filename
-            ]
-            self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
-            self.recording_thread = Thread(target=self._monitor_recording)
-            self.recording_thread.start()
-            asyncio.run(notify_status_change("RECORDING"))
+        end_time = time.time() + self.recording_duration
+        while time.time() < end_time and not self.should_stop:
+            current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
+            output_filename = f"{base_output_filename}_{current_time}.mp4"
+            self.start_segment_recording(output_filename)
+            self.process.wait()
+            time.sleep(1)  # 짧은 휴식 후 다음 세그먼트 시작
+
+        self.process = None
+        if self.should_stop:
+            print("녹화가 중단되었습니다.")
+        else:
+            print("녹화가 완료되었습니다.")
+        asyncio.run(notify_status_change("NOT_RECORDING"))
 
     def stop_recording(self):
         if self.process:
             self.should_stop = True
+            self.process.terminate()
             self.recording_thread.join()
             self.process = None
             print("녹화가 종료되었습니다.")
@@ -280,12 +298,12 @@ def record_and_upload():
     
     while True:
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-        output_filename = os.path.join(input_directory, f'video_{current_time}.mp4')
-
+        output_filename = os.path.join(input_directory, f'video_{current_time}')
+        
         print(f"녹화 시작: {current_time}")
-        recorder.start_recording(output_filename, 60)
+        recorder.start_recording(output_filename)
 
-        time.sleep(60)
+        time.sleep(recorder.recording_duration)
         recorder.stop_recording()
 
         manage_video_files()
@@ -356,7 +374,7 @@ def udp_server():
 
             if message == "START_RECORDING":
                 print("녹화 시작 명령 수신")
-                recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
+                recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}'))
                 sock.sendto("RECORDING".encode(), addr)
                 print("녹화 상태 응답 전송: RECORDING")
             elif message == "STOP_RECORDING":
