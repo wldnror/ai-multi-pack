@@ -68,11 +68,15 @@ class Recorder:
     def __init__(self):
         self.recording = False
 
-    def start_recording(self, output_filename, duration=60):
+    def start_recording(self, output_filename, duration=60, fps=30):
         self.recording = True
         cap = cv2.VideoCapture(0)  # Use the first camera
+        cap.set(cv2.CAP_PROP_FPS, fps)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        
         fourcc = cv2.VideoWriter_fourcc(*'avc1')  # H.264 codec
-        out = cv2.VideoWriter(output_filename, fourcc, 30.0, (1920, 1080))
+        out = cv2.VideoWriter(output_filename, fourcc, fps, (1920, 1080))
 
         start_time = time.time()
         while self.recording and (time.time() - start_time) < duration:
