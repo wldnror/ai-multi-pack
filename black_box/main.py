@@ -10,9 +10,7 @@ from threading import Thread, Lock
 from queue import Queue
 import asyncio
 import websockets
-import socket
 import RPi.GPIO as GPIO
-import re
 
 # MPU-6050 설정
 bus = smbus.SMBus(1)  # Raspberry Pi의 I2C 인터페이스 사용
@@ -90,6 +88,7 @@ class Recorder:
     def __init__(self):
         self.process = None
         self.recording_thread = None
+        self.should_stop = False
 
     def _monitor_recording(self):
         while True:
@@ -98,8 +97,12 @@ class Recorder:
                 break
             if output:
                 print(output.strip())
+            if self.should_stop:
+                self.process.terminate()
+                break
 
     def start_recording(self, output_filename, duration=60):
+        self.should_stop = False
         if not self.process:
             command = [
                 'ffmpeg',
@@ -119,16 +122,10 @@ class Recorder:
 
     def stop_recording(self):
         if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
-            print("녹화가 종료되었습니다.")
+            self.should_stop = True
+            self.recording_thread.join()
             self.process = None
-            if self.recording_thread:
-                self.recording_thread.join()
+            print("녹화가 종료되었습니다.")
 
 recorder = Recorder()
 
@@ -273,91 +270,6 @@ def record_and_upload():
 
         manage_video_files()
 
-# IP 주소 가져오기
-def get_ip_address():
-    try:
-        result = subprocess.check_output(["hostname", "-I"]).decode().strip()
-        ip_address = re.findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', result)[0]
-        return ip_address
-    except Exception as e:
-        print(f"IP 주소 가져오기 실패: {e}")
-        return None
-
-# 프로세스 확인
-def process_exists(process_name):
-    try:
-        process_list = subprocess.check_output(['ps', 'aux']).decode()
-        if process_name in process_list:
-            return True
-        return False
-    except Exception as e:
-        print(f"프로세스 확인 중 오류 발생: {e}")
-        return False
-
-# 녹화 시작
-def start_recording():
-    if not process_exists('black_box/main.py'):
-        subprocess.Popen(['python3', 'black_box/main.py'])
-        print("녹화 시작.")
-    else:
-        print("녹화 이미 진행 중.")
-    return "RECORDING"
-
-# 녹화 중지
-def stop_recording():
-    try:
-        subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
-        print("녹화 중지.")
-        time.sleep(1)
-        force_release_camera()
-    except subprocess.CalledProcessError:
-        print("녹화 프로세스를 찾을 수 없습니다.")
-        force_release_camera()
-    finally:
-        return "NOT_RECORDING"
-
-def force_release_camera():
-    try:
-        camera_process_output = subprocess.check_output(['fuser', '/dev/video0']).decode().strip()
-        for pid in camera_process_output.split():
-            subprocess.call(['kill', '-9', pid])
-        print("카메라 자원 강제 해제.")
-    except Exception as e:
-        print(f"카메라 자원 해제 실패: {e}")
-
-def send_status(sock, ip, port, message):
-    try:
-        ip_address = get_ip_address()
-        if ip_address:
-            message_with_ip = f"IP:{ip_address} - {message}"
-            sock.sendto(message_with_ip.encode(), (ip, port))
-        else:
-            print("IP 주소를 가져오는 데 실패했습니다.")
-    except Exception as e:
-        print(f"메시지 전송 실패: {e}")
-
-def terminate_and_restart_blinker(mode_script, additional_args=""):
-    try:
-        subprocess.call(['pkill', '-f', mode_script])
-        print(f"{mode_script} 프로세스 종료됨.")
-        subprocess.Popen(['python3', mode_script] + additional_args.split())
-        print(f"{mode_script} 시작됨.")
-    except Exception as e:
-        print(f"{mode_script} 실행 중 오류 발생: {e}")
-
-def enable_mode(mode):
-    global current_mode
-    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")
-    script = 'led/gyro_led_steering.py'
-    if mode == "manual" and current_mode != 'manual':
-        terminate_and_restart_blinker(script, '--manual')
-        current_mode = 'manual'
-        print("수동 모드로 변경됨")
-    elif mode == "auto" and current_mode != 'auto':
-        terminate_and_restart_blinker(script, '--auto')
-        current_mode = 'auto'
-        print("자동 모드로 변경됨")
-
 async def notify_status(websocket, path):
     global connected_clients
     connected_clients.add(websocket)
@@ -365,13 +277,19 @@ async def notify_status(websocket, path):
         last_status = None
         while True:
             await asyncio.sleep(1)
-            recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+            recording_status = "RECORDING" if recorder.process else "NOT_RECORDING"
             if recording_status != last_status:
                 await websocket.send(recording_status)
                 print(f"상태 업데이트 전송: {recording_status}")
                 last_status = recording_status
     finally:
         connected_clients.remove(websocket)
+
+async def broadcast_message(message):
+    global connected_clients
+    for client in connected_clients:
+        await client.send(message)
+        print(f"메시지 전송됨: {message}")
 
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
@@ -395,12 +313,6 @@ def gpio_monitor():
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
-async def broadcast_message(message):
-    global connected_clients
-    for client in connected_clients:
-        await client.send(message)
-        print(f"메시지 전송됨: {message}")
-
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -420,35 +332,22 @@ def udp_server():
 
             if message == "Right Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
-                send_status(sock, broadcast_ip, udp_port, "오른쪽 블링커 활성화됨")
             elif message == "Left Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
-                send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            elif message == "REQUEST_IP":
-                ip_address = get_ip_address()
-                if ip_address:
-                    send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
             elif message == "START_RECORDING":
-                recording_status = start_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
+                recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
             elif message == "STOP_RECORDING":
-                recording_status = stop_recording()
-                send_status(sock, broadcast_ip, udp_port, recording_status)
-            elif message == "REQUEST_RECORDING_STATUS":
-                recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-                send_status(sock, broadcast_ip, udp_port, recording_status)
+                recorder.stop_recording()
             elif message == "ENABLE_MANUAL_MODE":
                 enable_mode("manual")
-                send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
             elif message == "ENABLE_AUTO_MODE":
                 enable_mode("auto")
-                send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
         except socket.timeout:
             continue
 
 def main():
     enable_mode("auto")
-    start_recording()
+    recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
     check_config_exists()
 
     # 스레드 시작
