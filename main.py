@@ -66,6 +66,7 @@ async def notify_status(websocket, path):
         connected_clients.remove(websocket)
 
 def gpio_monitor():
+    GPIO.cleanup()  # GPIO 핀 모드 초기화
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
@@ -143,7 +144,7 @@ def main():
     gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
-    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
+    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8766)  # 다른 포트 사용
     loop.run_until_complete(websocket_server)
     loop.run_forever()
 
