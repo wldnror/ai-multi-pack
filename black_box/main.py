@@ -323,19 +323,27 @@ def udp_server():
 
     while True:
         try:
-            sock.settimeout(1)
+            sock.settimeout(10)  # 타임아웃을 10초로 설정
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
+            print(f"메시지 수신됨: {message} from {addr}")  # 수신된 메시지와 발신자 주소 출력
 
             if message == "START_RECORDING":
+                print("녹화 시작 명령 수신")
                 recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
             elif message == "STOP_RECORDING":
+                print("녹화 중지 명령 수신")
                 recorder.stop_recording()
+            else:
+                print(f"알 수 없는 메시지: {message}")
         except socket.timeout:
+            print("타임아웃 발생")
             continue
+        except Exception as e:
+            print(f"예외 발생: {e}")
 
 def main():
-    recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
+    # 기존 녹화 시작 코드 제거 (녹화 시작 명령 수신 시에만 시작)
     check_config_exists()
 
     # 스레드 시작
@@ -362,3 +370,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
