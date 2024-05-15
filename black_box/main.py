@@ -13,7 +13,7 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
             try:
                 ftp.cwd(ftp_target_path)
                 print("FTP 경로 접근 성공!")
-            except Exception as e:
+            except Exception:
                 try:
                     ftp.mkd(ftp_target_path)
                     ftp.cwd(ftp_target_path)
@@ -92,9 +92,9 @@ class Recorder:
                 output_filename
             ]
             self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
-            self.recording_thread = Thread(target=self._monitor_recording)  # 수정된 부분
+            self.recording_thread = Thread(target=self._monitor_recording)
             self.recording_thread.start()
-            
+
     def stop_recording(self):
         if self.process:
             self.process.terminate()
@@ -105,7 +105,8 @@ class Recorder:
                 self.process.wait()
             print("녹화가 종료되었습니다.")
             self.process = None
-            self.recording_thread.join()
+            if self.recording_thread:
+                self.recording_thread.join()
 
 recorder = Recorder()
 queue = Queue()
@@ -116,13 +117,14 @@ def upload_worker():
         file_path = queue.get()
         if file_path is None:
             break
+
         file_ready = False
         attempts = 0
         while not file_ready and attempts < 10:
             if os.path.exists(file_path):
                 file_ready = True
             else:
-                time.sleep(1)  # 1초 동안 대기
+                time.sleep(1)
                 attempts += 1
 
         if file_ready:
@@ -146,7 +148,10 @@ def manage_video_files():
         os.makedirs(output_directory)
 
     with lock:
-        video_files = sorted(os.listdir(output_directory), key=lambda x: os.path.getctime(os.path.join(output_directory, x)))
+        video_files = sorted(
+            (f for f in os.listdir(output_directory) if os.path.isfile(os.path.join(output_directory, f))),
+            key=lambda x: os.path.getctime(os.path.join(output_directory, x))
+        )
         while len(video_files) > 100:
             file_to_delete = os.path.join(output_directory, video_files.pop(0))
             os.remove(file_to_delete)
@@ -157,15 +162,15 @@ def record_and_upload():
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
         output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
         output_filename = os.path.join(output_directory, f'video_{current_time}.mp4')
-        
+
         print(f"녹화 시작: {current_time}")
-        recorder.start_recording(output_filename, 60)  # 녹화 시간을 1분으로 설정
-        
-        time.sleep(60)  # 녹화 시간이 끝날 때까지 기다림
-        recorder.stop_recording()  # 녹화 중지
-        
+        recorder.start_recording(output_filename, 60)
+
+        time.sleep(60)
+        recorder.stop_recording()
+
         manage_video_files()
-        queue.put(output_filename)  # 녹화가 완전히 끝난 후 파일을 업로드 큐에 추가
+        queue.put(output_filename)
 
 check_config_exists()
 
@@ -176,6 +181,5 @@ record_thread = Thread(target=record_and_upload)
 record_thread.start()
 
 record_thread.join()
-queue.put(None)  # 모든 작업 완료 후 None을 큐에 추가하여 업로더 스레드 종료 신호를 보냄
+queue.put(None)
 uploader_thread.join()
-
