@@ -132,6 +132,10 @@ class Recorder:
     def terminate(self):
         if self.process:
             self.process.terminate()
+            try:
+                self.process.wait(timeout=5)  # 프로세스가 종료될 때까지 기다림
+            except subprocess.TimeoutExpired:
+                self.process.kill()  # 강제로 종료
             self.process = None
             print("녹화가 강제로 종료되었습니다.")
             asyncio.run(notify_status_change("NOT_RECORDING"))
