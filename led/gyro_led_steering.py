@@ -99,6 +99,9 @@ def main():
 
     init_GPIO()
 
+    last_left_active = False
+    last_right_active = False
+
     try:
         while True:
             if not manual_mode:
@@ -114,8 +117,14 @@ def main():
                     right_active = new_right_active
                     left_active = new_left_active
 
-            blink_led(left_led_pin, left_active)
-            blink_led(right_led_pin, right_active)
+            if left_active != last_left_active:
+                blink_led(left_led_pin, left_active)
+                last_left_active = left_active
+
+            if right_active != last_right_active:
+                blink_led(right_led_pin, right_active)
+                last_right_active = right_active
+
             time.sleep(0.1)
 
     except KeyboardInterrupt:
