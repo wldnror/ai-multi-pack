@@ -313,10 +313,31 @@ def gpio_monitor():
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
+def terminate_and_restart_blinker(mode_script, additional_args=""):
+    try:
+        subprocess.call(['pkill', '-f', mode_script])
+        print(f"{mode_script} 프로세스 종료됨.")
+        subprocess.Popen(['python3', mode_script] + additional_args.split())
+        print(f"{mode_script} 시작됨.")
+    except Exception as e:
+        print(f"{mode_script} 실행 중 오류 발생: {e}")
+
+def enable_mode(mode):
+    global current_mode
+    print(f"현재 모드: {current_mode}, 요청 모드: {mode}")
+    script = 'led/gyro_led_steering.py'
+    if mode == "manual" and current_mode != 'manual':
+        terminate_and_restart_blinker(script, '--manual')
+        current_mode = 'manual'
+        print("수동 모드로 변경됨")
+    elif mode == "auto" and current_mode != 'auto':
+        terminate_and_restart_blinker(script, '--auto')
+        current_mode = 'auto'
+        print("자동 모드로 변경됨")
+
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
-    broadcast_ip = "255.255.255.255"
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
     sock.bind((udp_ip, udp_port))
