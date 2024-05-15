@@ -4,7 +4,7 @@ import shutil
 import smbus
 import configparser
 from ftplib import FTP
-import subprocess
+import cv2
 from threading import Thread, Lock
 from queue import Queue
 
@@ -80,47 +80,48 @@ def check_config_exists():
 
 class Recorder:
     def __init__(self):
-        self.process = None
+        self.cap = None
+        self.out = None
         self.recording_thread = None
+        self.should_stop = False
 
-    def _monitor_recording(self):
-        while True:
-            output = self.process.stderr.readline()
-            if output == '' and self.process.poll() is not None:
+    def _monitor_recording(self, output_filename, duration, fps, resolution):
+        self.cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, resolution[0])
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, resolution[1])
+        self.cap.set(cv2.CAP_PROP_FPS, fps)
+
+        if not self.cap.isOpened():
+            print("웹캠을 열 수 없습니다.")
+            return
+
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        self.out = cv2.VideoWriter(output_filename, fourcc, fps, resolution)
+        
+        start_time = time.time()
+        while int(time.time() - start_time) < duration:
+            if self.should_stop:
                 break
-            if output:
-                print(output.strip())
+            ret, frame = self.cap.read()
+            if ret:
+                self.out.write(frame)
+            else:
+                break
 
-    def start_recording(self, output_filename, duration=60):
-        if not self.process:
-            command = [
-                'ffmpeg',
-                '-f', 'v4l2',
-                '-framerate', '30',
-                '-video_size', '1920x1080',
-                '-i', '/dev/video0',
-                '-c:v', 'libx264',
-                '-preset', 'veryfast',
-                '-crf', '18',
-                '-t', str(duration),
-                output_filename
-            ]
-            self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
-            self.recording_thread = Thread(target=self._monitor_recording)
-            self.recording_thread.start()
+        self.cap.release()
+        self.out.release()
+        cv2.destroyAllWindows()
+
+    def start_recording(self, output_filename, duration=60, fps=30, resolution=(1280, 720)):
+        self.should_stop = False
+        self.recording_thread = Thread(target=self._monitor_recording, args=(output_filename, duration, fps, resolution))
+        self.recording_thread.start()
 
     def stop_recording(self):
-        if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=10)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
-                self.process.wait()
+        if self.cap:
+            self.should_stop = True
+            self.recording_thread.join()
             print("녹화가 종료되었습니다.")
-            self.process = None
-            if self.recording_thread:
-                self.recording_thread.join()
 
 recorder = Recorder()
 
@@ -174,6 +175,9 @@ def read_acceleration(addr):
     x = (raw_data[0] << 8) + raw_data[1]
     y = (raw_data[2] << 8) + raw_data[3]
     z = (raw_data[4] << 8) + raw_data[5]
+    if x > 32767: x -= 65536
+    if y > 32767: y -= 65536
+    if z > 32767: z -= 65536
     return x, y, z
 
 def init_sensor():
@@ -185,7 +189,10 @@ def detect_impact(x, y, z, threshold):
     delta_y = abs(y - last_y)
     delta_z = abs(z - last_z)
     last_x, last_y, last_z = x, y, z
-    return (delta_x + delta_y + delta_z) > threshold
+    impact_detected = (delta_x + delta_y + delta_z) > threshold
+    if impact_detected:
+        print(f"충격 감지: Δx={delta_x}, Δy={delta_y}, Δz={delta_z}")
+    return impact_detected
 
 def is_file_ready(filepath, timeout=10):
     initial_size = os.path.getsize(filepath)
@@ -199,9 +206,13 @@ def is_file_ready(filepath, timeout=10):
     return False
 
 def copy_last_two_videos(input_directory, output_directory, impact_time):
+    if not os.path.exists(input_directory):
+        print(f"입력 디렉토리가 존재하지 않습니다: {input_directory}")
+        return
+
     video_files = [
         f for f in os.listdir(input_directory)
-        if f.endswith('.mp4')
+        if f.endswith('.avi')
     ]
     video_files = sorted(
         video_files,
@@ -209,10 +220,13 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
         reverse=True
     )
 
-    copied_files = 0
-    for file in video_files:
-        if copied_files >= 2:
-            break
+    if len(video_files) < 2:
+        print("충격 감지 시점에 저장된 상시녹화 파일이 충분하지 않습니다.")
+        return
+
+    files_to_copy = video_files[:2]  # 최신 두 개의 파일
+
+    for file in files_to_copy:
         file_path = os.path.join(input_directory, file)
         file_mod_time = os.path.getmtime(file_path)
         file_identifier = (file, file_mod_time)
@@ -221,7 +235,6 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
             shutil.copy(file_path, dst)
             copied_files_list.add(file_identifier)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
-            copied_files += 1
             queue.put(dst)
 
 def monitor_impact(threshold, input_directory, output_directory):
@@ -231,7 +244,6 @@ def monitor_impact(threshold, input_directory, output_directory):
             x, y, z = read_acceleration(address)
             if detect_impact(x, y, z, threshold):
                 current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-                print(f"충격 감지: {current_time}")
                 copy_last_two_videos(input_directory, output_directory, current_time)
             time.sleep(1)
     except KeyboardInterrupt:
@@ -239,18 +251,15 @@ def monitor_impact(threshold, input_directory, output_directory):
 
 def record_and_upload():
     input_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
-    output_directory = os.path.join(os.path.dirname(__file__), '충격녹화')
     if not os.path.exists(input_directory):
         os.makedirs(input_directory)
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
     
     while True:
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
-        output_filename = os.path.join(input_directory, f'video_{current_time}.mp4')
+        output_filename = os.path.join(input_directory, f'video_{current_time}.avi')
 
         print(f"녹화 시작: {current_time}")
-        recorder.start_recording(output_filename, 60)
+        recorder.start_recording(output_filename, 60, fps=30, resolution=(1280, 720))
 
         time.sleep(60)
         recorder.stop_recording()
@@ -265,7 +274,7 @@ uploader_thread.start()
 record_thread = Thread(target=record_and_upload)
 record_thread.start()
 
-impact_monitor_thread = Thread(target=monitor_impact, args=(80000, '상시녹화', '충격녹화'))
+impact_monitor_thread = Thread(target=monitor_impact, args=(2000, '상시녹화', '충격녹화'))
 impact_monitor_thread.start()
 
 record_thread.join()
