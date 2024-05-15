@@ -205,6 +205,10 @@ def is_file_ready(filepath, timeout=10):
     return False
 
 def copy_last_two_videos(input_directory, output_directory, impact_time):
+    if not os.path.exists(input_directory):
+        print(f"입력 디렉토리가 존재하지 않습니다: {input_directory}")
+        return
+
     video_files = [
         f for f in os.listdir(input_directory)
         if f.endswith('.mp4')
@@ -269,7 +273,7 @@ uploader_thread.start()
 record_thread = Thread(target=record_and_upload)
 record_thread.start()
 
-impact_monitor_thread = Thread(target=monitor_impact, args=(2000, '상시녹화', '충격녹화'))  # 임계값 조정
+impact_monitor_thread = Thread(target=monitor_impact, args=(2000, os.path.abspath('상시녹화'), os.path.abspath('충격녹화')))  # 절대 경로 사용
 impact_monitor_thread.start()
 
 record_thread.join()
