@@ -209,10 +209,13 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
         reverse=True
     )
 
-    copied_files = 0
-    for file in video_files:
-        if copied_files >= 2:
-            break
+    if len(video_files) < 2:
+        print("충격 감지 시점에 저장된 상시녹화 파일이 충분하지 않습니다.")
+        return
+
+    files_to_copy = video_files[:2]  # 최신 두 개의 파일
+
+    for file in files_to_copy:
         file_path = os.path.join(input_directory, file)
         file_mod_time = os.path.getmtime(file_path)
         file_identifier = (file, file_mod_time)
@@ -221,7 +224,6 @@ def copy_last_two_videos(input_directory, output_directory, impact_time):
             shutil.copy(file_path, dst)
             copied_files_list.add(file_identifier)
             print(f"파일 {file}이 {dst}로 복사되었습니다.")
-            copied_files += 1
             queue.put(dst)
 
 def monitor_impact(threshold, input_directory, output_directory):
@@ -239,11 +241,8 @@ def monitor_impact(threshold, input_directory, output_directory):
 
 def record_and_upload():
     input_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
-    output_directory = os.path.join(os.path.dirname(__file__), '충격녹화')
     if not os.path.exists(input_directory):
         os.makedirs(input_directory)
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
     
     while True:
         current_time = time.strftime("%Y-%m-%d_%H-%M-%S")
