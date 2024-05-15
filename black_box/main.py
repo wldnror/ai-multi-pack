@@ -119,6 +119,7 @@ class Recorder:
             self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
             self.recording_thread = Thread(target=self._monitor_recording)
             self.recording_thread.start()
+            asyncio.run(notify_status_change("RECORDING"))
 
     def stop_recording(self):
         if self.process:
@@ -126,8 +127,16 @@ class Recorder:
             self.recording_thread.join()
             self.process = None
             print("녹화가 종료되었습니다.")
+            asyncio.run(notify_status_change("NOT_RECORDING"))
 
 recorder = Recorder()
+
+# 녹화 상태를 웹소켓으로 전송하는 함수
+async def notify_status_change(status):
+    global connected_clients
+    for client in connected_clients:
+        await client.send(status)
+        print(f"녹화 상태 전송: {status}")
 
 def upload_worker():
     while True:
@@ -270,6 +279,12 @@ def record_and_upload():
 
         manage_video_files()
 
+async def handle_websocket(websocket, path):
+    async for message in websocket:
+        if message == "STOP_RECORDING":
+            recorder.stop_recording()
+            await notify_status_change("NOT_RECORDING")
+
 async def notify_status(websocket, path):
     global connected_clients
     connected_clients.add(websocket)
@@ -368,7 +383,7 @@ def main():
 
     # 웹소켓 서버 시작
     loop = asyncio.get_event_loop()
-    websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
+    websocket_server = websockets.serve(handle_websocket, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
     loop.run_forever()
 
