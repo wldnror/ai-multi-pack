@@ -93,6 +93,13 @@ async def broadcast_message(message):
         await client.send(message)
         print(f"메시지 전송됨: {message}")
 
+def send_status(sock, ip, port, message):
+    try:
+        sock.sendto(message.encode(), (ip, port))
+        print(f"메시지 전송됨: {message}")
+    except Exception as e:
+        print(f"메시지 전송 실패: {e}")
+
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
