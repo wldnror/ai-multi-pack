@@ -129,6 +129,13 @@ class Recorder:
             print("녹화가 종료되었습니다.")
             asyncio.run(notify_status_change("NOT_RECORDING"))
 
+    def terminate(self):
+        if self.process:
+            self.process.terminate()
+            self.process = None
+            print("녹화가 강제로 종료되었습니다.")
+            asyncio.run(notify_status_change("NOT_RECORDING"))
+
 recorder = Recorder()
 
 # 녹화 상태를 웹소켓으로 전송하는 함수
@@ -282,7 +289,7 @@ def record_and_upload():
 async def handle_websocket(websocket, path):
     async for message in websocket:
         if message == "STOP_RECORDING":
-            recorder.stop_recording()
+            recorder.terminate()  # 녹화를 강제로 종료합니다.
             await notify_status_change("NOT_RECORDING")
 
 async def notify_status(websocket, path):
@@ -350,7 +357,7 @@ def udp_server():
                 print("녹화 상태 응답 전송: RECORDING")
             elif message == "STOP_RECORDING":
                 print("녹화 중지 명령 수신")
-                recorder.stop_recording()
+                recorder.terminate()  # 녹화를 강제로 종료합니다.
                 sock.sendto("NOT_RECORDING".encode(), addr)
                 print("녹화 상태 응답 전송: NOT_RECORDING")
             elif message == "REQUEST_RECORDING_STATUS":
