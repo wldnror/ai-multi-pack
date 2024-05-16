@@ -45,14 +45,14 @@ def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path
 
 def read_ftp_config():
     config = configparser.ConfigParser()
-    script_directory = os.path.dirname(__file__)
+    script_directory = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     config.read(config_file_path)
     return config['FTP']
 
 def init_ftp_config():
     config = configparser.ConfigParser()
-    script_directory = os.path.dirname(__file__)
+    script_directory = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     while True:
         ftp_address = input('FTP 주소 입력: ')
@@ -73,7 +73,7 @@ def init_ftp_config():
             print("잘못된 FTP 정보입니다. 다시 입력해주세요.")
 
 def check_config_exists():
-    script_directory = os.path.dirname(__file__)
+    script_directory = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
     config_file_path = os.path.join(script_directory, 'ftp_config.ini')
     if not os.path.exists(config_file_path):
         print("FTP 설정 파일이 없습니다. 설정을 시작합니다.")
@@ -149,7 +149,7 @@ def upload_worker():
                     with open(file_path, 'rb') as file:
                         # 경로 및 파일 이름을 안전하게 처리
                         target_path = f"{ftp_info['ftp_target_path']}/{os.path.basename(file_path)}"
-                        ftp.storbinary(f"STOR {target_path.encode('utf-8')}", file)
+                        ftp.storbinary(f"STOR {target_path}", file)
                     print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
             except Exception as e:
                 print(f"파일 업로드 중 오류 발생: {e}")
@@ -159,7 +159,8 @@ def upload_worker():
         queue.task_done()
 
 def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
+    script_directory = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+    output_directory = os.path.join(script_directory, 'black_box', '상시녹화')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -253,7 +254,8 @@ def monitor_impact(threshold, input_directory, output_directory):
         print("모니터링 중단")
 
 def record_and_upload():
-    input_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
+    script_directory = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+    input_directory = os.path.join(script_directory, 'black_box', '상시녹화')
     if not os.path.exists(input_directory):
         os.makedirs(input_directory)
     
