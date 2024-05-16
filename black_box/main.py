@@ -147,7 +147,9 @@ def upload_worker():
                 with FTP(ftp_info['ftp_address']) as ftp:
                     ftp.login(ftp_info['ftp_username'], ftp_info['ftp_password'])
                     with open(file_path, 'rb') as file:
-                        ftp.storbinary(f"STOR {ftp_info['ftp_target_path']}/{os.path.basename(file_path)}", file)
+                        # 경로 및 파일 이름을 안전하게 처리
+                        target_path = f"{ftp_info['ftp_target_path']}/{os.path.basename(file_path)}"
+                        ftp.storbinary(f"STOR {target_path.encode('utf-8')}", file)
                     print(f"파일 {file_path}가 성공적으로 업로드되었습니다.")
             except Exception as e:
                 print(f"파일 업로드 중 오류 발생: {e}")
