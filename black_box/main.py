@@ -169,7 +169,7 @@ def upload_worker():
         queue.task_done()
 
 def manage_video_files():
-    output_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+    output_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
     if not os.path.exists(output_directory):
         os.makedirs(output_directory)
 
@@ -263,7 +263,7 @@ def monitor_impact(threshold, input_directory, output_directory):
         print("모니터링 중단")
 
 def record_and_upload():
-    input_directory = os.path.join(os.path.dirname(__file__), '상시녹화')
+    input_directory = os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화')
     if not os.path.exists(input_directory):
         os.makedirs(input_directory)
     
@@ -345,7 +345,7 @@ def udp_server():
 
             if message == "START_RECORDING":
                 print("녹화 시작 명령 수신")
-                recorder.start_recording(os.path.join(os.path.dirname(__file__), '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
+                recorder.start_recording(os.path.join(os.path.dirname(__file__), 'black_box', '상시녹화', f'video_{time.strftime("%Y-%m-%d_%H-%M-%S")}.mp4'), 60)
                 sock.sendto("RECORDING".encode(), addr)
                 print("녹화 상태 응답 전송: RECORDING")
             elif message == "STOP_RECORDING":
@@ -378,7 +378,7 @@ def main():
     uploader_thread.start()
     record_thread = Thread(target=record_and_upload)
     record_thread.start()
-    impact_monitor_thread = Thread(target=monitor_impact, args=(2000, os.path.abspath('상시녹화'), os.path.abspath('충격녹화')))
+    impact_monitor_thread = Thread(target=monitor_impact, args=(2000, os.path.abspath('black_box/상시녹화'), os.path.abspath('black_box/충격녹화')))
     impact_monitor_thread.start()
 
     # 웹소켓 서버 시작
