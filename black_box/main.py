@@ -9,8 +9,6 @@ import threading
 from threading import Thread, Lock
 from queue import Queue
 import asyncio
-import websockets
-import RPi.GPIO as GPIO
 import socket
 
 # MPU-6050 설정
@@ -24,7 +22,6 @@ copied_files_list = set()  # 복사된 파일 목록 관리
 # 녹화 및 업로드 관리
 queue = Queue()
 lock = Lock()
-connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
 
 def test_ftp_connection(ftp_address, ftp_username, ftp_password, ftp_target_path):
     try:
@@ -119,7 +116,6 @@ class Recorder:
             self.process = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
             self.recording_thread = Thread(target=self._monitor_recording)
             self.recording_thread.start()
-            asyncio.run(notify_status_change("RECORDING"))
 
     def stop_recording(self):
         if self.process:
@@ -127,16 +123,8 @@ class Recorder:
             self.recording_thread.join()
             self.process = None
             print("녹화가 종료되었습니다.")
-            asyncio.run(notify_status_change("NOT_RECORDING"))
 
 recorder = Recorder()
-
-# 녹화 상태를 웹소켓으로 전송하는 함수
-async def notify_status_change(status):
-    global connected_clients
-    for client in connected_clients:
-        await client.send(status)
-        print(f"녹화 상태 전송: {status}")
 
 def upload_worker():
     while True:
@@ -279,55 +267,6 @@ def record_and_upload():
 
         manage_video_files()
 
-async def handle_websocket(websocket, path):
-    async for message in websocket:
-        if message == "STOP_RECORDING":
-            recorder.stop_recording()
-            await notify_status_change("NOT_RECORDING")
-
-async def notify_status(websocket, path):
-    global connected_clients
-    connected_clients.add(websocket)
-    try:
-        last_status = None
-        while True:
-            await asyncio.sleep(1)
-            recording_status = "RECORDING" if recorder.process else "NOT_RECORDING"
-            if recording_status != last_status:
-                await websocket.send(recording_status)
-                print(f"상태 업데이트 전송: {recording_status}")
-                last_status = recording_status
-    finally:
-        connected_clients.remove(websocket)
-
-async def broadcast_message(message):
-    global connected_clients
-    for client in connected_clients:
-        await client.send(message)
-        print(f"메시지 전송됨: {message}")
-
-def gpio_monitor():
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setwarnings(False)
-
-    pins = [17, 26]
-    for pin in pins:
-        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-    def pin_callback(channel):
-        state = GPIO.input(channel)
-        message = f"Pin {channel} is {'on' if state else 'off'}"
-        print(message)
-        asyncio.run_coroutine_threadsafe(
-            broadcast_message(message), asyncio.get_event_loop()
-        )
-
-    for pin in pins:
-        try:
-            GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
-        except RuntimeError as e:
-            print(f"Error setting up GPIO detection on pin {pin}: {e}")
-
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 5001
@@ -370,8 +309,6 @@ def main():
     check_config_exists()
 
     # 스레드 시작
-    gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
-    gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
     uploader_thread = Thread(target=upload_worker)
@@ -380,12 +317,6 @@ def main():
     record_thread.start()
     impact_monitor_thread = Thread(target=monitor_impact, args=(2000, os.path.abspath('black_box/상시녹화'), os.path.abspath('black_box/충격녹화')))
     impact_monitor_thread.start()
-
-    # 웹소켓 서버 시작
-    loop = asyncio.get_event_loop()
-    websocket_server = websockets.serve(handle_websocket, "0.0.0.0", 8765)
-    loop.run_until_complete(websocket_server)
-    loop.run_forever()
 
     record_thread.join()
     queue.put(None)
