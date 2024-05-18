@@ -127,6 +127,7 @@ def gpio_monitor():
             GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
+            pass
 
 async def broadcast_message(message):
     global connected_clients
