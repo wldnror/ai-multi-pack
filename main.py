@@ -109,10 +109,14 @@ async def notify_status(websocket, path):
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
+    GPIO.cleanup()  # 초기화 코드 추가
 
-    pins = [16, 20]
+    pins = [17, 26]
     for pin in pins:
-        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        if is_gpio_in_use(pin):
+            print(f"GPIO 핀 {pin}가 이미 사용 중입니다.")
+        else:
+            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def pin_callback(channel):
         state = GPIO.input(channel)
@@ -124,9 +128,11 @@ def gpio_monitor():
 
     for pin in pins:
         try:
-            GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+            if not is_gpio_in_use(pin):
+                GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
+            pass  # 오류 발생 시 무시하고 계속 실행
 
     try:
         # Add MPU6050 initialization code here
@@ -142,6 +148,7 @@ def gpio_monitor():
     except Exception as e:
         print(f"MPU6050 센서 초기화 실패: {e}")
         pass
+
 
 async def broadcast_message(message):
     global connected_clients
