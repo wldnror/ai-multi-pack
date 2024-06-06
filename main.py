@@ -6,6 +6,7 @@ import threading
 import re
 import time
 import RPi.GPIO as GPIO
+import os
 
 current_mode = 'manual'  # 초기 모드 설정
 connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
@@ -106,6 +107,14 @@ async def notify_status(websocket, path):
     finally:
         connected_clients.remove(websocket)
 
+def is_gpio_in_use(pin):
+    try:
+        gpio_info = os.popen("cat /sys/kernel/debug/gpio").read()
+        return f"gpio-{pin} " in gpio_info
+    except Exception as e:
+        print(f"GPIO 정보를 가져오는 데 실패했습니다: {e}")
+        return False
+
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
@@ -148,7 +157,6 @@ def gpio_monitor():
     except Exception as e:
         print(f"MPU6050 센서 초기화 실패: {e}")
         pass
-
 
 async def broadcast_message(message):
     global connected_clients
