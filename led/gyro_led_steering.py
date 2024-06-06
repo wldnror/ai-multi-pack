@@ -16,7 +16,7 @@ GPIO.setwarnings(False)  # GPIO 경고 비활성화
 
 # MPU-6050 설정
 power_mgmt_1 = 0x6b
-device_address = 0x68  # MPU-6050의 기본 I2C 주소
+device_address = 0x69  # MPU-6050의 기본 I2C 주소
 bus = smbus2.SMBus(1)
 
 # UDP 소켓 설정
