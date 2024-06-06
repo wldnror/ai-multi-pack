@@ -106,42 +106,42 @@ async def notify_status(websocket, path):
     finally:
         connected_clients.remove(websocket)
 
-# def gpio_monitor():
-#     GPIO.setmode(GPIO.BCM)
-#     GPIO.setwarnings(False)
+def gpio_monitor():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setwarnings(False)
 
-#     pins = [17, 26]
-#     for pin in pins:
-#         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    pins = [17, 26]
+    for pin in pins:
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-#     def pin_callback(channel):
-#         state = GPIO.input(channel)
-#         message = f"Pin {channel} is {'on' if state else 'off'}"
-#         print(message)
-#         asyncio.run_coroutine_threadsafe(
-#             broadcast_message(message), asyncio.get_event_loop()
-#         )
+    def pin_callback(channel):
+        state = GPIO.input(channel)
+        message = f"Pin {channel} is {'on' if state else 'off'}"
+        print(message)
+        asyncio.run_coroutine_threadsafe(
+            broadcast_message(message), asyncio.get_event_loop()
+        )
 
-#     for pin in pins:
-#         try:
-#             GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
-#         except RuntimeError as e:
-#             print(f"Error setting up GPIO detection on pin {pin}: {e}")
+    for pin in pins:
+        try:
+            GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        except RuntimeError as e:
+            print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
-#     try:
-#         # Add MPU6050 initialization code here
-#         import smbus
-#         MPU6050_ADDR = 0x69
+    try:
+        # Add MPU6050 initialization code here
+        import smbus
+        MPU6050_ADDR = 0x69
 
-#         def MPU6050_init():
-#             bus = smbus.SMBus(1)
-#             bus.write_byte_data(MPU6050_ADDR, 0x6B, 0x00)  # Wake up the MPU6050
-#             print("MPU6050 센서 초기화 완료.")
+        def MPU6050_init():
+            bus = smbus.SMBus(1)
+            bus.write_byte_data(MPU6050_ADDR, 0x6B, 0x00)  # Wake up the MPU6050
+            print("MPU6050 센서 초기화 완료.")
 
-#         MPU6050_init()
-#     except Exception as e:
-#         print(f"MPU6050 센서 초기화 실패: {e}")
-#         pass
+        MPU6050_init()
+    except Exception as e:
+        print(f"MPU6050 센서 초기화 실패: {e}")
+        pass
 
 async def broadcast_message(message):
     global connected_clients
