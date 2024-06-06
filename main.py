@@ -122,10 +122,15 @@ def gpio_monitor():
 
     pins = [17, 26]
     for pin in pins:
-        if is_gpio_in_use(pin):
-            print(f"GPIO 핀 {pin}가 이미 사용 중입니다.")
-        else:
-            GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        try:
+            if is_gpio_in_use(pin):
+                print(f"GPIO 핀 {pin}가 이미 사용 중입니다.")
+            else:
+                GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+                GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        except RuntimeError as e:
+            print(f"Error setting up GPIO detection on pin {pin}: {e}")
+            pass  # 오류 발생 시 무시하고 계속 실행
 
     def pin_callback(channel):
         state = GPIO.input(channel)
@@ -134,14 +139,6 @@ def gpio_monitor():
         asyncio.run_coroutine_threadsafe(
             broadcast_message(message), asyncio.get_event_loop()
         )
-
-    for pin in pins:
-        try:
-            if not is_gpio_in_use(pin):
-                GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
-        except RuntimeError as e:
-            print(f"Error setting up GPIO detection on pin {pin}: {e}")
-            pass  # 오류 발생 시 무시하고 계속 실행
 
     try:
         # Add MPU6050 initialization code here
