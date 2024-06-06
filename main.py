@@ -110,7 +110,7 @@ def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    pins = [17, 18]
+    pins = [17, 26]
     for pin in pins:
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
@@ -127,21 +127,7 @@ def gpio_monitor():
             GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
-
-    try:
-        # Add MPU6050 initialization code here
-        import smbus
-        MPU6050_ADDR = 0x68
-
-        def MPU6050_init():
-            bus = smbus.SMBus(1)
-            bus.write_byte_data(MPU6050_ADDR, 0x6B, 0x00)  # Wake up the MPU6050
-            print("MPU6050 센서 초기화 완료.")
-
-        MPU6050_init()
-    except Exception as e:
-        print(f"MPU6050 센서 초기화 실패: {e}")
-        pass
+            pass
 
 async def broadcast_message(message):
     global connected_clients
