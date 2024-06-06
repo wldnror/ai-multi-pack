@@ -6,7 +6,6 @@ import threading
 import re
 import time
 import RPi.GPIO as GPIO
-import os
 
 current_mode = 'manual'  # 초기 모드 설정
 connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
@@ -107,30 +106,13 @@ async def notify_status(websocket, path):
     finally:
         connected_clients.remove(websocket)
 
-def is_gpio_in_use(pin):
-    try:
-        gpio_info = os.popen("cat /sys/kernel/debug/gpio").read()
-        return f"gpio-{pin} " in gpio_info
-    except Exception as e:
-        print(f"GPIO 정보를 가져오는 데 실패했습니다: {e}")
-        return False
-
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
-    GPIO.cleanup()  # 초기화 코드 추가
 
     pins = [17, 26]
     for pin in pins:
-        try:
-            if is_gpio_in_use(pin):
-                print(f"GPIO 핀 {pin}가 이미 사용 중입니다.")
-            else:
-                GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-                GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
-        except RuntimeError as e:
-            print(f"Error setting up GPIO detection on pin {pin}: {e}")
-            pass  # 오류 발생 시 무시하고 계속 실행
+        GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
     def pin_callback(channel):
         state = GPIO.input(channel)
@@ -139,6 +121,12 @@ def gpio_monitor():
         asyncio.run_coroutine_threadsafe(
             broadcast_message(message), asyncio.get_event_loop()
         )
+
+    for pin in pins:
+        try:
+            GPIO.add_event_detect(pin, GPIO.BOTH, callback=pin_callback, bouncetime=200)
+        except RuntimeError as e:
+            print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
     try:
         # Add MPU6050 initialization code here
