@@ -110,7 +110,7 @@ def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    pins = [17, 18]
+    pins = [16, 20]
     for pin in pins:
         GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
