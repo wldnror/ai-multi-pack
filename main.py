@@ -109,6 +109,7 @@ async def notify_status(websocket, path):
 def gpio_monitor():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
+    GPIO.cleanup()  # 초기화 코드 추가
 
     pins = [17, 26]
     for pin in pins:
@@ -128,20 +129,21 @@ def gpio_monitor():
         except RuntimeError as e:
             print(f"Error setting up GPIO detection on pin {pin}: {e}")
 
-    try:
-        # Add MPU6050 initialization code here
-        import smbus
-        MPU6050_ADDR = 0x69
+    # MPU6050 초기화 코드 주석 처리
+    # try:
+    #     # Add MPU6050 initialization code here
+    #     import smbus
+    #     MPU6050_ADDR = 0x69
 
-        def MPU6050_init():
-            bus = smbus.SMBus(1)
-            bus.write_byte_data(MPU6050_ADDR, 0x6B, 0x00)  # Wake up the MPU6050
-            print("MPU6050 센서 초기화 완료.")
+    #     def MPU6050_init():
+    #         bus = smbus.SMBus(1)
+    #         bus.write_byte_data(MPU6050_ADDR, 0x6B, 0x00)  # Wake up the MPU6050
+    #         print("MPU6050 센서 초기화 완료.")
 
-        MPU6050_init()
-    except Exception as e:
-        print(f"MPU6050 센서 초기화 실패: {e}")
-        pass
+    #     MPU6050_init()
+    # except Exception as e:
+    #     print(f"MPU6050 센서 초기화 실패: {e}")
+    #     pass
 
 async def broadcast_message(message):
     global connected_clients
