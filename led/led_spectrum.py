@@ -15,6 +15,9 @@ FFT_SIZE = 1024       # FFT 크기
 band_led_counts = [50, 30, 30, 30, 30, 50]
 total_bands = len(band_led_counts)
 
+# 민감도 조정 값
+sensitivity_multiplier = [2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
@@ -33,12 +36,21 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     for i, count in enumerate(band_led_counts):
-        led_height = int(np.log1p(fft_results[i] / max_fft) * count)
-        for j in range(count):
-            if j < led_height:
-                strip[led_index + j] = COLORS[i]
-            else:
-                strip[led_index + j] = (0, 0, 0)
+        # 민감도 조정
+        adjusted_fft_result = fft_results[i] * sensitivity_multiplier[i]
+        led_height = int(np.log1p(adjusted_fft_result / max_fft) * count)
+        if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + count - 1 - j] = COLORS[i]
+                else:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
+        else:
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
         led_index += count
     strip.show()
 
