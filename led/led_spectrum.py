@@ -34,11 +34,18 @@ def control_leds(fft_results):
     led_index = 0
     for i, count in enumerate(band_led_counts):
         led_height = int(np.log1p(fft_results[i] / max_fft) * count)
-        for j in range(count):
-            if j < led_height:
-                strip[led_index + j] = COLORS[i]
-            else:
-                strip[led_index + j] = (0, 0, 0)
+        if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + count - 1 - j] = COLORS[i]
+                else:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
+        else:
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
         led_index += count
     strip.show()
 
