@@ -21,15 +21,19 @@ sensitivity_multiplier = [2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 각 스펙트럼 대역에 따른 색상 정의
-COLORS = [
-    (255, 0, 0),    # 빨간색: 저주파수 대역
-    (255, 255, 0),  # 노란색: 저-중간 주파수 대역
-    (0, 255, 0),    # 초록색: 중간 주파수 대역
-    (0, 255, 255),  # 청록색: 중-고주파수 대역
-    (0, 0, 255),    # 파란색: 고주파수 대역
-    (255, 0, 255)   # 보라색: 최상위 주파수 대역
+# 무지개 색상 정의
+RAINBOW_COLORS = [
+    (255, 0, 0),    # 빨간색
+    (255, 127, 0),  # 주황색
+    (255, 255, 0),  # 노란색
+    (0, 255, 0),    # 초록색
+    (0, 0, 255),    # 파란색
+    (75, 0, 130),   # 남색
+    (148, 0, 211)   # 보라색
 ]
+
+# 스펙트럼 대역을 무지개 색상에 매핑
+COLORS = [RAINBOW_COLORS[i % len(RAINBOW_COLORS)] for i in range(total_bands)]
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
