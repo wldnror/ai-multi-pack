@@ -33,7 +33,6 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     for i, count in enumerate(band_led_counts):
-        # 각 대역에 대해 로그 스케일 적용 및 LED 높이 계산
         led_height = int(np.log1p(fft_results[i] / max_fft) * count)
         for j in range(count):
             if j < led_height:
@@ -50,7 +49,7 @@ def audio_callback(indata, frames, time, status):
     # 저주파수 대역에 중점을 둔 FFT 결과 처리
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
     # 주파수 대역 조정
-    important_freqs = fft_result[:total_bands * 100]
+    important_freqs = fft_result[:FFT_SIZE//25]
     fft_result_split = np.array_split(important_freqs, total_bands)  # FFT 결과를 각 대역에 맞게 분할
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
