@@ -16,7 +16,7 @@ band_led_counts = [50, 30, 30, 30, 30, 50]
 total_bands = len(band_led_counts)
 
 # 민감도 조정 값
-sensitivity_multiplier = [2.0, 1.0, 1.0, 1.0, 1.0, 2.0]
+sensitivity_multiplier = [1.0, 1.0, 1.0, 1.0, 1.0, 1.5]
 
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
