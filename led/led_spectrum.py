@@ -5,7 +5,7 @@ import sounddevice as sd
 import time
 
 # LED 스트립 설정
-LED_COUNT = 144       # LED 개수 (8x32 매트릭스)
+LED_COUNT = 220       # LED 개수 (8x32 매트릭스)
 LED_PIN = board.D21   # GPIO 핀 번호
 LED_BRIGHTNESS = 0.05 # LED 밝기 (0.0에서 1.0 사이)
 SAMPLE_RATE = 48000   # 오디오 샘플레이트
