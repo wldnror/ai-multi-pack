@@ -69,7 +69,7 @@ def audio_callback(indata, frames, time, status):
 # 메인 함수
 def main():
     try:
-        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
+        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,0'):
             print("Streaming started...")
             while True:
                 time.sleep(1)
