@@ -1,25 +1,24 @@
 import bluetooth
-import uuid
 
-# 블루투스 소켓 생성 및 바인드
+# UUID 설정
+uuid = "00001101-0000-1000-8000-00805F9B34FB"  # SPP (Serial Port Profile) UUID
+
+# 블루투스 서버 소켓 생성
 server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
 server_sock.bind(("", bluetooth.PORT_ANY))
 server_sock.listen(1)
 
 port = server_sock.getsockname()[1]
 
-# UUID 생성
-service_uuid = str(uuid.uuid4())
-print(f"Generated UUID: {service_uuid}")
-
-# 블루투스 서비스 광고
+# 서비스 광고 설정
 bluetooth.advertise_service(server_sock, "BluetoothServer",
-                            service_id=service_uuid,
-                            service_classes=[service_uuid, bluetooth.SERIAL_PORT_CLASS],
+                            service_id=uuid,
+                            service_classes=[uuid, bluetooth.SERIAL_PORT_CLASS],
                             profiles=[bluetooth.SERIAL_PORT_PROFILE])
 
 print(f"Waiting for connection on RFCOMM channel {port}")
 
+# 클라이언트 연결 수락
 client_sock, client_info = server_sock.accept()
 print(f"Accepted connection from {client_info}")
 
