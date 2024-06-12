@@ -1,60 +1,46 @@
-from time import sleep
-from pydbus import SystemBus
-from gi.repository import GLib
-from dbus.mainloop.glib import DBusGMainLoop
+import bluetooth
 
-DBusGMainLoop(set_as_default=True)
+# 서비스 이름 및 UUID 설정
+service_name = "YongGulRiderService"
+service_uuid = "00001101-0000-1000-8000-00805F9B34FB"
 
-# D-Bus 시스템 버스에 연결
-bus = SystemBus()
+# 블루투스 서버 소켓 생성
+server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+server_sock.bind(("", bluetooth.PORT_ANY))
+server_sock.listen(1)
 
-# 블루투스 어댑터 가져오기
-adapter = bus.get('org.bluez', '/org/bluez/hci0')
+# 포트 번호 가져오기
+port = server_sock.getsockname()[1]
 
-# 어댑터를 powered on 상태로 설정
-adapter.Powered = True
-
-# LEAdvertisingManager1 인터페이스 가져오기
-adapter_path = "/org/bluez/hci0"
-adapter_obj = bus.get("org.bluez", adapter_path)
-le_advertising_manager = bus.get("org.bluez.LEAdvertisingManager1", adapter_path)
-
-# 광고 데이터 설정
-class Advertisement:
-    def __init__(self, bus, index):
-        self.path = f"/org/bluez/example/advertisement{index}"
-        self.bus = bus
-        self.ad_type = "peripheral"
-        self.service_uuids = ["00001101-0000-1000-8000-00805F9B34FB"]
-        self.local_name = "YongGulRiderService"
-        self.include_tx_power = True
-
-    def get_properties(self):
-        return {
-            "Type": self.ad_type,
-            "ServiceUUIDs": self.service_uuids,
-            "LocalName": self.local_name,
-            "IncludeTxPower": self.include_tx_power,
-        }
-
-    def get_path(self):
-        return dbus.ObjectPath(self.path)
-
-    def add_to_connection(self):
-        self.bus.publish(self.path, self)
-
-advertisement = Advertisement(bus, 0)
-advertisement.add_to_connection()
-
-# 광고 등록
-le_advertising_manager.RegisterAdvertisement(advertisement.get_path(), {})
-
-print("Advertising...")
-
-# 광고 유지
 try:
-    GLib.MainLoop().run()
-except KeyboardInterrupt:
-    print("Stopping advertising...")
-    le_advertising_manager.UnregisterAdvertisement(advertisement.get_path())
-    print("Advertising stopped.")
+    # 서비스 광고 시작
+    bluetooth.advertise_service(
+        server_sock, service_name,
+        service_id=service_uuid,
+        service_classes=[service_uuid, bluetooth.SERIAL_PORT_CLASS],
+        profiles=[bluetooth.SERIAL_PORT_PROFILE]
+    )
+    print(f"Bluetooth service '{service_name}' started on port {port}")
+
+    while True:
+        print("Waiting for connection...")
+        client_sock, client_info = server_sock.accept()
+        print(f"Accepted connection from {client_info}")
+
+        try:
+            while True:
+                data = client_sock.recv(1024)
+                if not data:
+                    break
+                print(f"Received: {data}")
+                client_sock.send(data)
+        except OSError:
+            pass
+
+        print("Connection closed")
+        client_sock.close()
+except bluetooth.btcommon.BluetoothError as e:
+    print(f"Bluetooth error occurred: {e}")
+finally:
+    print("Shutting down server...")
+    server_sock.close()
