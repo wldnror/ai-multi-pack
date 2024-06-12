@@ -14,6 +14,10 @@ server_sock.listen(1)
 port = server_sock.getsockname()[1]
 
 try:
+    # 블루투스 장치 목록 확인
+    devices = bluetooth.discover_devices(lookup_names=True)
+    print(f"Available devices: {devices}")
+
     # 서비스 광고 시작
     bluetooth.advertise_service(
         server_sock, service_name,
@@ -45,3 +49,4 @@ except bluetooth.btcommon.BluetoothError as e:
 finally:
     print("Shutting down server...")
     server_sock.close()
+    
