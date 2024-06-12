@@ -1,27 +1,37 @@
-import asyncio
-from bleak import BleakScanner, BleakAdvertiser
+from time import sleep
+from pydbus import SystemBus
+from gi.repository import GLib
+from dbus.mainloop.glib import DBusGMainLoop
 
-# 광고 데이터 설정
-advertisement_data = {
-    "local_name": "YongGulRiderService",
-    "manufacturer_data": {
-        0xFFFF: bytearray([0x01, 0x02, 0x03, 0x04])
-    },
-    "service_data": {
-        "00001101-0000-1000-8000-00805F9B34FB": bytearray([0x05, 0x06, 0x07, 0x08])
-    },
-    "service_uuids": ["00001101-0000-1000-8000-00805F9B34FB"]
+DBusGMainLoop(set_as_default=True)
+
+# D-Bus 시스템 버스에 연결
+bus = SystemBus()
+
+# 블루투스 어댑터 가져오기
+adapter = bus.get('org.bluez', '/org/bluez/hci0')
+
+# 어댑터를 powered on 상태로 설정
+adapter.Powered = True
+
+# 광고 설정
+advertisement = {
+    'Type': 'peripheral',
+    'LocalName': 'YongGulRiderService',
+    'ServiceUUIDs': ['00001101-0000-1000-8000-00805F9B34FB']
 }
 
-async def advertise():
-    advertiser = BleakAdvertiser()
-    await advertiser.start(advertisement_data)
+# 광고 등록
+ad_manager = bus.get('org.bluez', '/org/bluez')
+path = '/org/bluez/example/advertisement0'
+ad_manager.RegisterAdvertisement(path, advertisement, {})
 
-    print("Advertising...")
-    try:
-        await asyncio.sleep(30)  # 광고를 30초 동안 유지
-    finally:
-        await advertiser.stop()
-        print("Advertising stopped.")
+print("Advertising...")
 
-asyncio.run(advertise())
+# 광고 유지
+try:
+    GLib.MainLoop().run()
+except KeyboardInterrupt:
+    print("Stopping advertising...")
+    ad_manager.UnregisterAdvertisement(path)
+    print("Advertising stopped.")
