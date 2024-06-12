@@ -1,26 +1,34 @@
 import bluetooth
+import time
 
-server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-port = 1
-server_sock.bind(("", port))
-server_sock.listen(1)
+# 핸드폰의 MAC 주소를 입력하세요
+target_address = "BC:93:07:14:62:EE"
 
-print("Waiting for connection on RFCOMM channel %d" % port)
+def connect_to_device(address):
+    sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+    try:
+        sock.connect((address, 1))
+        print(f"Connected to {address}")
+        return sock
+    except bluetooth.btcommon.BluetoothError as err:
+        print(f"Connection to {address} failed: {err}")
+        return None
 
-client_sock, client_info = server_sock.accept()
-print("Accepted connection from ", client_info)
-
-try:
+def main():
     while True:
-        data = client_sock.recv(1024)
-        if not data:
-            break
-        print("Received: %s" % data)
-except OSError:
-    pass
+        print("Attempting to connect...")
+        sock = connect_to_device(target_address)
+        if sock:
+            try:
+                while True:
+                    data = sock.recv(1024)
+                    if data:
+                        print(f"Received: {data}")
+            except bluetooth.btcommon.BluetoothError as err:
+                print(f"Connection lost: {err}")
+                sock.close()
+        print("Reconnecting in 5 seconds...")
+        time.sleep(5)
 
-print("Disconnected.")
-
-client_sock.close()
-server_sock.close()
-print("All done.")
+if __name__ == "__main__":
+    main()
