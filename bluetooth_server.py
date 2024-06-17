@@ -11,10 +11,17 @@ def connect_bluetooth(target_name):
 
     if target_address is not None:
         print(f"Found target bluetooth device with address {target_address}")
-        # Connect to the device (replace this with the actual connection code)
-        # socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-        # socket.connect((target_address, 1))
-        print("용준의 S24+")
+        try:
+            # Create a Bluetooth socket and connect to the target address
+            socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+            socket.connect((target_address, 1))
+            print("Connected to the device")
+
+            # Optionally, you can send some data to the connected device
+            socket.send("Hello from Raspberry Pi!")
+            socket.close()
+        except bluetooth.btcommon.BluetoothError as err:
+            print(f"Failed to connect to the device: {err}")
     else:
         print("Could not find target bluetooth device nearby")
 
