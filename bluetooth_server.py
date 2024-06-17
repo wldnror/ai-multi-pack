@@ -18,4 +18,4 @@ def connect_bluetooth(target_name):
     else:
         print("Could not find target bluetooth device nearby")
 
-connect_bluetooth("Target_Device_Name")
+connect_bluetooth("용준의 S24+")
