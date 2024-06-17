@@ -1,7 +1,9 @@
-import bluetooth
+import socket
 import time
+import bluetooth
 
-def connect_bluetooth(target_name):
+def get_bluetooth_uuids():
+    target_name = "용굴라이더"  # 타겟 블루투스 장치 이름
     target_address = None
     nearby_devices = bluetooth.discover_devices(duration=8, lookup_names=True)
 
@@ -11,21 +13,24 @@ def connect_bluetooth(target_name):
             break
 
     if target_address is not None:
-        print(f"Found target bluetooth device with address {target_address}")
-        for port in range(1, 31):
-            try:
-                print(f"Trying port {port}")
-                socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-                socket.connect((target_address, port))
-                print(f"Connected to port {port}")
-                socket.send("Hello from Raspberry Pi!")
-                socket.close()
-                break
-            except bluetooth.btcommon.BluetoothError as err:
-                print(f"Port {port} failed: {err}")
-                socket.close()
-                time.sleep(1)
-    else:
-        print("Could not find target bluetooth device nearby")
+        services = bluetooth.find_service(address=target_address)
+        uuids = [service["service-id"] for service in services]
+        return uuids
+    return []
 
-connect_bluetooth("용준의 S24+")
+def broadcast_uuids():
+    broadcast_ip = '255.255.255.255'
+    broadcast_port = 5005
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+
+    while True:
+        uuids = get_bluetooth_uuids()
+        for uuid in uuids:
+            message = f"UUID: {uuid}"
+            sock.sendto(message.encode(), (broadcast_ip, broadcast_port))
+            print(f"Broadcasting: {message}")
+            time.sleep(5)  # 5초마다 브로드캐스트
+
+if __name__ == "__main__":
+    broadcast_uuids()
