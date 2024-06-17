@@ -1,4 +1,5 @@
 import bluetooth
+import time
 
 def connect_bluetooth(target_name):
     target_address = None
@@ -11,30 +12,19 @@ def connect_bluetooth(target_name):
 
     if target_address is not None:
         print(f"Found target bluetooth device with address {target_address}")
-        try:
-            # Create a Bluetooth socket and connect to the target address
-            port = 1  # 포트는 필요에 따라 조정
-            socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            print("Creating socket...")
-            socket.connect((target_address, port))
-            print("Connected to the device")
-
-            # Optionally, you can send some data to the connected device
-            socket.send("Hello from Raspberry Pi!")
-            socket.close()
-        except bluetooth.btcommon.BluetoothError as err:
-            print(f"Failed to connect to the device: {err}")
-            # 포트 번호를 변경해 보거나 다른 방법을 시도
-            for p in range(1, 31):
-                try:
-                    print(f"Trying port {p}")
-                    socket.connect((target_address, p))
-                    print(f"Connected to port {p}")
-                    socket.send("Hello from Raspberry Pi!")
-                    socket.close()
-                    break
-                except bluetooth.btcommon.BluetoothError as inner_err:
-                    print(f"Port {p} failed: {inner_err}")
+        for port in range(1, 31):
+            try:
+                print(f"Trying port {port}")
+                socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+                socket.connect((target_address, port))
+                print(f"Connected to port {port}")
+                socket.send("Hello from Raspberry Pi!")
+                socket.close()
+                break
+            except bluetooth.btcommon.BluetoothError as err:
+                print(f"Port {port} failed: {err}")
+                socket.close()
+                time.sleep(1)
     else:
         print("Could not find target bluetooth device nearby")
 
