@@ -12,9 +12,10 @@ def connect_bluetooth(target_name):
     if target_address is not None:
         print(f"Found target bluetooth device with address {target_address}")
         try:
-            # Create a Bluetooth socket and connect to the target address
+            port = 1  # The port may need to be discovered dynamically
             socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-            socket.connect((target_address, 1))
+            print("Creating socket...")
+            socket.connect((target_address, port))
             print("Connected to the device")
 
             # Optionally, you can send some data to the connected device
