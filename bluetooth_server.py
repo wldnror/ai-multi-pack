@@ -1,5 +1,10 @@
 import bluetooth
+import os
+import subprocess
 import uuid
+
+# Ensure the Bluetooth adapter is up
+subprocess.run(['sudo', 'hciconfig', 'hci0', 'up'])
 
 # Generate a UUID for your service
 service_uuid = uuid.uuid4()
@@ -12,12 +17,16 @@ server_sock.listen(1)
 port = server_sock.getsockname()[1]
 
 # Advertise the service
-bluetooth.advertise_service(server_sock, "BluetoothServer",
-                            service_id=str(service_uuid),
-                            service_classes=[str(service_uuid), bluetooth.SERIAL_PORT_CLASS],
-                            profiles=[bluetooth.SERIAL_PORT_PROFILE])
-
-print(f"Waiting for connection on RFCOMM channel {port}, UUID: {service_uuid}")
+try:
+    bluetooth.advertise_service(server_sock, "BluetoothServer",
+                                service_id=str(service_uuid),
+                                service_classes=[str(service_uuid), bluetooth.SERIAL_PORT_CLASS],
+                                profiles=[bluetooth.SERIAL_PORT_PROFILE])
+    print(f"Waiting for connection on RFCOMM channel {port}, UUID: {service_uuid}")
+except bluetooth.BluetoothError as e:
+    print(f"Failed to advertise service: {e}")
+    server_sock.close()
+    exit(1)
 
 try:
     client_sock, client_info = server_sock.accept()
