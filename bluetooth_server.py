@@ -1,36 +1,46 @@
-import socket
+import subprocess
 import time
-import bluetooth
 
-def get_bluetooth_uuids():
-    target_name = "용굴라이더"  # 타겟 블루투스 장치 이름
-    target_address = None
-    nearby_devices = bluetooth.discover_devices(duration=8, lookup_names=True)
+def bluetoothctl_command(command):
+    process = subprocess.Popen(['bluetoothctl'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = process.communicate(command.encode('utf-8'))
+    return output.decode('utf-8'), error.decode('utf-8')
 
-    for addr, name in nearby_devices:
-        if target_name == name:
-            target_address = addr
-            break
+def is_device_connected(mac_address):
+    output, error = bluetoothctl_command(f'info {mac_address}\n')
+    return 'Connected: yes' in output
 
-    if target_address is not None:
-        services = bluetooth.find_service(address=target_address)
-        uuids = [service["service-id"] for service in services]
-        return uuids
-    return []
+def connect_bluetooth_device(mac_address):
+    commands = [
+        'power on\n',
+        'agent on\n',
+        'default-agent\n',
+        f'connect {mac_address}\n'
+    ]
 
-def broadcast_uuids():
-    broadcast_ip = '255.255.255.255'
-    broadcast_port = 5005
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    for command in commands:
+        print(f"Running command: {command.strip()}")
+        output, error = bluetoothctl_command(command)
+        print(output)
+        if error:
+            print(f"Error: {error}")
 
+    # Check if the device is connected
+    if is_device_connected(mac_address):
+        print(f"Successfully connected to {mac_address}")
+    else:
+        print(f"Failed to connect to {mac_address}")
+
+def main():
+    mac_address = "BC:93:07:14:62:EE"  # Replace with your device's MAC address
     while True:
-        uuids = get_bluetooth_uuids()
-        for uuid in uuids:
-            message = f"UUID: {uuid}"
-            sock.sendto(message.encode(), (broadcast_ip, broadcast_port))
-            print(f"Broadcasting: {message}")
-            time.sleep(5)  # 5초마다 브로드캐스트
+        if not is_device_connected(mac_address):
+            print("Device not connected. Attempting to connect...")
+            connect_bluetooth_device(mac_address)
+        else:
+            print("Device is already connected.")
+        
+        time.sleep(60)  # Check connection status every 60 seconds
 
 if __name__ == "__main__":
-    broadcast_uuids()
+    main()
