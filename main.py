@@ -193,7 +193,7 @@ def udp_server():
                 send_status(sock, broadcast_ip, udp_port)
         elif message == "START_RECORDING":
             recording_status = start_recording()
-            send_status(sock, broadcast_ip, udp_port, recording_status)
+            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
         elif message == "STOP_RECORDING":
             recording_status = stop_recording()
             send_status(sock, broadcast_ip, udp_port, recording_status)
