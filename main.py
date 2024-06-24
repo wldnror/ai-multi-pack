@@ -163,7 +163,7 @@ def ip_broadcast(sock, broadcast_ip, udp_port):
             ip_address = get_ip_address()
             if ip_address:
                 send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-            time.sleep(1)  # 1초마다 IP 전송
+            time.sleep(0.1)  # 1초마다 IP 전송
         except Exception as e:
             print(f"IP 전송 오류: {e}")
 
