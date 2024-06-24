@@ -73,7 +73,6 @@ def blink_led(pin, active, last_state):
             send_udp_message({"pin": pin, "state": "ON"})
         time.sleep(0.4)
         GPIO.output(pin, False)
-        send_udp_message({"pin": pin, "state": "OFF"})
         time.sleep(0.4)
     else:
         GPIO.output(pin, False)
@@ -120,22 +119,13 @@ def main():
                     right_active = new_right_active
                     left_active = new_left_active
 
-            if left_active or right_active:
-                if left_active != last_left_active:
-                    blink_led(left_led_pin, left_active, last_left_active)
-                    last_left_active = left_active
+            if left_active != last_left_active:
+                blink_led(left_led_pin, left_active, last_left_active)
+                last_left_active = left_active
 
-                if right_active != last_right_active:
-                    blink_led(right_led_pin, right_active, last_right_active)
-                    last_right_active = right_active
-            else:
-                if left_active != last_left_active:
-                    blink_led(left_led_pin, left_active, last_left_active)
-                    last_left_active = left_active
-
-                if right_active != last_right_active:
-                    blink_led(right_led_pin, right_active, last_right_active)
-                    last_right_active = right_active
+            if right_active != last_right_active:
+                blink_led(right_led_pin, right_active, last_right_active)
+                last_right_active = right_active
 
             time.sleep(0.1)
 
