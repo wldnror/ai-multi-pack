@@ -70,14 +70,21 @@ def send_udp_message(pin, state):
     sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
 def blink_led(pin, active):
-    GPIO.output(pin, active)
-    state = "ON" if active else "OFF"
-    send_udp_message(pin, state)
-    time.sleep(0.4)
-    GPIO.output(pin, not active)
-    state = "OFF" if active else "ON"
-    send_udp_message(pin, state)
-    time.sleep(0.4)
+    if pin == left_led_pin:
+        GPIO.output(left_led_pin, active)
+        state = "ON" if active else "OFF"
+        send_udp_message(pin, state)
+        time.sleep(0.4)
+        GPIO.output(right_led_pin, False)  # 오른쪽 LED는 항상 끄기
+        send_udp_message(right_led_pin, "OFF")
+    elif pin == right_led_pin:
+        GPIO.output(right_led_pin, active)
+        state = "ON" if active else "OFF"
+        send_udp_message(pin, state)
+        time.sleep(0.4)
+        GPIO.output(left_led_pin, False)  # 왼쪽 LED는 항상 끄기
+        send_udp_message(left_led_pin, "OFF")
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
