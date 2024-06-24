@@ -200,7 +200,7 @@ def udp_server():
                 enable_mode("auto")
                 send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
 
-            time.sleep(1)  # 1초 대기
+            time.sleep(0.5)  # 1초 대기
         except socket.timeout:
             continue
 
