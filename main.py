@@ -180,7 +180,7 @@ def udp_server():
             elif message == "Left Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            elif message == "REQUEST_IP":
+            elif message == "REQUEST_IP" or True:  # 항상 True로 설정하여 1초 주기로 IP 전송
                 ip_address = get_ip_address()
                 if ip_address:
                     send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
@@ -199,6 +199,8 @@ def udp_server():
             elif message == "ENABLE_AUTO_MODE":
                 enable_mode("auto")
                 send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
+
+            time.sleep(1)  # 1초 대기
         except socket.timeout:
             continue
 
