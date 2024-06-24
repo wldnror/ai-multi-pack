@@ -163,7 +163,7 @@ def ip_broadcast(sock, broadcast_ip, udp_port):
             ip_address = get_ip_address()
             if ip_address:
                 send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
-            time.sleep(0.5)  # 1초마다 IP 전송
+            time.sleep(1)  # 1초마다 IP 전송
         except Exception as e:
             print(f"IP 전송 오류: {e}")
 
@@ -190,10 +190,10 @@ def udp_server():
         elif message == "REQUEST_IP":
             ip_address = get_ip_address()
             if ip_address:
-                send_status(sock, broadcast_ip, udp_port)
+                send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
         elif message == "START_RECORDING":
             recording_status = start_recording()
-            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
+            send_status(sock, broadcast_ip, udp_port, recording_status)
         elif message == "STOP_RECORDING":
             recording_status = stop_recording()
             send_status(sock, broadcast_ip, udp_port, recording_status)
