@@ -6,7 +6,6 @@ import threading
 import re
 import time
 import RPi.GPIO as GPIO
-from battery_monitor import read_battery_level
 
 current_mode = 'manual'  # 초기 모드 설정
 connected_clients = set()  # 클라이언트 세션 저장을 위한 집합
@@ -104,13 +103,6 @@ async def notify_status(websocket, path):
                 await websocket.send(recording_status)
                 print(f"상태 업데이트 전송: {recording_status}")
                 last_status = recording_status
-
-            # 배터리 잔량 읽어오기
-            voltage, current, power, battery_percentage = read_battery_level()
-            battery_status = f"Battery - Voltage: {voltage:.2f}V, Current: {current:.2f}mA, Power: {power:.2f}mW, Level: {battery_percentage:.2f}%"
-            await websocket.send(battery_status)
-            print(f"배터리 상태 전송: {battery_status}")
-
     finally:
         connected_clients.remove(websocket)
 
