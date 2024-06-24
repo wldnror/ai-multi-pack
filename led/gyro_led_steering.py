@@ -10,7 +10,7 @@ import json
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
-right_led_pin = 26 # 우회전 LED
+right_led_pin = 18 # 우회전 LED
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
 
