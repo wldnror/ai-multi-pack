@@ -38,10 +38,12 @@ def init_GPIO():
     GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
     GPIO.setup(left_led_pin, GPIO.OUT)
     GPIO.setup(right_led_pin, GPIO.OUT)
+    print("GPIO 초기화 완료")
 
 # MPU-6050 초기화
 def init_MPU6050():
     bus.write_byte_data(device_address, power_mgmt_1, 0)
+    print("MPU-6050 초기화 완료")
 
 # 센서 데이터 읽기
 def read_sensor_data(addr):
@@ -64,6 +66,7 @@ def send_udp_message(message):
         "mode": mode_status,
         "message": message
     }
+    print(f"Sending UDP message: {full_message}")
     sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
 def blink_led(pin, active, last_state):
@@ -117,14 +120,17 @@ def main():
                 new_left_active = angle_y < -20
 
                 if new_right_active != right_active or new_left_active != left_active:
+                    print(f"Angle changed: left_active={new_left_active}, right_active={new_right_active}")
                     right_active = new_right_active
                     left_active = new_left_active
 
-            if left_active != last_left_active or left_active:
+            if left_active != last_left_active:
+                print(f"Left LED: {left_active}")
                 blink_led(left_led_pin, left_active, last_left_active)
                 last_left_active = left_active
 
-            if right_active != last_right_active or right_active:
+            if right_active != last_right_active:
+                print(f"Right LED: {right_active}")
                 blink_led(right_led_pin, right_active, last_right_active)
                 last_right_active = right_active
 
