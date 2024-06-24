@@ -157,6 +157,16 @@ async def broadcast_message(message):
         await client.send(message)
         print(f"메시지 전송됨: {message}")
 
+def ip_broadcast(sock, broadcast_ip, udp_port):
+    while True:
+        try:
+            ip_address = get_ip_address()
+            if ip_address:
+                send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+            time.sleep(1)  # 1초마다 IP 전송
+        except Exception as e:
+            print(f"IP 전송 오류: {e}")
+
 def udp_server():
     udp_ip = "0.0.0.0"
     udp_port = 12345
@@ -170,7 +180,7 @@ def udp_server():
 
     while True:
         try:
-            sock.settimeout(1)
+            sock.settimeout(0.1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
 
@@ -180,7 +190,7 @@ def udp_server():
             elif message == "Left Blinker Activated" and current_mode == 'manual':
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
                 send_status(sock, broadcast_ip, udp_port, "왼쪽 블링커 활성화됨")
-            elif message == "REQUEST_IP" or True:  # 항상 True로 설정하여 1초 주기로 IP 전송
+            elif message == "REQUEST_IP":
                 ip_address = get_ip_address()
                 if ip_address:
                     send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
@@ -199,8 +209,6 @@ def udp_server():
             elif message == "ENABLE_AUTO_MODE":
                 enable_mode("auto")
                 send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
-
-            time.sleep(0.5)  # 1초 대기
         except socket.timeout:
             continue
 
@@ -212,6 +220,11 @@ def main():
     gpio_thread.start()
     udp_thread = threading.Thread(target=udp_server, daemon=True)
     udp_thread.start()
+    
+    # IP 정보를 1초마다 전송하는 스레드 시작
+    ip_thread = threading.Thread(target=ip_broadcast, args=(sock, "255.255.255.255", 12345), daemon=True)
+    ip_thread.start()
+    
     websocket_server = websockets.serve(notify_status, "0.0.0.0", 8765)
     loop.run_until_complete(websocket_server)
     loop.run_forever()
