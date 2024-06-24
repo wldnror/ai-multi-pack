@@ -69,19 +69,15 @@ def send_udp_message(pin, state):
     print(f"Sending UDP message: {full_message}")
     sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
-def blink_led(pin, active, last_state):
-    if active:
-        GPIO.output(pin, True)
-        if not last_state:
-            send_udp_message(pin, "ON")
-        time.sleep(0.4)
-        GPIO.output(pin, False)
-        send_udp_message(pin, "OFF")
-        time.sleep(0.4)
-    else:
-        GPIO.output(pin, False)
-        if last_state:
-            send_udp_message(pin, "OFF")
+def blink_led(pin, active):
+    GPIO.output(pin, active)
+    state = "ON" if active else "OFF"
+    send_udp_message(pin, state)
+    time.sleep(0.4)
+    GPIO.output(pin, not active)
+    state = "OFF" if active else "ON"
+    send_udp_message(pin, state)
+    time.sleep(0.4)
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -105,9 +101,6 @@ def main():
 
     init_GPIO()
 
-    last_left_active = False
-    last_right_active = False
-
     try:
         while True:
             if not manual_mode:
@@ -116,21 +109,13 @@ def main():
                 accel_z = read_sensor_data(0x3f)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
 
-                new_right_active = angle_y > 20
-                new_left_active = angle_y < -20
+                right_active = angle_y > 20
+                left_active = angle_y < -20
 
-                if new_right_active != right_active or new_left_active != left_active:
-                    print(f"Angle changed: left_active={new_left_active}, right_active={new_right_active}")
-                    right_active = new_right_active
-                    left_active = new_left_active
-
-            if left_active != last_left_active:
-                blink_led(left_led_pin, left_active, last_left_active)
-                last_left_active = left_active
-
-            if right_active != last_right_active:
-                blink_led(right_led_pin, right_active, last_right_active)
-                last_right_active = right_active
+            if left_active:
+                blink_led(left_led_pin, True)
+            if right_active:
+                blink_led(right_led_pin, True)
 
             time.sleep(0.1)
 
