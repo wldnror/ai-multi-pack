@@ -109,12 +109,21 @@ def main():
                 accel_z = read_sensor_data(0x3f)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
 
-                right_active = angle_y > 20
-                left_active = angle_y < -20
+                if angle_y > 20:
+                    right_active = True
+                    left_active = False
+                elif angle_y < -20:
+                    right_active = False
+                    left_active = True
+                else:
+                    right_active = False
+                    left_active = False
 
             if left_active:
+                GPIO.output(right_led_pin, False)  # 오른쪽 LED 끄기
                 blink_led(left_led_pin, True)
-            if right_active:
+            elif right_active:
+                GPIO.output(left_led_pin, False)  # 왼쪽 LED 끄기
                 blink_led(right_led_pin, True)
 
             time.sleep(0.1)
