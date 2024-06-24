@@ -170,7 +170,7 @@ def udp_server():
 
     while True:
         try:
-            sock.settimeout(0.1)
+            sock.settimeout(1)
             data, addr = sock.recvfrom(1024)
             message = data.decode().strip()
 
