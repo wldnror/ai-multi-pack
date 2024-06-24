@@ -60,26 +60,28 @@ def calculate_angle(acc_x, acc_y, acc_z):
     angle_y = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi
     return angle_x, angle_y
 
-def send_udp_message(message):
+def send_udp_message(pin, state):
     mode_status = "manual" if manual_mode else "auto"
     full_message = {
         "mode": mode_status,
-        "message": message
+        "message": {"pin": pin, "state": state}
     }
     print(f"Sending UDP message: {full_message}")
     sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
-def blink_led(pin, active):
+def blink_led(pin, active, last_state):
     if active:
         GPIO.output(pin, True)
-        send_udp_message({"pin": pin, "state": "ON"})
+        if not last_state:
+            send_udp_message(pin, "ON")
         time.sleep(0.4)
         GPIO.output(pin, False)
-        send_udp_message({"pin": pin, "state": "OFF"})
+        send_udp_message(pin, "OFF")
         time.sleep(0.4)
     else:
         GPIO.output(pin, False)
-        send_udp_message({"pin": pin, "state": "OFF"})
+        if last_state:
+            send_udp_message(pin, "OFF")
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -122,10 +124,13 @@ def main():
                     right_active = new_right_active
                     left_active = new_left_active
 
-            if left_active:
-                blink_led(left_led_pin, left_active)
-            if right_active:
-                blink_led(right_led_pin, right_active)
+            if left_active != last_left_active:
+                blink_led(left_led_pin, left_active, last_left_active)
+                last_left_active = left_active
+
+            if right_active != last_right_active:
+                blink_led(right_led_pin, right_active, last_right_active)
+                last_right_active = right_active
 
             time.sleep(0.1)
 
