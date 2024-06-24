@@ -71,12 +71,12 @@ def send_udp_message(message):
 
 def blink_led(pin, active, last_state):
     if active:
-        GPIO.output(pin, True)
         if not last_state:
+            GPIO.output(pin, True)
             send_udp_message({"pin": pin, "state": "ON"})
-        time.sleep(0.4)
-        GPIO.output(pin, False)
-        send_udp_message({"pin": pin, "state": "OFF"})
+        else:
+            GPIO.output(pin, False)
+            send_udp_message({"pin": pin, "state": "OFF"})
         time.sleep(0.4)
     else:
         GPIO.output(pin, False)
