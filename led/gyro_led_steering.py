@@ -70,14 +70,14 @@ def send_udp_message(pin, state):
     sock.sendto(json.dumps(full_message).encode(), (broadcast_ip, udp_port))
 
 def blink_led(pin, active):
-    GPIO.output(pin, active)
-    state = "ON" if active else "OFF"
-    send_udp_message(pin, state)
-    time.sleep(0.4)
-    GPIO.output(pin, not active)
-    state = "OFF" if active else "ON"
-    send_udp_message(pin, state)
-    time.sleep(0.4)
+    if active:
+        GPIO.output(pin, True)
+        send_udp_message(pin, "ON")
+        time.sleep(0.4)
+        GPIO.output(pin, False)
+        time.sleep(0.4)
+    else:
+        GPIO.output(pin, False)
 
 def parse_args():
     parser = argparse.ArgumentParser()
