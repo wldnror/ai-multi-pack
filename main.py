@@ -193,19 +193,19 @@ def udp_server():
                 send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
         elif message == "START_RECORDING":
             recording_status = start_recording()
-            send_status(sock, broadcast_ip, udp_port, recording_status)
+            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
         elif message == "STOP_RECORDING":
             recording_status = stop_recording()
-            send_status(sock, broadcast_ip, udp_port, recording_status)
+            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
         elif message == "REQUEST_RECORDING_STATUS":
             recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-            send_status(sock, broadcast_ip, udp_port, recording_status)
+            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
         elif message == "ENABLE_MANUAL_MODE":
             enable_mode("manual")
-            send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨")
+            send_status(sock, broadcast_ip, udp_port, "수동 모드 활성화됨", f"IP:{ip_address}")
         elif message == "ENABLE_AUTO_MODE":
             enable_mode("auto")
-            send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨")
+            send_status(sock, broadcast_ip, udp_port, "자동 모드 활성화됨", f"IP:{ip_address}")
 
     while True:
         try:
