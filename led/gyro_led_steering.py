@@ -124,12 +124,12 @@ def main():
                     right_active = new_right_active
                     left_active = new_left_active
 
-            if left_active != last_left_active:
+            if left_active != last_left_active or left_active:
                 print(f"Left LED: {left_active}")
                 blink_led(left_led_pin, left_active, last_left_active)
                 last_left_active = left_active
 
-            if right_active != last_right_active:
+            if right_active != last_right_active or right_active:
                 print(f"Right LED: {right_active}")
                 blink_led(right_led_pin, right_active, last_right_active)
                 last_right_active = right_active
