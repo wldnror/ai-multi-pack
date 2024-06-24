@@ -190,13 +190,13 @@ def udp_server():
         elif message == "REQUEST_IP":
             ip_address = get_ip_address()
             if ip_address:
-                send_status(sock, broadcast_ip, udp_port, f"IP:{ip_address}")
+                send_status(sock, broadcast_ip, udp_port)
         elif message == "START_RECORDING":
             recording_status = start_recording()
-            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
+            send_status(sock, broadcast_ip, udp_port, recording_status)
         elif message == "STOP_RECORDING":
             recording_status = stop_recording()
-            send_status(sock, broadcast_ip, udp_port, recording_status, f"IP:{ip_address}")
+            send_status(sock, broadcast_ip, udp_port, recording_status)
         elif message == "REQUEST_RECORDING_STATUS":
             recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
             send_status(sock, broadcast_ip, udp_port, recording_status)
