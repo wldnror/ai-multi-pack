@@ -38,6 +38,9 @@ def wheel(pos):
         pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
+# 스펙트럼 대역을 무지개 색상에 매핑
+COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
+
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
