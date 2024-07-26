@@ -7,13 +7,24 @@ import subprocess
 import math
 import sys
 import json
-import bluetooth  # 블루투스 모듈 추가
+import bluetooth
+from rpi_ws281x import PixelStrip, Color
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
 right_led_pin = 18 # 우회전 LED
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
+
+# 네오픽셀 설정
+LED_COUNT = 16  # LED 개수
+LED_PIN = 21  # GPIO 핀
+LED_FREQ_HZ = 800000  # LED 신호 주파수
+LED_DMA = 10  # DMA 채널
+LED_BRIGHTNESS = 255  # 밝기 (0-255)
+LED_INVERT = False  # 신호 반전 여부
+strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
+strip.begin()
 
 # MPU-6050 설정
 power_mgmt_1 = 0x6b
@@ -92,6 +103,24 @@ def is_bluetooth_connected():
     nearby_devices = bluetooth.discover_devices(duration=8, lookup_names=True, flush_cache=True, lookup_class=False)
     return len(nearby_devices) > 0
 
+def rainbow_cycle(wait):
+    for j in range(256):
+        for i in range(strip.numPixels()):
+            pixel_index = (i * 256 // strip.numPixels()) + j
+            strip.setPixelColor(i, wheel(pixel_index & 255))
+        strip.show()
+        time.sleep(wait)
+
+def wheel(pos):
+    if pos < 85:
+        return Color(pos * 3, 255 - pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return Color(255 - pos * 3, 0, pos * 3)
+    else:
+        pos -= 170
+        return Color(0, pos * 3, 255 - pos * 3)
+
 def main():
     global manual_mode, left_active, right_active
     args = parse_args()
@@ -110,7 +139,7 @@ def main():
         while True:
             if not is_bluetooth_connected():
                 print("블루투스 연결이 필요합니다.")
-                time.sleep(5)
+                rainbow_cycle(0.01)
                 continue
 
             if not manual_mode:
