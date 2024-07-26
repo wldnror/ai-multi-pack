@@ -91,9 +91,12 @@ def blink_led(pin, active):
     time.sleep(0.4)
 
 def set_rgb_led(r, g, b):
-    pwm_rgb['R'].ChangeDutyCycle(r)
-    pwm_rgb['G'].ChangeDutyCycle(g)
-    pwm_rgb['B'].ChangeDutyCycle(b)
+    r_duty = r * 100 / 255
+    g_duty = g * 100 / 255
+    b_duty = b * 100 / 255
+    pwm_rgb['R'].ChangeDutyCycle(r_duty)
+    pwm_rgb['G'].ChangeDutyCycle(g_duty)
+    pwm_rgb['B'].ChangeDutyCycle(b_duty)
 
 def rainbow_cycle(wait):
     for j in range(256):
