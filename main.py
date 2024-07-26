@@ -2,7 +2,7 @@ import asyncio
 import subprocess
 import re
 import time
-from bleak import BleakServer
+from bleak import BleakClient
 
 current_mode = 'manual'  # 초기 모드 설정
 
