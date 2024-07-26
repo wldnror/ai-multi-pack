@@ -36,9 +36,9 @@ RAINBOW_COLORS = [
 COLORS = [RAINBOW_COLORS[i % len(RAINBOW_COLORS)] for i in range(total_bands)]
 
 # 무지개 패턴을 표시하는 함수
-def show_rainbow():
+def show_rainbow(position):
     for i in range(LED_COUNT):
-        strip[i] = RAINBOW_COLORS[i % len(RAINBOW_COLORS)]
+        strip[i] = RAINBOW_COLORS[(i + position) % len(RAINBOW_COLORS)]
     strip.show()
 
 # FFT 결과에 따라 LED 제어하는 함수
@@ -67,7 +67,9 @@ def control_leds(fft_results):
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
     if not any_signal:
-        show_rainbow()
+        global rainbow_position
+        show_rainbow(rainbow_position)
+        rainbow_position = (rainbow_position + 1) % len(RAINBOW_COLORS)
     strip.show()
 
 # 오디오 콜백 함수
@@ -82,13 +84,16 @@ def audio_callback(indata, frames, time, status):
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
+# 전역 변수 초기화
+rainbow_position = 0
+
 # 메인 함수
 def main():
     try:
         with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
             print("Streaming started...")
             while True:
-                time.sleep(1)
+                time.sleep(0.1)
     except Exception as e:
         print("Error:", e)
 
