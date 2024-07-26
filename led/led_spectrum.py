@@ -11,8 +11,6 @@ import json
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
 right_led_pin = 18 # 우회전 LED
-# RGB LED 핀 설정 (예시: R=22, G=23, B=24)
-rgb_led_pins = {'R': 22, 'G': 23, 'B': 24}
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
 
@@ -31,7 +29,6 @@ udp_port = 5005  # UDP 포트
 manual_mode = False
 left_active = False
 right_active = False
-sound_active = False
 
 def get_ip_address():
     return subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
@@ -41,8 +38,6 @@ def init_GPIO():
     GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
     GPIO.setup(left_led_pin, GPIO.OUT)
     GPIO.setup(right_led_pin, GPIO.OUT)
-    for pin in rgb_led_pins.values():
-        GPIO.setup(pin, GPIO.OUT)
     print("GPIO 초기화 완료")
 
 # MPU-6050 초기화
@@ -84,24 +79,6 @@ def blink_led(pin, active):
     send_udp_message(pin, state)
     time.sleep(0.4)
 
-def set_rgb_led(color):
-    for color_name, pin in rgb_led_pins.items():
-        GPIO.output(pin, GPIO.HIGH if color_name in color else GPIO.LOW)
-
-def rainbow_cycle(wait):
-    for j in range(256):
-        for i in range(3):
-            set_rgb_led([color_wheel((i + j) & 255)])
-        time.sleep(wait)
-
-def color_wheel(pos):
-    if pos < 85:
-        return ['R']
-    elif pos < 170:
-        return ['G']
-    else:
-        return ['B']
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
@@ -111,7 +88,7 @@ def parse_args():
     return parser.parse_args()
 
 def main():
-    global manual_mode, left_active, right_active, sound_active
+    global manual_mode, left_active, right_active
     args = parse_args()
 
     if args.manual:
@@ -148,8 +125,6 @@ def main():
             elif right_active:
                 GPIO.output(left_led_pin, False)  # 왼쪽 LED 끄기
                 blink_led(right_led_pin, True)
-            elif not sound_active:
-                rainbow_cycle(0.05)  # 스펙트럼이 없을 때 무지개 효과
 
             time.sleep(0.1)
 
