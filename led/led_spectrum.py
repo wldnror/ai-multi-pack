@@ -38,14 +38,28 @@ def wheel(pos):
         pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
+# 다채로운 색상 변화를 위한 색상 정의
+def gradient_wheel(pos):
+    pos = pos % 256
+    if pos < 128:
+        r = int(255 * (1 - pos / 128))
+        g = int(255 * (pos / 128))
+        b = 0
+    else:
+        pos -= 128
+        g = int(255 * (1 - pos / 128))
+        b = int(255 * (pos / 128))
+        r = 0
+    return (r, g, b)
+
 # 스펙트럼 대역을 무지개 색상에 매핑
-COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
+COLORS = [gradient_wheel(i * 256 // total_bands) for i in range(total_bands)]
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
         pixel_index = (i * 256 // LED_COUNT) + position
-        strip[i] = wheel(pixel_index & 255)
+        strip[i] = gradient_wheel(pixel_index & 255)
     strip.show()
 
 # FFT 결과에 따라 LED 제어하는 함수
