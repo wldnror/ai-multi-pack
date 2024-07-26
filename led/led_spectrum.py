@@ -48,7 +48,7 @@ smooth_fft_results = np.zeros(total_bands)
 def control_leds(fft_results):
     global smooth_fft_results
     alpha = 0.2  # 새로운 값에 대한 가중치 (0.0 - 1.0 사이)
-    smooth_fft_results = alpha * fft_results + (1 - alpha) * smooth_fft_results
+    smooth_fft_results = alpha * np.array(fft_results) + (1 - alpha) * smooth_fft_results
     max_fft = max(smooth_fft_results) if max(smooth_fft_results) != 0 else 1
     led_index = 0
     any_signal = False
