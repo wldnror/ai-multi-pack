@@ -35,15 +35,24 @@ RAINBOW_COLORS = [
 # 스펙트럼 대역을 무지개 색상에 매핑
 COLORS = [RAINBOW_COLORS[i % len(RAINBOW_COLORS)] for i in range(total_bands)]
 
+# 무지개 패턴을 표시하는 함수
+def show_rainbow():
+    for i in range(LED_COUNT):
+        strip[i] = RAINBOW_COLORS[i % len(RAINBOW_COLORS)]
+    strip.show()
+
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
+    any_signal = False
     for i, count in enumerate(band_led_counts):
         # 민감도 조정
         adjusted_fft_result = fft_results[i] * sensitivity_multiplier[i]
         # 로그 스케일 대신 선형 스케일로 변환
         led_height = int((adjusted_fft_result / max_fft) * count)
+        if led_height > 0:
+            any_signal = True
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
@@ -57,6 +66,8 @@ def control_leds(fft_results):
                 else:
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
+    if not any_signal:
+        show_rainbow()
     strip.show()
 
 # 오디오 콜백 함수
