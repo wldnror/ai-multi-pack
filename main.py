@@ -1,10 +1,8 @@
-import bluetooth
+import asyncio
 import subprocess
-import threading
 import re
 import time
-import RPi.GPIO as GPIO
-from battery_monitor import read_battery_level
+from bleak import BleakServer
 
 current_mode = 'manual'  # 초기 모드 설정
 
@@ -78,69 +76,50 @@ def enable_mode(mode):
         current_mode = 'auto'
         print("자동 모드로 변경됨")
 
-def handle_client(client_sock):
+async def handle_client(reader, writer):
     try:
         while True:
-            data = client_sock.recv(1024).decode('utf-8')
-            print(f"Data received: {data}")
-            if data:
-                if data == "Right Blinker Activated" and current_mode == 'manual':
-                    terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
-                    client_sock.send("오른쪽 블링커 활성화됨".encode('utf-8'))
-                elif data == "Left Blinker Activated" and current_mode == 'manual':
-                    terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
-                    client_sock.send("왼쪽 블링커 활성화됨".encode('utf-8'))
-                elif data == "REQUEST_IP":
-                    ip_address = get_ip_address()
-                    if ip_address:
-                        client_sock.send(f"IP:{ip_address}".encode('utf-8'))
-                elif data == "START_RECORDING":
-                    recording_status = start_recording()
-                    client_sock.send(recording_status.encode('utf-8'))
-                elif data == "STOP_RECORDING":
-                    recording_status = stop_recording()
-                    client_sock.send(recording_status.encode('utf-8'))
-                elif data == "REQUEST_RECORDING_STATUS":
-                    recording_status = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
-                    client_sock.send(recording_status.encode('utf-8'))
-                elif data == "ENABLE_MANUAL_MODE":
-                    enable_mode("manual")
-                    client_sock.send("수동 모드 활성화됨".encode('utf-8'))
-                elif data == "ENABLE_AUTO_MODE":
-                    enable_mode("auto")
-                    client_sock.send("자동 모드 활성화됨".encode('utf-8'))
-            if not data:
-                break
-    except OSError as e:
-        print(f"Connection error: {e}")
+            data = await reader.read(1024)
+            message = data.decode('utf-8').strip()
+            print(f"Received: {message}")
+            
+            # 처리할 명령어에 따라 적절한 동작 수행
+            if message == "Right Blinker Activated":
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
+                response = "오른쪽 깜박이 활성화됨"
+            elif message == "Left Blinker Activated":
+                terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --left')
+                response = "왼쪽 깜박이 활성화됨"
+            elif message == "REQUEST_IP":
+                ip_address = get_ip_address()
+                response = f"IP:{ip_address}" if ip_address else "IP 주소를 가져올 수 없습니다"
+            elif message == "START_RECORDING":
+                response = start_recording()
+            elif message == "STOP_RECORDING":
+                response = stop_recording()
+            elif message == "REQUEST_RECORDING_STATUS":
+                response = "RECORDING" if process_exists('black_box/main.py') else "NOT_RECORDING"
+            elif message == "ENABLE_MANUAL_MODE":
+                enable_mode("manual")
+                response = "수동 모드 활성화됨"
+            elif message == "ENABLE_AUTO_MODE":
+                enable_mode("auto")
+                response = "자동 모드 활성화됨"
+            else:
+                response = "알 수 없는 명령"
+            
+            writer.write(response.encode('utf-8'))
+            await writer.drain()
+    except Exception as e:
+        print(f"Client handling error: {e}")
     finally:
-        print("Disconnected")
-        client_sock.close()
+        writer.close()
+        await writer.wait_closed()
 
-def bluetooth_server():
-    server_sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-    server_sock.bind(("", bluetooth.PORT_ANY))
-    server_sock.listen(1)
-    port = server_sock.getsockname()[1]
-    print(f"Listening on port {port}")
-
-    while True:
-        print("Waiting for connection...")
-        client_sock, client_info = server_sock.accept()
-        print(f"Accepted connection from {client_info}")
-        handle_client(client_sock)
-
-def main():
-    enable_mode("auto")
-    start_recording()
-    gpio_thread = threading.Thread(target=gpio_monitor, daemon=True)
-    gpio_thread.start()
-    
-    # 블루투스 서버 시작
-    bt_thread = threading.Thread(target=bluetooth_server, daemon=True)
-    bt_thread.start()
-    
-    bt_thread.join()
+async def main():
+    server = await asyncio.start_server(handle_client, "0.0.0.0", 12345)
+    async with server:
+        await server.serve_forever()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
