@@ -3,6 +3,7 @@ import board
 import neopixel
 import sounddevice as sd
 import time
+import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -52,7 +53,10 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
-    for i, count in enumerate(band_led_counts):
+    order = list(range(total_bands))
+    random.shuffle(order)  # 대역 순서를 랜덤하게 섞음
+    for i in order:
+        count = band_led_counts[i]
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
             smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
