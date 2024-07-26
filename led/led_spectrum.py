@@ -12,7 +12,7 @@ SAMPLE_RATE = 48000   # 오디오 샘플레이트
 FFT_SIZE = 1024       # FFT 크기
 
 # 각 스펙트럼 대역에 할당된 LED 개수
-band_led_counts = [50, 30, 30, 30, 30, 50]
+band_led_counts = [25, 15, 15, 15, 15, 25]
 total_bands = len(band_led_counts)
 
 # 민감도 조정 값
@@ -44,31 +44,34 @@ def show_rainbow(position):
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
-    led_index = 0
+    half_led_count = LED_COUNT // 2
+    center_index = half_led_count - 1
     any_signal = False
+    
     for i, count in enumerate(band_led_counts):
         # 민감도 조정 및 로그 스케일 적용
         adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
+        
         if led_height > 0:
             any_signal = True
-        if i % 2 == 1:  # 두 번째, 네 번째 대역 반전
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + count - 1 - j] = COLORS[i]
-                else:
-                    strip[led_index + count - 1 - j] = (0, 0, 0)
-        else:
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + j] = COLORS[i]
-                else:
-                    strip[led_index + j] = (0, 0, 0)
-        led_index += count
+        
+        # 양쪽으로 퍼지도록 LED 설정
+        for j in range(count):
+            if j < led_height:
+                strip[center_index - j] = COLORS[i]
+                strip[center_index + j + 1] = COLORS[i]
+            else:
+                strip[center_index - j] = (0, 0, 0)
+                strip[center_index + j + 1] = (0, 0, 0)
+        
+        center_index -= count
+
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % len(RAINBOW_COLORS)
+    
     strip.show()
 
 # 오디오 콜백 함수
