@@ -77,12 +77,14 @@ def enable_mode(mode):
 
 async def handle_client(reader, writer):
     try:
+        print("클라이언트 연결됨")
         while True:
             data = await reader.read(1024)
+            if not data:
+                break
             message = data.decode('utf-8').strip()
             print(f"Received: {message}")
             
-            # 처리할 명령어에 따라 적절한 동작 수행
             if message == "Right Blinker Activated":
                 terminate_and_restart_blinker('led/gyro_led_steering.py', '--manual --right')
                 response = "오른쪽 깜박이 활성화됨"
@@ -117,6 +119,7 @@ async def handle_client(reader, writer):
 
 async def main():
     server = await asyncio.start_server(handle_client, "0.0.0.0", 12345)
+    print("서버 시작됨")
     async with server:
         await server.serve_forever()
 
