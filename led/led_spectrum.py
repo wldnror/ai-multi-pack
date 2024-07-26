@@ -11,8 +11,14 @@ import json
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
 right_led_pin = 18 # 우회전 LED
+# RGB LED 핀 설정 (예시: R=22, G=23, B=24)
+rgb_led_pins = {'R': 22, 'G': 23, 'B': 24}
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
+
+# PWM 설정
+pwm_freq = 100  # PWM 주파수 (Hz)
+pwm_rgb = {}
 
 # MPU-6050 설정
 power_mgmt_1 = 0x6b
@@ -29,6 +35,7 @@ udp_port = 5005  # UDP 포트
 manual_mode = False
 left_active = False
 right_active = False
+sound_active = False
 
 def get_ip_address():
     return subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
@@ -38,6 +45,10 @@ def init_GPIO():
     GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
     GPIO.setup(left_led_pin, GPIO.OUT)
     GPIO.setup(right_led_pin, GPIO.OUT)
+    for color, pin in rgb_led_pins.items():
+        GPIO.setup(pin, GPIO.OUT)
+        pwm_rgb[color] = GPIO.PWM(pin, pwm_freq)
+        pwm_rgb[color].start(0)  # 초기 듀티 사이클 0으로 설정
     print("GPIO 초기화 완료")
 
 # MPU-6050 초기화
@@ -79,6 +90,20 @@ def blink_led(pin, active):
     send_udp_message(pin, state)
     time.sleep(0.4)
 
+def set_rgb_led(r, g, b):
+    pwm_rgb['R'].ChangeDutyCycle(r)
+    pwm_rgb['G'].ChangeDutyCycle(g)
+    pwm_rgb['B'].ChangeDutyCycle(b)
+
+def rainbow_cycle(wait):
+    for j in range(256):
+        for i in range(3):
+            r = (255 if (i + j) & 1 else 0)
+            g = (255 if (i + j + 1) & 1 else 0)
+            b = (255 if (i + j + 2) & 1 else 0)
+            set_rgb_led(r, g, b)
+        time.sleep(wait)
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
@@ -88,7 +113,7 @@ def parse_args():
     return parser.parse_args()
 
 def main():
-    global manual_mode, left_active, right_active
+    global manual_mode, left_active, right_active, sound_active
     args = parse_args()
 
     if args.manual:
@@ -125,6 +150,8 @@ def main():
             elif right_active:
                 GPIO.output(left_led_pin, False)  # 왼쪽 LED 끄기
                 blink_led(right_led_pin, True)
+            elif not sound_active:
+                rainbow_cycle(0.05)  # 스펙트럼이 없을 때 무지개 효과
 
             time.sleep(0.1)
 
