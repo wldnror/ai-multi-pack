@@ -7,6 +7,7 @@ import subprocess
 import math
 import sys
 import json
+import bluetooth  # 블루투스 모듈 추가
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
@@ -87,6 +88,10 @@ def parse_args():
     parser.add_argument("--auto", help="Enable automatic mode", action="store_true")
     return parser.parse_args()
 
+def is_bluetooth_connected():
+    nearby_devices = bluetooth.discover_devices(duration=8, lookup_names=True, flush_cache=True, lookup_class=False)
+    return len(nearby_devices) > 0
+
 def main():
     global manual_mode, left_active, right_active
     args = parse_args()
@@ -103,6 +108,11 @@ def main():
 
     try:
         while True:
+            if not is_bluetooth_connected():
+                print("블루투스 연결이 필요합니다.")
+                time.sleep(5)
+                continue
+
             if not manual_mode:
                 accel_x = read_sensor_data(0x3b)
                 accel_y = read_sensor_data(0x3d)
