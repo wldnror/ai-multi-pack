@@ -3,7 +3,6 @@ import board
 import neopixel
 import sounddevice as sd
 import time
-import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -53,10 +52,7 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
-    order = list(range(total_bands))
-    random.shuffle(order)  # 대역 순서를 랜덤하게 섞음
-    for i in order:
-        count = band_led_counts[i]
+    for i, count in enumerate(band_led_counts):
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
             smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
@@ -66,18 +62,11 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        if i % 2 == 1:  # 두 번째, 네 번째 대역 반전
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + count - 1 - j] = COLORS[i]
-                else:
-                    strip[led_index + count - 1 - j] = (0, 0, 0)
-        else:
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + j] = COLORS[i]
-                else:
-                    strip[led_index + j] = (0, 0, 0)
+        for j in range(count):
+            if j < led_height:
+                strip[led_index + j] = COLORS[i]
+            else:
+                strip[led_index + j] = (0, 0, 0)
         led_index += count
     if not any_signal:
         global rainbow_position
