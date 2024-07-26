@@ -1,7 +1,6 @@
 import asyncio
 import subprocess
 import re
-import time
 
 current_mode = 'manual'  # 초기 모드 설정
 
@@ -36,7 +35,6 @@ def stop_recording():
     try:
         subprocess.check_output(['pkill', '-f', 'black_box/main.py'])
         print("녹화 중지.")
-        time.sleep(1)
         force_release_camera()
     except subprocess.CalledProcessError:
         print("녹화 프로세스를 찾을 수 없습니다.")
