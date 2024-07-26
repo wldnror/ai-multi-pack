@@ -24,31 +24,25 @@ alpha = 0.1
 # 지수 평활화된 결과를 저장할 변수 초기화
 smoothed_fft = [0] * total_bands
 
-# 최고점을 저장할 변수 초기화
-peak_values = [0] * total_bands
-peak_decay = 0.9  # 최고점이 점점 줄어드는 비율
-
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 무지개 색상 정의
-RAINBOW_COLORS = [
-    (255, 0, 0),    # 빨간색
-    (255, 127, 0),  # 주황색
-    (255, 255, 0),  # 노란색
-    (0, 255, 0),    # 초록색
-    (0, 0, 255),    # 파란색
-    (75, 0, 130),   # 남색
-    (148, 0, 211)   # 보라색
-]
+# 부드러운 색상 변화를 위한 색상 정의
+def wheel(pos):
+    if pos < 85:
+        return (255 - pos * 3, pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return (0, 255 - pos * 3, pos * 3)
+    else:
+        pos -= 170
+        return (pos * 3, 0, 255 - pos * 3)
 
-# 스펙트럼 대역을 무지개 색상에 매핑
-COLORS = [RAINBOW_COLORS[i % len(RAINBOW_COLORS)] for i in range(total_bands)]
-
-# 무지개 패턴을 표시하는 함수
+# 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
-        strip[i] = RAINBOW_COLORS[(i + position) % len(RAINBOW_COLORS)]
+        pixel_index = (i * 256 // LED_COUNT) + position
+        strip[i] = wheel(pixel_index & 255)
     strip.show()
 
 # FFT 결과에 따라 LED 제어하는 함수
@@ -66,39 +60,23 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        
-        # 최고점 업데이트
-        if led_height > peak_values[i]:
-            peak_values[i] = led_height
-        else:
-            peak_values[i] = int(peak_values[i] * peak_decay)
-
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
                     strip[led_index + count - 1 - j] = COLORS[i]
                 else:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
-            # 최고점 표시
-            if peak_values[i] < count:
-                strip[led_index + count - 1 - peak_values[i]] = (255, 255, 255)
         else:
             for j in range(count):
                 if j < led_height:
                     strip[led_index + j] = COLORS[i]
                 else:
                     strip[led_index + j] = (0, 0, 0)
-            # 최고점 표시
-            if peak_values[i] < count:
-                strip[led_index + peak_values[i]] = (255, 255, 255)
-
         led_index += count
-
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
-        rainbow_position = (rainbow_position + 1) % len(RAINBOW_COLORS)
-    
+        rainbow_position = (rainbow_position + 1) % 256
     strip.show()
 
 # 오디오 콜백 함수
