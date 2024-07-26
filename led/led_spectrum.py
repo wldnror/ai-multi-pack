@@ -7,7 +7,6 @@ import subprocess
 import math
 import sys
 import json
-import bluetooth
 from rpi_ws281x import PixelStrip, Color
 import pygame  # Pygame 모듈 추가
 
@@ -104,8 +103,9 @@ def parse_args():
     return parser.parse_args()
 
 def is_bluetooth_connected():
-    nearby_devices = bluetooth.discover_devices(duration=8, lookup_names=True, flush_cache=True, lookup_class=False)
-    return len(nearby_devices) > 0
+    result = subprocess.run(['hcitool', 'con'], stdout=subprocess.PIPE)
+    output = result.stdout.decode('utf-8')
+    return "Connections:" in output and len(output.split('\n')) > 1
 
 def rainbow_cycle(wait):
     for j in range(256):
