@@ -7,18 +7,25 @@ import subprocess
 import math
 import sys
 import json
+import bluetooth
+from rpi_ws281x import PixelStrip, Color
+import pygame  # Pygame 모듈 추가
 
 # GPIO 설정
 left_led_pin = 17  # 좌회전 LED
 right_led_pin = 18 # 우회전 LED
-# RGB LED 핀 설정 (예시: R=22, G=23, B=24)
-rgb_led_pins = {'R': 22, 'G': 23, 'B': 24}
 GPIO.setmode(GPIO.BCM)
 GPIO.setwarnings(False)  # GPIO 경고 비활성화
 
-# PWM 설정
-pwm_freq = 100  # PWM 주파수 (Hz)
-pwm_rgb = {}
+# 네오픽셀 설정
+LED_COUNT = 16  # LED 개수
+LED_PIN = 21  # GPIO 핀
+LED_FREQ_HZ = 800000  # LED 신호 주파수
+LED_DMA = 10  # DMA 채널
+LED_BRIGHTNESS = 255  # 밝기 (0-255)
+LED_INVERT = False  # 신호 반전 여부
+strip = PixelStrip(LED_COUNT, LED_PIN, LED_FREQ_HZ, LED_DMA, LED_INVERT, LED_BRIGHTNESS)
+strip.begin()
 
 # MPU-6050 설정
 power_mgmt_1 = 0x6b
@@ -35,7 +42,9 @@ udp_port = 5005  # UDP 포트
 manual_mode = False
 left_active = False
 right_active = False
-sound_active = False
+
+# Pygame 초기화
+pygame.mixer.init()
 
 def get_ip_address():
     return subprocess.check_output(["hostname", "-I"]).decode().strip().split()[0]
@@ -45,10 +54,6 @@ def init_GPIO():
     GPIO.setmode(GPIO.BCM)  # GPIO 모드 재설정
     GPIO.setup(left_led_pin, GPIO.OUT)
     GPIO.setup(right_led_pin, GPIO.OUT)
-    for color, pin in rgb_led_pins.items():
-        GPIO.setup(pin, GPIO.OUT)
-        pwm_rgb[color] = GPIO.PWM(pin, pwm_freq)
-        pwm_rgb[color].start(0)  # 초기 듀티 사이클 0으로 설정
     print("GPIO 초기화 완료")
 
 # MPU-6050 초기화
@@ -90,23 +95,6 @@ def blink_led(pin, active):
     send_udp_message(pin, state)
     time.sleep(0.4)
 
-def set_rgb_led(r, g, b):
-    r_duty = r * 100 / 255
-    g_duty = g * 100 / 255
-    b_duty = b * 100 / 255
-    pwm_rgb['R'].ChangeDutyCycle(r_duty)
-    pwm_rgb['G'].ChangeDutyCycle(g_duty)
-    pwm_rgb['B'].ChangeDutyCycle(b_duty)
-
-def rainbow_cycle(wait):
-    for j in range(256):
-        for i in range(3):
-            r = (255 if (i + j) & 1 else 0)
-            g = (255 if (i + j + 1) & 1 else 0)
-            b = (255 if (i + j + 2) & 1 else 0)
-            set_rgb_led(r, g, b)
-        time.sleep(wait)
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--manual", help="Enable manual mode", action="store_true")
@@ -115,8 +103,33 @@ def parse_args():
     parser.add_argument("--auto", help="Enable automatic mode", action="store_true")
     return parser.parse_args()
 
+def is_bluetooth_connected():
+    nearby_devices = bluetooth.discover_devices(duration=8, lookup_names=True, flush_cache=True, lookup_class=False)
+    return len(nearby_devices) > 0
+
+def rainbow_cycle(wait):
+    for j in range(256):
+        for i in range(strip.numPixels()):
+            pixel_index = (i * 256 // strip.numPixels()) + j
+            strip.setPixelColor(i, wheel(pixel_index & 255))
+        strip.show()
+        time.sleep(wait)
+
+def wheel(pos):
+    if pos < 85:
+        return Color(pos * 3, 255 - pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return Color(255 - pos * 3, 0, pos * 3)
+    else:
+        pos -= 170
+        return Color(0, pos * 3, 255 - pos * 3)
+
+def is_sound_playing():
+    return pygame.mixer.get_busy()
+
 def main():
-    global manual_mode, left_active, right_active, sound_active
+    global manual_mode, left_active, right_active
     args = parse_args()
 
     if args.manual:
@@ -131,6 +144,15 @@ def main():
 
     try:
         while True:
+            if not is_bluetooth_connected():
+                print("블루투스 연결이 필요합니다.")
+                time.sleep(5)
+                continue
+
+            if not is_sound_playing():
+                rainbow_cycle(0.01)
+                continue
+
             if not manual_mode:
                 accel_x = read_sensor_data(0x3b)
                 accel_y = read_sensor_data(0x3d)
@@ -153,8 +175,6 @@ def main():
             elif right_active:
                 GPIO.output(left_led_pin, False)  # 왼쪽 LED 끄기
                 blink_led(right_led_pin, True)
-            elif not sound_active:
-                rainbow_cycle(0.05)  # 스펙트럼이 없을 때 무지개 효과
 
             time.sleep(0.1)
 
