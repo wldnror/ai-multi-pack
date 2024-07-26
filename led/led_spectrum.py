@@ -15,7 +15,7 @@ FFT_SIZE = 1024       # FFT 크기
 band_led_counts = [50, 30, 30, 30, 30, 50]
 total_bands = len(band_led_counts)
 
-# 민감도 조정 값
+# 민감도 조정 값 (첫 번째와 마지막 대역의 민감도는 조금 더 낮게 설정)
 sensitivity_multiplier = [1.0, 1.2, 1.4, 1.4, 1.2, 1.0]
 
 # NeoPixel 객체 초기화
@@ -77,15 +77,9 @@ def audio_callback(indata, frames, time, status):
         print("Status:", status)
     # 저주파수 대역에 중점을 둔 FFT 결과 처리
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
-    # 주파수 대역 조정 (15-20 대역대 제거하고 나머지 균등 분할)
-    fft_result_split = [
-        fft_result[0:15],      # 첫 번째 대역 (0-15)
-        fft_result[20:120:5],  # 두 번째 대역 (20-40)
-        fft_result[40:60],     # 세 번째 대역 (40-60)
-        fft_result[60:80],     # 네 번째 대역 (60-80)
-        fft_result[80:100],    # 다섯 번째 대역 (80-100)
-        fft_result[100:120]    # 여섯 번째 대역 (100-120)
-    ]
+    # 주파수 대역 조정
+    important_freqs = fft_result[:FFT_SIZE//25]
+    fft_result_split = np.array_split(important_freqs, total_bands)  # FFT 결과를 각 대역에 맞게 분할
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
