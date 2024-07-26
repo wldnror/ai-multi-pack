@@ -47,10 +47,9 @@ def control_leds(fft_results):
     led_index = 0
     any_signal = False
     for i, count in enumerate(band_led_counts):
-        # 민감도 조정
-        adjusted_fft_result = fft_results[i] * sensitivity_multiplier[i]
-        # 로그 스케일 대신 선형 스케일로 변환
-        led_height = int((adjusted_fft_result / max_fft) * count)
+        # 민감도 조정 및 로그 스케일 적용
+        adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
+        led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
