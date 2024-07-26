@@ -16,7 +16,7 @@ band_led_counts = [50, 30, 30, 30, 30, 50]
 total_bands = len(band_led_counts)
 
 # 민감도 조정 값 (첫 번째와 마지막 대역의 민감도는 조금 더 낮게 설정)
-sensitivity_multiplier = [0.8, 1.0, 1.2, 1.2, 1.0, 0.8]
+sensitivity_multiplier = [1.0, 1.2, 1.4, 1.4, 1.2, 1.0]
 
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
@@ -41,20 +41,14 @@ def show_rainbow(position):
         strip[i] = RAINBOW_COLORS[(i + position) % len(RAINBOW_COLORS)]
     strip.show()
 
-# 반응을 부드럽게 하기 위한 신호 평균값 초기화
-smooth_fft_results = np.zeros(total_bands)
-
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    global smooth_fft_results
-    alpha = 0.2  # 새로운 값에 대한 가중치 (0.0 - 1.0 사이)
-    smooth_fft_results = alpha * np.array(fft_results) + (1 - alpha) * smooth_fft_results
-    max_fft = max(smooth_fft_results) if max(smooth_fft_results) != 0 else 1
+    max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
     for i, count in enumerate(band_led_counts):
         # 민감도 조정 및 로그 스케일 적용
-        adjusted_fft_result = np.log1p(smooth_fft_results[i] * sensitivity_multiplier[i])
+        adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
