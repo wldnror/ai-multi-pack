@@ -18,6 +18,12 @@ total_bands = len(band_led_counts)
 # 민감도 조정 값 (첫 번째와 마지막 대역의 민감도는 조금 더 낮게 설정)
 sensitivity_multiplier = [1.0, 1.2, 1.4, 1.4, 1.2, 1.0]
 
+# 지수 평활화 계수 (첫 번째 대역)
+alpha = 0.1
+
+# 지수 평활화된 결과를 저장할 변수 초기화
+smoothed_fft = [0] * total_bands
+
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
@@ -47,8 +53,12 @@ def control_leds(fft_results):
     led_index = 0
     any_signal = False
     for i, count in enumerate(band_led_counts):
-        # 민감도 조정 및 로그 스케일 적용
-        adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
+        # 첫 번째 대역에 대해 지수 평활화 적용
+        if i == 0:
+            smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
+            adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
+        else:
+            adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
