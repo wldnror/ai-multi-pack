@@ -3,7 +3,7 @@ import time
 
 # GPIO 핀 설정 (물리적 핀 번호 기준)
 red_led_pin = 24  # 빨간색 LED 핀 (BCM 24, 물리적 핀 18)
-green_led_pin = 23  # 초록색 LED 핀 (BCM 11, 물리적 핀 23)
+green_led_pin = 23  # 초록색 LED 핀 (BCM 23, 물리적 핀 16)
 
 # GPIO 모드 설정
 GPIO.setmode(GPIO.BCM)
