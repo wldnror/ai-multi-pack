@@ -4,16 +4,15 @@ import time
 # GPIO 핀 설정 (BCM 번호 기준)
 red_led_pin = 24  # 빨간색 LED 핀 (BCM 24, 물리적 핀 18)
 green_led_pin = 23  # 초록색 LED 핀 (BCM 23, 물리적 핀 16)
-ground_pin = 23  # 가상 그라운드 핀 (BCM 23, 물리적 핀 16)
 
 # GPIO 모드 설정
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(red_led_pin, GPIO.OUT)
 GPIO.setup(green_led_pin, GPIO.OUT)
-GPIO.setup(ground_pin, GPIO.OUT)
 
-# 가상 그라운드 핀 항상 LOW로 설정
-GPIO.output(ground_pin, GPIO.LOW)
+# 16번 GPIO 핀을 GND로 설정 (항상 LOW 상태)
+GPIO.setup(16, GPIO.OUT)  # 16번 핀(BCM 16)을 출력으로 설정
+GPIO.output(16, GPIO.LOW)  # 16번 핀을 LOW 상태로 설정하여 GND 신호 생성
 
 # PWM 설정
 red_led_pwm = GPIO.PWM(red_led_pin, 100)  # 빨간색 LED 핀에서 100Hz 주파수로 PWM 설정
