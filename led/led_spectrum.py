@@ -27,19 +27,12 @@ smoothed_fft = [0] * total_bands
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 부드러운 색상 변화를 위한 색상 정의
-def wheel(pos):
-    if pos < 85:
-        return (255 - pos * 3, pos * 3, 0)
-    elif pos < 170:
-        pos -= 85
-        return (0, 255 - pos * 3, pos * 3)
-    else:
-        pos -= 170
-        return (pos * 3, 0, 255 - pos * 3)
+# 색상 보간 함수
+def interpolate_color(color1, color2, factor):
+    return tuple(int(c1 + (c2 - c1) * factor) for c1, c2 in zip(color1, color2))
 
 # 스펙트럼 대역을 무지개 색상에 매핑
-COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
+base_colors = [(255, 0, 0), (255, 255, 0), (0, 255, 0), (0, 255, 255), (0, 0, 255), (255, 0, 255)]
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
@@ -63,23 +56,30 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + count - 1 - j] = COLORS[i]
+        
+        color_start = base_colors[i]
+        color_end = base_colors[(i + 1) % len(base_colors)]
+        
+        for j in range(count):
+            color_factor = j / count
+            color = interpolate_color(color_start, color_end, color_factor)
+            if j < led_height:
+                if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
+                    strip[led_index + count - 1 - j] = color
                 else:
+                    strip[led_index + j] = color
+            else:
+                if i % 2 == 1:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
-        else:
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + j] = COLORS[i]
                 else:
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
+    
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
+
     strip.show()
 
 # 오디오 콜백 함수
@@ -96,13 +96,20 @@ def audio_callback(indata, frames, time, status):
 
 # 전역 변수 초기화
 rainbow_position = 0
+last_signal_time = time.time()
 
 # 메인 함수
 def main():
+    global last_signal_time
     try:
         with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
             print("Streaming started...")
             while True:
+                current_time = time.time()
+                if current_time - last_signal_time > 2:  # 2초 동안 신호가 없으면 무지개 패턴으로 전환
+                    global rainbow_position
+                    show_rainbow(rainbow_position)
+                    rainbow_position = (rainbow_position + 1) % 512
                 time.sleep(0.1)
     except Exception as e:
         print("Error:", e)
