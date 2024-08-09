@@ -77,6 +77,7 @@ def control_leds(fft_results):
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
 
+    # 신호가 없으면 무지개 효과를 보여줌
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
