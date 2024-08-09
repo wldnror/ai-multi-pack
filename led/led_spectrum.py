@@ -67,12 +67,19 @@ def control_leds(fft_results):
         if led_height > 0:
             any_signal = True
         
-        # 모든 대역을 아래에서 위로 솟구치도록 수정
-        for j in range(count):
-            if j < led_height:
-                strip[led_index + j] = COLORS[i]
-            else:
-                strip[led_index + j] = (0, 0, 0)
+        # 두 번째, 네 번째, 여섯 번째 대역만 반전 적용 (아래에서 위로 솟구치도록)
+        if i % 2 == 1:
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + count - 1 - j] = COLORS[i]
+                else:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
+        else:
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
 
         led_index += count
         
