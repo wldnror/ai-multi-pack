@@ -34,6 +34,13 @@ def interpolate_color(color1, color2, factor):
 # 스펙트럼 대역을 무지개 색상에 매핑
 base_colors = [(255, 0, 0), (255, 255, 0), (0, 255, 0), (0, 255, 255), (0, 0, 255), (255, 0, 255)]
 
+# 부드러운 무지개 패턴을 표시하는 함수
+def show_rainbow(position):
+    for i in range(LED_COUNT):
+        pixel_index = (i * 512 // LED_COUNT) + position
+        strip[i] = wheel(pixel_index & 255)
+    strip.show()
+
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
@@ -57,23 +64,22 @@ def control_leds(fft_results):
             color_factor = j / count
             color = interpolate_color(color_start, color_end, color_factor)
             if j < led_height:
-                strip[led_index + j] = color
+                if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
+                    strip[led_index + count - 1 - j] = color
+                else:
+                    strip[led_index + j] = color
             else:
-                strip[led_index + j] = (0, 0, 0)
+                if i % 2 == 1:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
+                else:
+                    strip[led_index + j] = (0, 0, 0)
         led_index += count
     
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
-    
-    strip.show()
 
-# 부드러운 무지개 패턴을 표시하는 함수
-def show_rainbow(position):
-    for i in range(LED_COUNT):
-        pixel_index = (i * 512 // LED_COUNT) + position
-        strip[i] = wheel(pixel_index & 255)
     strip.show()
 
 # 오디오 콜백 함수
