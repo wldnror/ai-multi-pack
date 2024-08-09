@@ -27,33 +27,44 @@ smoothed_fft = [0] * total_bands
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 부드러운 색상 변화를 위한 색상 정의 (그라데이션)
-def gradient_wheel(pos, max_pos=256):
-    # pos 값을 0부터 max_pos까지의 범위로 가정하고 색상을 계산합니다.
-    pos = pos % max_pos
-    if pos < max_pos // 3:
+# 부드러운 색상 변화를 위한 색상 정의
+def wheel(pos):
+    if pos < 85:
         return (255 - pos * 3, pos * 3, 0)
-    elif pos < 2 * max_pos // 3:
-        pos -= max_pos // 3
+    elif pos < 170:
+        pos -= 85
         return (0, 255 - pos * 3, pos * 3)
     else:
-        pos -= 2 * max_pos // 3
+        pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
-# 색상 변화 속도 조절 및 대역별 그라데이션 색상 매핑
-def update_colors(position, max_pos=256):
-    global COLORS
-    COLORS = [gradient_wheel((i * max_pos // total_bands + position) % max_pos) for i in range(total_bands)]
+# 스펙트럼 대역을 무지개 색상에 매핑
+COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
         pixel_index = (i * 512 // LED_COUNT) + position
-        strip[i] = gradient_wheel(pixel_index & 255)
+        strip[i] = wheel(pixel_index & 255)
     strip.show()
+
+# LED 밝기 조절 함수
+def fade_in_out(strip, start_index, end_index, color, steps=20):
+    for step in range(steps):
+        factor = step / steps
+        for i in range(start_index, end_index):
+            strip[i] = (int(color[0] * factor), int(color[1] * factor), int(color[2] * factor))
+        strip.show()
+        time.sleep(0.02)
+
+# 색상 업데이트 함수
+def update_colors():
+    global COLORS
+    COLORS = [wheel((i * 256 // total_bands + rainbow_position) % 256) for i in range(total_bands)]
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
+    update_colors()  # 색상 업데이트
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
@@ -66,23 +77,23 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        
-        # 두 번째, 네 번째, 여섯 번째 대역만 반전 적용 (아래에서 위로 솟구치도록)
-        if i % 2 == 1:
+        if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
                     strip[led_index + count - 1 - j] = COLORS[i]
+                    strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = COLORS[i]  # 대칭 적용
                 else:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
+                    strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = (0, 0, 0)
         else:
             for j in range(count):
                 if j < led_height:
                     strip[led_index + j] = COLORS[i]
+                    strip[LED_COUNT - 1 - (led_index + j)] = COLORS[i]  # 대칭 적용
                 else:
                     strip[led_index + j] = (0, 0, 0)
-
+                    strip[LED_COUNT - 1 - (led_index + j)] = (0, 0, 0)
         led_index += count
-        
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
@@ -110,9 +121,6 @@ def main():
         with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
             print("Streaming started...")
             while True:
-                global rainbow_position
-                update_colors(rainbow_position)  # 색상 업데이트
-                rainbow_position = (rainbow_position + 2) % 512  # 색상 변화 속도 조절
                 time.sleep(0.1)
     except Exception as e:
         print("Error:", e)
