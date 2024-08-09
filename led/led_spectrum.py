@@ -45,7 +45,7 @@ COLOR_PALETTE = [
 # 초기 색상 설정 (서로 겹치지 않도록)
 COLORS = random.sample(COLOR_PALETTE, total_bands)
 
-# 무지개 웨이브 효과를 표시하는 함수
+# 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
         pixel_index = (i * 512 // LED_COUNT) + position
@@ -57,21 +57,9 @@ def pick_random_color(exclude_colors):
     available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
     return random.choice(available_colors)
 
-# 색상 계산 함수
-def wheel(pos):
-    # 무지개 색상을 생성하는 함수
-    if pos < 85:
-        return (int(pos * 3), int(255 - pos * 3), 0)
-    elif pos < 170:
-        pos -= 85
-        return (int(255 - pos * 3), 0, int(pos * 3))
-    else:
-        pos -= 170
-        return (0, int(pos * 3), int(255 - pos * 3))
-
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    global COLORS, rainbow_position  # 전역 변수로 선언
+    global COLORS  # 전역 변수로 선언
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
@@ -121,6 +109,7 @@ def control_leds(fft_results):
         led_index += count
     
     if not any_signal:
+        global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
     
