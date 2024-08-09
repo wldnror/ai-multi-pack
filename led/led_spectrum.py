@@ -29,7 +29,6 @@ strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_wr
 
 # 부드러운 색상 변화를 위한 색상 정의 (그라데이션)
 def gradient_wheel(pos, max_pos=256):
-    # pos 값을 0부터 max_pos까지의 범위로 가정하고 색상을 계산합니다.
     pos = pos % max_pos
     if pos < max_pos // 3:
         return (255 - pos * 3, pos * 3, 0)
@@ -66,14 +65,22 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        for j in range(count):
-            if j < led_height:
-                strip[led_index + j] = COLORS[i]
-                strip[LED_COUNT - 1 - (led_index + j)] = COLORS[i]  # 대칭 적용
-            else:
-                strip[led_index + j] = (0, 0, 0)
-                strip[LED_COUNT - 1 - (led_index + j)] = (0, 0, 0)
+
+        if i in [1, 4]:  # 두 번째와 다섯 번째 대역은 정상적으로
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
+        else:  # 나머지 대역은 뒤집어서 표현
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + count - 1 - j] = COLORS[i]
+                else:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
+
         led_index += count
+
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
