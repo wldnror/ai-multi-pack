@@ -25,6 +25,9 @@ alpha = 0.1
 # 지수 평활화된 결과를 저장할 변수 초기화
 smoothed_fft = [0] * total_bands
 
+# 색상 변경 카운터 초기화
+change_counters = [0] * total_bands
+
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
@@ -74,9 +77,14 @@ def control_leds(fft_results):
         if led_height > 0:
             any_signal = True
         
-        # 이전 LED 높이와 비교하여 줄어들 때 색상 변경
+        # 이전 LED 높이와 비교하여 줄어들 때 카운터 증가
         if led_height < smoothed_fft[i]:
+            change_counters[i] += 1
+        
+        # 두 번의 변화가 발생한 경우에만 색상 변경
+        if change_counters[i] >= 2:
             COLORS[i] = pick_random_color(used_colors)
+            change_counters[i] = 0  # 카운터 초기화
         
         smoothed_fft[i] = led_height  # 현재 높이를 저장하여 다음에 비교할 수 있게 함
         used_colors.append(COLORS[i])  # 사용된 색상 목록에 추가
