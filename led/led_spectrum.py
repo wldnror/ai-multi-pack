@@ -52,18 +52,17 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
-# 무지개 효과를 위한 색상 선택 함수
+# 색상 변경을 위한 휠 함수
 def wheel(pos):
-    """Input a value 0 to 255 to get a color value.
-    The colors are a transition r - g - b - back to r."""
+    pos = 255 - pos
     if pos < 85:
-        return (pos * 3, 255 - pos * 3, 0)
+        return (255 - pos * 3, 0, pos * 3)
     elif pos < 170:
         pos -= 85
-        return (255 - pos * 3, 0, pos * 3)
+        return (0, pos * 3, 255 - pos * 3)
     else:
         pos -= 170
-        return (0, pos * 3, 255 - pos * 3)
+        return (pos * 3, 255 - pos * 3, 0)
 
 # 랜덤 색상 선택 함수 (다른 대역과 중복되지 않도록)
 def pick_random_color(exclude_colors):
@@ -72,10 +71,7 @@ def pick_random_color(exclude_colors):
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    global COLORS  # 전역 변수로 선언
-    global rainbow_position
-    global last_signal_time
-
+    global COLORS, rainbow_position  # 전역 변수로 선언
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
@@ -124,16 +120,11 @@ def control_leds(fft_results):
         
         led_index += count
     
-    # 사운드 신호가 없으면 무지개 효과를 활성화
-    current_time = time.time()
-    if any_signal:
-        last_signal_time = current_time
-        strip.show()  # 스펙트럼이 제대로 표시되도록 즉시 LED 업데이트
-    elif current_time - last_signal_time >= 0.5:
+    if not any_signal:
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
-    else:
-        strip.show()  # 스펙트럼이 없다면 LED를 꺼줍니다.
+    
+    strip.show()
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
@@ -149,12 +140,11 @@ def audio_callback(indata, frames, time, status):
 
 # 전역 변수 초기화
 rainbow_position = 0
-last_signal_time = time.time()
 
 # 메인 함수
 def main():
     try:
-        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024):
+        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
             print("Streaming started...")
             while True:
                 time.sleep(0.1)
