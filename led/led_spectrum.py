@@ -52,11 +52,6 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
-# 랜덤 색상 선택 함수 (다른 대역과 중복되지 않도록)
-def pick_random_color(exclude_colors):
-    available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
-    return random.choice(available_colors)
-
 # 무지개 효과를 위한 색상 선택 함수
 def wheel(pos):
     """Input a value 0 to 255 to get a color value.
@@ -69,6 +64,11 @@ def wheel(pos):
     else:
         pos -= 170
         return (0, pos * 3, 255 - pos * 3)
+
+# 랜덤 색상 선택 함수 (다른 대역과 중복되지 않도록)
+def pick_random_color(exclude_colors):
+    available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
+    return random.choice(available_colors)
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
