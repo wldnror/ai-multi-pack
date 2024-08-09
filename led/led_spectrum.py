@@ -53,6 +53,12 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
+
+    # 모든 LED를 무지개 패턴으로 설정해 놓습니다.
+    global rainbow_position
+    show_rainbow(rainbow_position)
+    rainbow_position = (rainbow_position + 1) % 512
+
     for i, count in enumerate(band_led_counts):
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
@@ -76,13 +82,13 @@ def control_leds(fft_results):
                 else:
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
-
-    # 신호가 없으면 무지개 효과를 보여줌
+    
+    # any_signal이 False일 때만 무지개 패턴을 표시합니다.
     if not any_signal:
-        global rainbow_position
-        show_rainbow(rainbow_position)
-        rainbow_position = (rainbow_position + 1) % 512
-    strip.show()
+        strip.show()  # 이미 show_rainbow 함수에서 패턴이 적용된 상태로 유지
+    
+    else:
+        strip.show()  # 사운드 신호가 있을 때의 LED 상태를 표시합니다.
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
