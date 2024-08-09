@@ -90,13 +90,7 @@ def audio_callback(indata, frames, time, status):
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
     # 주파수 대역 조정
     important_freqs = fft_result[:FFT_SIZE//25]
-
-    # 랜덤으로 주파수 대역을 나누기 위해 시작
-    random_splits = np.random.randint(FFT_SIZE//100, FFT_SIZE//10, total_bands - 1)
-    random_splits.sort()
-    random_splits = np.concatenate(([0], random_splits, [len(important_freqs)]))
-
-    fft_result_split = [important_freqs[random_splits[i]:random_splits[i + 1]] for i in range(total_bands)]
+    fft_result_split = np.array_split(important_freqs, total_bands)  # FFT 결과를 각 대역에 맞게 분할
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
