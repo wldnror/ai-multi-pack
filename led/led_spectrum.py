@@ -66,18 +66,18 @@ def control_leds(fft_results):
         if led_height > 0:
             any_signal = True
 
-        if i in [1, 4]:  # 두 번째와 다섯 번째 대역은 정상적으로
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + j] = COLORS[i]
-                else:
-                    strip[led_index + j] = (0, 0, 0)
-        else:  # 나머지 대역은 뒤집어서 표현
+        if i in [0, 1, 2]:  # 첫 번째, 두 번째, 세 번째 대역은 뒤집어서 표현
             for j in range(count):
                 if j < led_height:
                     strip[led_index + count - 1 - j] = COLORS[i]
                 else:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
+        else:  # 네 번째, 다섯 번째, 여섯 번째 대역은 정상적으로 표현
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
 
         led_index += count
 
