@@ -57,11 +57,24 @@ def pick_random_color(exclude_colors):
     available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
     return random.choice(available_colors)
 
-# FFT 결과에 따라 LED 제어하는 함수
+# 무지개 효과를 위한 색상 선택 함수
+def wheel(pos):
+    """Input a value 0 to 255 to get a color value.
+    The colors are a transition r - g - b - back to r."""
+    if pos < 85:
+        return (pos * 3, 255 - pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return (255 - pos * 3, 0, pos * 3)
+    else:
+        pos -= 170
+        return (0, pos * 3, 255 - pos * 3)
+
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     global COLORS  # 전역 변수로 선언
     global rainbow_position
+    global last_signal_time
 
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
@@ -111,13 +124,15 @@ def control_leds(fft_results):
         
         led_index += count
     
-    if not any_signal:
-        # 신호가 없을 때 모든 LED에 무지개 효과 적용
+    # 사운드 신호가 없으면 무지개 효과를 활성화
+    current_time = time.time()
+    if any_signal:
+        last_signal_time = current_time
+    elif current_time - last_signal_time >= 0.5:
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
     
     strip.show()
-
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
@@ -133,11 +148,12 @@ def audio_callback(indata, frames, time, status):
 
 # 전역 변수 초기화
 rainbow_position = 0
+last_signal_time = time.time()
 
 # 메인 함수
 def main():
     try:
-        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
+        with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024):
             print("Streaming started...")
             while True:
                 time.sleep(0.1)
