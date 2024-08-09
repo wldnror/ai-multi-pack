@@ -123,8 +123,8 @@ def control_leds(fft_results):
     if not any_signal:
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 256
-    
-    strip.show()
+    else:
+        strip.show()
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
