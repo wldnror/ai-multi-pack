@@ -76,14 +76,11 @@ def control_leds(fft_results):
                 else:
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
-
-    # 모든 대역에서 LED가 꺼졌을 경우 무지개 효과를 표시
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
-    else:
-        strip.show()
+    strip.show()
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
