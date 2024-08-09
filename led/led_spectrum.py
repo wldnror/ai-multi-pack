@@ -128,11 +128,12 @@ def control_leds(fft_results):
     current_time = time.time()
     if any_signal:
         last_signal_time = current_time
+        strip.show()  # 스펙트럼이 제대로 표시되도록 즉시 LED 업데이트
     elif current_time - last_signal_time >= 0.5:
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
-    
-    strip.show()
+    else:
+        strip.show()  # 스펙트럼이 없다면 LED를 꺼줍니다.
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
