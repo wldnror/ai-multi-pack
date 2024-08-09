@@ -3,6 +3,7 @@ import board
 import neopixel
 import sounddevice as sd
 import time
+import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -41,6 +42,12 @@ def wheel(pos):
 # 스펙트럼 대역을 무지개 색상에 매핑
 COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
 
+# 랜덤 색상 할당을 위한 색상 셔플
+def shuffle_colors():
+    shuffled_colors = COLORS.copy()
+    random.shuffle(shuffled_colors)
+    return shuffled_colors
+
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
@@ -53,6 +60,8 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
+    shuffled_colors = shuffle_colors()
+    
     for i, count in enumerate(band_led_counts):
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
@@ -63,19 +72,22 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
+        
+        # 가운데 기준으로 랜덤한 색상 할당
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
-                    strip[led_index + count - 1 - j] = COLORS[i]
+                    strip[led_index + count - 1 - j] = shuffled_colors[i]
                 else:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
         else:
             for j in range(count):
                 if j < led_height:
-                    strip[led_index + j] = COLORS[i]
+                    strip[led_index + j] = shuffled_colors[i]
                 else:
                     strip[led_index + j] = (0, 0, 0)
         led_index += count
+
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
@@ -109,5 +121,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
