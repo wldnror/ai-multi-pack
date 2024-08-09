@@ -3,6 +3,8 @@ import board
 import neopixel
 import sounddevice as sd
 import time
+import threading
+import RPi.GPIO as GPIO
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -100,11 +102,48 @@ def audio_callback(indata, frames, time, status):
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
+# GPIO 핀 설정 (물리적 핀 번호 기준)
+red_led_pin = 24  # 빨간색 LED 핀 (BCM 24, 물리적 핀 18)
+green_led_pin = 23  # 초록색 LED 핀 (BCM 23, 물리적 핀 16)
+
+# GPIO 모드 설정
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(red_led_pin, GPIO.OUT)
+GPIO.setup(green_led_pin, GPIO.OUT)
+
+# PWM 설정
+red_led_pwm = GPIO.PWM(red_led_pin, 100)  # 빨간색 LED 핀에서 100Hz 주파수로 PWM 설정
+red_led_pwm.start(0)  # 시작 시 듀티 사이클 0%
+
+# 초록색 LED를 항상 켜기
+GPIO.output(green_led_pin, GPIO.HIGH)
+
+def fade_red_led():
+    try:
+        while True:
+            # 서서히 밝아지기
+            for duty_cycle in range(0, 101, 1):
+                red_led_pwm.ChangeDutyCycle(duty_cycle)
+                time.sleep(0.02)  # 20ms 지연
+
+            # 서서히 어두워지기
+            for duty_cycle in range(100, -1, -1):
+                red_led_pwm.ChangeDutyCycle(duty_cycle)
+                time.sleep(0.02)  # 20ms 지연
+
+    except KeyboardInterrupt:
+        pass
+
 # 전역 변수 초기화
 rainbow_position = 0
 
 # 메인 함수
 def main():
+    # 빨간색 LED 페이딩을 위한 쓰레드 시작
+    led_thread = threading.Thread(target=fade_red_led)
+    led_thread.daemon = True
+    led_thread.start()
+    
     try:
         with sd.InputStream(callback=audio_callback, channels=1, samplerate=SAMPLE_RATE, blocksize=1024, device='hw:4,1'):
             print("Streaming started...")
@@ -112,6 +151,9 @@ def main():
                 time.sleep(0.1)
     except Exception as e:
         print("Error:", e)
+    finally:
+        red_led_pwm.stop()
+        GPIO.cleanup()
 
 if __name__ == "__main__":
     main()
