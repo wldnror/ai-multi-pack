@@ -28,12 +28,19 @@ smoothed_fft = [0] * total_bands
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 랜덤 색상 생성 함수
-def random_color():
-    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+# 지정된 색상 팔레트 (빨, 주, 노, 초, 파, 남, 보)
+COLOR_PALETTE = [
+    (255, 0, 0),     # 빨강
+    (255, 165, 0),   # 주황
+    (255, 255, 0),   # 노랑
+    (0, 255, 0),     # 초록
+    (0, 0, 255),     # 파랑
+    (0, 0, 128),     # 남색
+    (128, 0, 128)    # 보라
+]
 
-# 초기 색상 설정
-COLORS = [random_color() for _ in range(total_bands)]
+# 초기 색상 설정 (서로 겹치지 않도록)
+COLORS = random.sample(COLOR_PALETTE, total_bands)
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
@@ -42,12 +49,18 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
+# 랜덤 색상 선택 함수 (다른 대역과 중복되지 않도록)
+def pick_random_color(exclude_colors):
+    available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
+    return random.choice(available_colors)
+
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     global COLORS  # 전역 변수로 선언
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
+    used_colors = []
 
     for i, count in enumerate(band_led_counts):
         if i == 0:
@@ -63,9 +76,10 @@ def control_leds(fft_results):
         
         # 이전 LED 높이와 비교하여 줄어들 때 색상 변경
         if led_height < smoothed_fft[i]:
-            COLORS[i] = random_color()
-
+            COLORS[i] = pick_random_color(used_colors)
+        
         smoothed_fft[i] = led_height  # 현재 높이를 저장하여 다음에 비교할 수 있게 함
+        used_colors.append(COLORS[i])  # 사용된 색상 목록에 추가
         
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
