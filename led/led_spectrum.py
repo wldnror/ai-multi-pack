@@ -92,7 +92,7 @@ def audio_callback(indata, frames, time, status):
     important_freqs = fft_result[:FFT_SIZE//25]
 
     # 랜덤으로 주파수 대역을 나누기 위해 시작
-    random_splits = np.random.randint(1, len(important_freqs), total_bands - 1)
+    random_splits = np.random.randint(FFT_SIZE//100, FFT_SIZE//10, total_bands - 1)
     random_splits.sort()
     random_splits = np.concatenate(([0], random_splits, [len(important_freqs)]))
 
