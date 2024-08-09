@@ -5,7 +5,7 @@ import time
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
 LED_PIN = board.D21   # GPIO 핀 번호
-LED_BRIGHTNESS = 0.05 # LED 밝기 (0.0에서 1.0 사이)
+LED_BRIGHTNESS = 0.1  # LED 밝기 (0.0에서 1.0 사이)
 
 # 각 줄에 할당된 LED 개수
 line_led_counts = [50, 30, 30, 30, 30, 50]
@@ -21,43 +21,27 @@ def get_led_index(line, pos):
     else:
         return line_start_indices[line] + pos
 
-# LED 스트립에 하트 모양을 표시하는 함수 (정지된 상태)
-def display_heart():
-    # 모든 LED 끄기
-    strip.fill((0, 0, 0))
-    
-    # 하트 모양의 LED들 켜기
-    # 첫 번째 줄은 비워둠
-    # 두 번째 줄
-    strip[get_led_index(1, 9)] = (255, 0, 0)
-    strip[get_led_index(1, 10)] = (255, 0, 0)
-    strip[get_led_index(1, 18)] = (255, 0, 0)
-    strip[get_led_index(1, 19)] = (255, 0, 0)
+# 색상 계산 함수
+def wheel(pos):
+    if pos < 85:
+        return (int(pos * 3), int(255 - pos * 3), 0)
+    elif pos < 170:
+        pos -= 85
+        return (int(255 - pos * 3), 0, int(pos * 3))
+    else:
+        pos -= 170
+        return (0, int(pos * 3), int(255 - pos * 3))
 
-    # 세 번째 줄
-    strip[get_led_index(2, 8)] = (255, 0, 0)
-    strip[get_led_index(2, 11)] = (255, 0, 0)
-    strip[get_led_index(2, 17)] = (255, 0, 0)
-    strip[get_led_index(2, 20)] = (255, 0, 0)
-    
-    # 네 번째 줄
-    strip[get_led_index(3, 7)] = (255, 0, 0)
-    strip[get_led_index(3, 21)] = (255, 0, 0)
-    
-    # 다섯 번째 줄
-    strip[get_led_index(4, 8)] = (255, 0, 0)
-    strip[get_led_index(4, 11)] = (255, 0, 0)
-    strip[get_led_index(4, 17)] = (255, 0, 0)
-    strip[get_led_index(4, 20)] = (255, 0, 0)
-    
-    # 여섯 번째 줄
-    strip[get_led_index(5, 9)] = (255, 0, 0)
-    strip[get_led_index(5, 10)] = (255, 0, 0)
-    strip[get_led_index(5, 18)] = (255, 0, 0)
-    strip[get_led_index(5, 19)] = (255, 0, 0)
-    
-    # 하트 모양 표시
-    strip.show()
+# 무지개 웨이브 효과 함수
+def rainbow_wave(wait):
+    for j in range(255):
+        for line in range(6):
+            for i in range(line_led_counts[line]):
+                pixel_index = (i * 256 // line_led_counts[line]) + j
+                strip[get_led_index(line, i)] = wheel(pixel_index & 255)
+        strip.show()
+        time.sleep(wait)
 
-# 메시지 표시 실행
-display_heart()
+# 무지개 웨이브 실행
+while True:
+    rainbow_wave(0.05)
