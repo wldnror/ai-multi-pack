@@ -21,48 +21,41 @@ def get_led_index(line, pos):
     else:
         return line_start_indices[line] + pos
 
-# LED 스트립에 글자를 표시하는 함수 (정지된 상태)
-def display_static_message():
+# LED 스트립에 하트 모양을 표시하는 함수 (정지된 상태)
+def display_heart():
     # 모든 LED 끄기
     strip.fill((0, 0, 0))
     
-    # 'H'와 'E'에 해당하는 LED들 켜기
-    # 'H'
-    strip[get_led_index(1, 0)] = (255, 255, 255)
-    strip[get_led_index(1, 4)] = (255, 255, 255)
-    strip[get_led_index(2, 0)] = (255, 255, 255)
-    strip[get_led_index(2, 2)] = (255, 255, 255)
-    strip[get_led_index(2, 4)] = (255, 255, 255)
-    strip[get_led_index(3, 0)] = (255, 255, 255)
-    strip[get_led_index(3, 1)] = (255, 255, 255)
-    strip[get_led_index(3, 2)] = (255, 255, 255)
-    strip[get_led_index(3, 3)] = (255, 255, 255)
-    strip[get_led_index(3, 4)] = (255, 255, 255)
-    strip[get_led_index(4, 0)] = (255, 255, 255)
-    strip[get_led_index(4, 2)] = (255, 255, 255)
-    strip[get_led_index(4, 4)] = (255, 255, 255)
-    strip[get_led_index(5, 0)] = (255, 255, 255)
-    strip[get_led_index(5, 4)] = (255, 255, 255)
-    
-    # 'E'
-    strip[get_led_index(1, 6)] = (255, 255, 255)
-    strip[get_led_index(1, 7)] = (255, 255, 255)
-    strip[get_led_index(1, 8)] = (255, 255, 255)
-    strip[get_led_index(1, 9)] = (255, 255, 255)
-    strip[get_led_index(1, 10)] = (255, 255, 255)
-    strip[get_led_index(3, 6)] = (255, 255, 255)
-    strip[get_led_index(3, 7)] = (255, 255, 255)
-    strip[get_led_index(3, 8)] = (255, 255, 255)
-    strip[get_led_index(3, 9)] = (255, 255, 255)
-    strip[get_led_index(3, 10)] = (255, 255, 255)
-    strip[get_led_index(5, 6)] = (255, 255, 255)
-    strip[get_led_index(5, 7)] = (255, 255, 255)
-    strip[get_led_index(5, 8)] = (255, 255, 255)
-    strip[get_led_index(5, 9)] = (255, 255, 255)
-    strip[get_led_index(5, 10)] = (255, 255, 255)
+    # 하트 모양의 LED들 켜기
+    # 첫 번째 줄은 비워둠
+    # 두 번째 줄
+    strip[get_led_index(1, 9)] = (255, 0, 0)
+    strip[get_led_index(1, 10)] = (255, 0, 0)
+    strip[get_led_index(1, 12)] = (255, 0, 0)
+    strip[get_led_index(1, 13)] = (255, 0, 0)
 
-    # 글자 표시
+    # 세 번째 줄
+    strip[get_led_index(2, 8)] = (255, 0, 0)
+    strip[get_led_index(2, 11)] = (255, 0, 0)
+    strip[get_led_index(2, 14)] = (255, 0, 0)
+    
+    # 네 번째 줄
+    strip[get_led_index(3, 7)] = (255, 0, 0)
+    strip[get_led_index(3, 15)] = (255, 0, 0)
+    
+    # 다섯 번째 줄
+    strip[get_led_index(4, 8)] = (255, 0, 0)
+    strip[get_led_index(4, 14)] = (255, 0, 0)
+    
+    # 여섯 번째 줄
+    strip[get_led_index(5, 9)] = (255, 0, 0)
+    strip[get_led_index(5, 10)] = (255, 0, 0)
+    strip[get_led_index(5, 11)] = (255, 0, 0)
+    strip[get_led_index(5, 12)] = (255, 0, 0)
+    strip[get_led_index(5, 13)] = (255, 0, 0)
+    
+    # 하트 모양 표시
     strip.show()
 
 # 메시지 표시 실행
-display_static_message()
+display_heart()
