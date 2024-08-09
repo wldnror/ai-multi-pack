@@ -54,6 +54,7 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
+    
     for i, count in enumerate(band_led_counts):
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
@@ -61,7 +62,9 @@ def control_leds(fft_results):
             adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
         else:
             adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
-        led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
+        
+        led_height = min(int((adjusted_fft_result / np.log1p(max_fft)) * count), count)  # 할당된 LED 개수를 넘지 않도록 제한
+        
         if led_height > 0:
             any_signal = True
         
