@@ -29,7 +29,6 @@ strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_wr
 
 # 부드러운 색상 변화를 위한 색상 정의 (그라데이션)
 def gradient_wheel(pos, max_pos=256):
-    # pos 값을 0부터 max_pos까지의 범위로 가정하고 색상을 계산합니다.
     pos = pos % max_pos
     if pos < max_pos // 3:
         return (255 - pos * 3, pos * 3, 0)
@@ -84,7 +83,6 @@ def control_leds(fft_results):
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
     strip.show()
-
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
