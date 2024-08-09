@@ -33,14 +33,25 @@ strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_wr
 
 # 지정된 색상 팔레트 (빨, 주, 노, 초, 파, 남, 보)
 COLOR_PALETTE = [
-    (255, 0, 0),     # 빨강
-    (255, 165, 0),   # 주황
-    (255, 255, 0),   # 노랑
-    (0, 255, 0),     # 초록
-    (0, 0, 255),     # 파랑
-    (0, 0, 128),     # 남색
-    (128, 0, 128)    # 보라
+    (255, 255, 0),     # 노랑
+    (255, 165, 0),     # 주황
+    (255, 0, 0),       # 빨강
+    (0, 255, 0),       # 초록
+    (0, 0, 255),       # 파랑
+    (0, 0, 128),       # 남색
+    (128, 0, 128)      # 보라
 ]
+
+# 각 색상에 대해 강렬한 색상으로의 변화 정의 (중간색 추가)
+COLOR_TRANSITIONS = {
+    (255, 255, 0): [(255, 255, 0), (255, 200, 0), (255, 165, 0)],  # 노랑 -> 주황
+    (255, 165, 0): [(255, 165, 0), (255, 100, 0), (255, 69, 0)],   # 주황 -> 진한 주황
+    (255, 0, 0):   [(255, 0, 0), (200, 0, 0), (128, 0, 0)],        # 빨강 -> 진한 빨강
+    (0, 255, 0):   [(0, 255, 0), (0, 200, 0), (0, 128, 0)],        # 초록 -> 진한 초록
+    (0, 0, 255):   [(0, 0, 255), (0, 0, 200), (0, 0, 128)],        # 파랑 -> 진한 파랑
+    (0, 0, 128):   [(0, 0, 128), (0, 0, 100), (0, 0, 69)],         # 남색 -> 진한 남색
+    (128, 0, 128): [(128, 0, 128), (100, 0, 100), (69, 0, 69)]     # 보라 -> 진한 보라
+}
 
 # 초기 색상 설정 (서로 겹치지 않도록)
 COLORS = random.sample(COLOR_PALETTE, total_bands)
@@ -60,6 +71,13 @@ def show_rainbow(position):
 def pick_random_color(exclude_colors):
     available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
     return random.choice(available_colors)
+
+# 강렬한 색상으로 점진적 변화 함수
+def get_transition_color(base_color, position, max_position):
+    transition_colors = COLOR_TRANSITIONS[base_color]
+    step = len(transition_colors) - 1  # 2단계의 색상 변화 (0, 1, 2)
+    index = int((position / max_position) * step)
+    return transition_colors[index]
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
@@ -86,26 +104,26 @@ def control_leds(fft_results):
             change_counters[i] += 1
         
         # 두 번의 변화가 발생한 경우에만 색상 변경
-        if change_counters[i] >= 1:
+        if change_counters[i] >= 2:
             COLORS[i] = pick_random_color(used_colors)
             change_counters[i] = 0  # 카운터 초기화
         
         smoothed_fft[i] = led_height  # 현재 높이를 저장하여 다음에 비교할 수 있게 함
         used_colors.append(COLORS[i])  # 사용된 색상 목록에 추가
         
-        if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
-            for j in range(count):
+        for j in range(count):
+            current_color = get_transition_color(COLORS[i], j, count - 1)
+            if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
                 if j < led_height:
-                    strip[led_index + count - 1 - j] = COLORS[i]
-                    strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = COLORS[i]  # 대칭 적용
+                    strip[led_index + count - 1 - j] = current_color
+                    strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = current_color  # 대칭 적용
                 else:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
                     strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = (0, 0, 0)
-        else:
-            for j in range(count):
+            else:
                 if j < led_height:
-                    strip[led_index + j] = COLORS[i]
-                    strip[LED_COUNT - 1 - (led_index + j)] = COLORS[i]  # 대칭 적용
+                    strip[led_index + j] = current_color
+                    strip[LED_COUNT - 1 - (led_index + j)] = current_color  # 대칭 적용
                 else:
                     strip[led_index + j] = (0, 0, 0)
                     strip[LED_COUNT - 1 - (led_index + j)] = (0, 0, 0)
