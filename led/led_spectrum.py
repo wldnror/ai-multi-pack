@@ -45,6 +45,10 @@ COLOR_PALETTE = [
 # 초기 색상 설정 (서로 겹치지 않도록)
 COLORS = random.sample(COLOR_PALETTE, total_bands)
 
+# LED 범위 계산
+led_ranges = [(sum(band_led_counts[:i]), sum(band_led_counts[:i + 1])) for i in range(total_bands)]
+trigger_leds = [0, 79, 80, 139, 140, 219]  # 각 대역의 LED 기준으로 색상 변경할 LED 인덱스
+
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
@@ -65,7 +69,7 @@ def control_leds(fft_results):
     any_signal = False
     used_colors = []
 
-    for i, count in enumerate(band_led_counts):
+    for i, (count, (start_led, end_led)) in enumerate(zip(band_led_counts, led_ranges)):
         if i == 0:
             smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
             adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
@@ -76,9 +80,9 @@ def control_leds(fft_results):
         
         if led_height > 0:
             any_signal = True
-        
-        # 이전 LED 높이와 비교하여 줄어들 때 카운터 증가
-        if led_height < smoothed_fft[i]:
+
+        # 특정 LED가 꺼졌을 때 색상 변경
+        if led_height < smoothed_fft[i] and smoothed_fft[i] > trigger_leds[i] - start_led:
             change_counters[i] += 1
         
         # 두 번의 변화가 발생한 경우에만 색상 변경
