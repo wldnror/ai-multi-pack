@@ -38,15 +38,18 @@ def wheel(pos):
         pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
-# 스펙트럼 대역을 무지개 색상에 매핑
-COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
+# 부드러운 파스텔 색상 정의
+def pastel_color(pos):
+    return (
+        int((np.sin(pos * 0.1) + 1) * 127.5),
+        int((np.sin(pos * 0.2 + 2) + 1) * 127.5),
+        int((np.sin(pos * 0.3 + 4) + 1) * 127.5)
+    )
 
-# 부드러운 무지개 패턴을 표시하는 함수
-def show_rainbow(position):
-    for i in range(LED_COUNT):
-        pixel_index = (i * 512 // LED_COUNT) + position
-        strip[i] = wheel(pixel_index & 255)
-    strip.show()
+# 스펙트럼 대역을 부드러운 색상 변화에 매핑
+def update_colors():
+    global COLORS
+    COLORS = [pastel_color((i * 256 // total_bands + rainbow_position) % 256) for i in range(total_bands)]
 
 # LED 밝기 조절 함수
 def fade_in_out(strip, start_index, end_index, color, steps=20):
@@ -57,10 +60,13 @@ def fade_in_out(strip, start_index, end_index, color, steps=20):
         strip.show()
         time.sleep(0.02)
 
-# 색상 업데이트 함수
-def update_colors():
-    global COLORS
-    COLORS = [wheel((i * 256 // total_bands + rainbow_position) % 256) for i in range(total_bands)]
+# 부드러운 무지개 패턴을 표시하는 함수
+def show_rainbow(position):
+    gradient = [pastel_color(i) for i in range(LED_COUNT)]
+    for i in range(LED_COUNT):
+        pixel_index = (i * 512 // LED_COUNT) + position
+        strip[i] = gradient[pixel_index % len(gradient)]
+    strip.show()
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
