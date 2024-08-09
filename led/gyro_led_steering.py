@@ -109,7 +109,7 @@ def main():
                 accel_z = read_sensor_data(0x3f)
                 _, angle_y = calculate_angle(accel_x, accel_y, accel_z)
 
-                if angle_y > 10:
+                if angle_y > 3:
                     right_active = True
                     left_active = False
                 elif angle_y < -10:
