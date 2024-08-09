@@ -63,7 +63,8 @@ def control_leds(fft_results):
         else:
             adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
         
-        led_height = min(int((adjusted_fft_result / np.log1p(max_fft)) * count), count)  # 할당된 LED 개수를 넘지 않도록 제한
+        # 할당된 LED 개수를 넘지 않도록 제한
+        led_height = min(int((adjusted_fft_result / np.log1p(max_fft)) * count), count)
         
         if led_height > 0:
             any_signal = True
