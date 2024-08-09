@@ -31,28 +31,30 @@ def display_heart():
     # 두 번째 줄
     strip[get_led_index(1, 9)] = (255, 0, 0)
     strip[get_led_index(1, 10)] = (255, 0, 0)
-    strip[get_led_index(1, 12)] = (255, 0, 0)
-    strip[get_led_index(1, 13)] = (255, 0, 0)
+    strip[get_led_index(1, 18)] = (255, 0, 0)
+    strip[get_led_index(1, 19)] = (255, 0, 0)
 
     # 세 번째 줄
     strip[get_led_index(2, 8)] = (255, 0, 0)
     strip[get_led_index(2, 11)] = (255, 0, 0)
-    strip[get_led_index(2, 14)] = (255, 0, 0)
+    strip[get_led_index(2, 17)] = (255, 0, 0)
+    strip[get_led_index(2, 20)] = (255, 0, 0)
     
     # 네 번째 줄
     strip[get_led_index(3, 7)] = (255, 0, 0)
-    strip[get_led_index(3, 15)] = (255, 0, 0)
+    strip[get_led_index(3, 21)] = (255, 0, 0)
     
     # 다섯 번째 줄
     strip[get_led_index(4, 8)] = (255, 0, 0)
-    strip[get_led_index(4, 14)] = (255, 0, 0)
+    strip[get_led_index(4, 11)] = (255, 0, 0)
+    strip[get_led_index(4, 17)] = (255, 0, 0)
+    strip[get_led_index(4, 20)] = (255, 0, 0)
     
     # 여섯 번째 줄
     strip[get_led_index(5, 9)] = (255, 0, 0)
     strip[get_led_index(5, 10)] = (255, 0, 0)
-    strip[get_led_index(5, 11)] = (255, 0, 0)
-    strip[get_led_index(5, 12)] = (255, 0, 0)
-    strip[get_led_index(5, 13)] = (255, 0, 0)
+    strip[get_led_index(5, 18)] = (255, 0, 0)
+    strip[get_led_index(5, 19)] = (255, 0, 0)
     
     # 하트 모양 표시
     strip.show()
