@@ -82,7 +82,7 @@ def control_leds(fft_results):
             change_counters[i] += 1
         
         # 두 번의 변화가 발생한 경우에만 색상 변경
-        if change_counters[i] >= 3:
+        if change_counters[i] >= 2:
             COLORS[i] = pick_random_color(used_colors)
             change_counters[i] = 0  # 카운터 초기화
         
