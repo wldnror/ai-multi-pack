@@ -3,7 +3,6 @@ import board
 import neopixel
 import sounddevice as sd
 import time
-import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -49,42 +48,34 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
-# 주파수 대역의 순서를 랜덤으로 섞는 함수
-def shuffle_bands(fft_results):
-    band_indices = list(range(total_bands))
-    random.shuffle(band_indices)
-    shuffled_fft = [fft_results[i] for i in band_indices]
-    shuffled_colors = [COLORS[i] for i in band_indices]
-    return shuffled_fft, shuffled_colors
-
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
-
-    # 주파수 대역과 색상을 무작위로 섞음
-    shuffled_fft, shuffled_colors = shuffle_bands(fft_results)
-    
     for i, count in enumerate(band_led_counts):
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
-            smoothed_fft[i] = alpha * shuffled_fft[i] + (1 - alpha) * smoothed_fft[i]
+            smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
             adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
         else:
-            adjusted_fft_result = np.log1p(shuffled_fft[i] * sensitivity_multiplier[i])
+            adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        
-        # LED를 해당 대역의 색상으로 켜기
-        for j in range(count):
-            if j < led_height:
-                strip[led_index + j] = shuffled_colors[i]
-            else:
-                strip[led_index + j] = (0, 0, 0)
+        if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + count - 1 - j] = COLORS[i]
+                else:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
+        else:
+            for j in range(count):
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
         led_index += count
-
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
@@ -99,7 +90,13 @@ def audio_callback(indata, frames, time, status):
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
     # 주파수 대역 조정
     important_freqs = fft_result[:FFT_SIZE//25]
-    fft_result_split = np.array_split(important_freqs, total_bands)  # FFT 결과를 각 대역에 맞게 분할
+
+    # 랜덤으로 주파수 대역을 나누기 위해 시작
+    random_splits = np.random.randint(1, len(important_freqs), total_bands - 1)
+    random_splits.sort()
+    random_splits = np.concatenate(([0], random_splits, [len(important_freqs)]))
+
+    fft_result_split = [important_freqs[random_splits[i]:random_splits[i + 1]] for i in range(total_bands)]
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
