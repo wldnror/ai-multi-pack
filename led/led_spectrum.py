@@ -3,7 +3,6 @@ import board
 import neopixel
 import sounddevice as sd
 import time
-import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -54,7 +53,6 @@ def control_leds(fft_results):
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
-    
     for i, count in enumerate(band_led_counts):
         # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
@@ -62,39 +60,26 @@ def control_leds(fft_results):
             adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
         else:
             adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
-        
-        # 할당된 LED 개수를 넘지 않도록 제한
-        led_height = min(int((adjusted_fft_result / np.log1p(max_fft)) * count), count)
-        
+        led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        
-        random_offset = random.randint(-5, 5)  # 랜덤 오프셋 추가
-        
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
-                index = led_index + count - 1 - j + random_offset
-                if 0 <= index < LED_COUNT:
-                    if j < led_height:
-                        strip[index] = COLORS[i]
-                    else:
-                        strip[index] = (0, 0, 0)
+                if j < led_height:
+                    strip[led_index + count - 1 - j] = COLORS[i]
+                else:
+                    strip[led_index + count - 1 - j] = (0, 0, 0)
         else:
             for j in range(count):
-                index = led_index + j + random_offset
-                if 0 <= index < LED_COUNT:
-                    if j < led_height:
-                        strip[index] = COLORS[i]
-                    else:
-                        strip[index] = (0, 0, 0)
-        
+                if j < led_height:
+                    strip[led_index + j] = COLORS[i]
+                else:
+                    strip[led_index + j] = (0, 0, 0)
         led_index += count
-    
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
-    
     strip.show()
 
 # 오디오 콜백 함수
@@ -124,3 +109,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
