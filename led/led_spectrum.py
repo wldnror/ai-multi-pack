@@ -3,6 +3,7 @@ import board
 import neopixel
 import sounddevice as sd
 import time
+import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -88,9 +89,16 @@ def audio_callback(indata, frames, time, status):
         print("Status:", status)
     # 저주파수 대역에 중점을 둔 FFT 결과 처리
     fft_result = np.abs(np.fft.rfft(indata[:, 0] * np.hanning(indata.shape[0]), n=FFT_SIZE))
-    # 주파수 대역 조정
+    # 랜덤으로 주파수 대역 설정
     important_freqs = fft_result[:FFT_SIZE//25]
-    fft_result_split = np.array_split(important_freqs, total_bands)  # FFT 결과를 각 대역에 맞게 분할
+    
+    # 주파수 대역의 랜덤한 경계를 생성
+    split_indices = sorted(random.sample(range(1, len(important_freqs)), total_bands - 1))
+    split_indices = [0] + split_indices + [len(important_freqs)]
+    
+    # 랜덤한 경계를 사용하여 FFT 결과를 분할
+    fft_result_split = [important_freqs[split_indices[i]:split_indices[i+1]] for i in range(total_bands)]
+    
     fft_result_means = [np.mean(part) for part in fft_result_split]
     control_leds(fft_result_means)
 
