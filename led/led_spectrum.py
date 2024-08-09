@@ -3,7 +3,6 @@ import board
 import neopixel
 import sounddevice as sd
 import time
-import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -25,25 +24,22 @@ alpha = 0.1
 # 지수 평활화된 결과를 저장할 변수 초기화
 smoothed_fft = [0] * total_bands
 
-# 색상 변경 카운터 초기화
-change_counters = [0] * total_bands
-
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 지정된 색상 팔레트 (빨, 주, 노, 초, 파, 남, 보)
-COLOR_PALETTE = [
-    (255, 0, 0),     # 빨강
-    (255, 165, 0),   # 주황
-    (255, 255, 0),   # 노랑
-    (0, 255, 0),     # 초록
-    (0, 0, 255),     # 파랑
-    (0, 0, 128),     # 남색
-    (128, 0, 128)    # 보라
-]
+# 부드러운 색상 변화를 위한 색상 정의
+def wheel(pos):
+    if pos < 85:
+        return (255 - pos * 3, pos * 3, 0)
+    elif pos < 170:
+        pos -= 85
+        return (0, 255 - pos * 3, pos * 3)
+    else:
+        pos -= 170
+        return (pos * 3, 0, 255 - pos * 3)
 
-# 초기 색상 설정 (서로 겹치지 않도록)
-COLORS = random.sample(COLOR_PALETTE, total_bands)
+# 스펙트럼 대역을 무지개 색상에 매핑
+COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
@@ -52,32 +48,14 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
-# 색상 변경을 위한 휠 함수
-def wheel(pos):
-    pos = 255 - pos
-    if pos < 85:
-        return (255 - pos * 3, 0, pos * 3)
-    elif pos < 170:
-        pos -= 85
-        return (0, pos * 3, 255 - pos * 3)
-    else:
-        pos -= 170
-        return (pos * 3, 255 - pos * 3, 0)
-
-# 랜덤 색상 선택 함수 (다른 대역과 중복되지 않도록)
-def pick_random_color(exclude_colors):
-    available_colors = [color for color in COLOR_PALETTE if color not in exclude_colors]
-    return random.choice(available_colors)
-
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    global COLORS, rainbow_position  # 전역 변수로 선언
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
-    used_colors = []
-
+    
     for i, count in enumerate(band_led_counts):
+        # 첫 번째 대역에 대해 지수 평활화 적용
         if i == 0:
             smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
             adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
@@ -89,42 +67,26 @@ def control_leds(fft_results):
         if led_height > 0:
             any_signal = True
         
-        # 이전 LED 높이와 비교하여 줄어들 때 카운터 증가
-        if led_height < smoothed_fft[i]:
-            change_counters[i] += 1
-        
-        # 두 번의 변화가 발생한 경우에만 색상 변경
-        if change_counters[i] >= 5:
-            COLORS[i] = pick_random_color(used_colors)
-            change_counters[i] = 0  # 카운터 초기화
-        
-        smoothed_fft[i] = led_height  # 현재 높이를 저장하여 다음에 비교할 수 있게 함
-        used_colors.append(COLORS[i])  # 사용된 색상 목록에 추가
-        
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
                     strip[led_index + count - 1 - j] = COLORS[i]
-                    strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = COLORS[i]  # 대칭 적용
                 else:
                     strip[led_index + count - 1 - j] = (0, 0, 0)
-                    strip[LED_COUNT - 1 - (led_index + count - 1 - j)] = (0, 0, 0)
         else:
             for j in range(count):
                 if j < led_height:
                     strip[led_index + j] = COLORS[i]
-                    strip[LED_COUNT - 1 - (led_index + j)] = COLORS[i]  # 대칭 적용
                 else:
                     strip[led_index + j] = (0, 0, 0)
-                    strip[LED_COUNT - 1 - (led_index + j)] = (0, 0, 0)
-        
         led_index += count
     
     if not any_signal:
+        global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 256
-    else:
-        strip.show()
+    
+    strip.show()
 
 # 오디오 콜백 함수
 def audio_callback(indata, frames, time, status):
