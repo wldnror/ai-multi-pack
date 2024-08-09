@@ -66,18 +66,13 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
-        if i in [1, 3]:  # 두 번째와 네 번째 대역은 정상
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + j] = COLORS[i]
-                else:
-                    strip[led_index + j] = (0, 0, 0)
-        else:  # 나머지 대역은 반전
-            for j in range(count):
-                if j < led_height:
-                    strip[led_index + count - 1 - j] = COLORS[i]
-                else:
-                    strip[led_index + count - 1 - j] = (0, 0, 0)
+        for j in range(count):
+            if j < led_height:
+                strip[led_index + j] = COLORS[i]
+                strip[LED_COUNT - 1 - (led_index + j)] = COLORS[i]  # 대칭 적용
+            else:
+                strip[led_index + j] = (0, 0, 0)
+                strip[LED_COUNT - 1 - (led_index + j)] = (0, 0, 0)
         led_index += count
     if not any_signal:
         global rainbow_position
