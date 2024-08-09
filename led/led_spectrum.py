@@ -48,7 +48,7 @@ COLORS = random.sample(COLOR_PALETTE, total_bands)
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
     for i in range(LED_COUNT):
-        pixel_index = (i * 512 // LED_COUNT) + position
+        pixel_index = (i * 256 // LED_COUNT) + position
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
@@ -122,7 +122,7 @@ def control_leds(fft_results):
     
     if not any_signal:
         show_rainbow(rainbow_position)
-        rainbow_position = (rainbow_position + 1) % 512
+        rainbow_position = (rainbow_position + 1) % 256
     
     strip.show()
 
