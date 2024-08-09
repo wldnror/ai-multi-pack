@@ -28,22 +28,11 @@ smoothed_fft = [0] * total_bands
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 부드러운 색상 변화를 위한 색상 정의
-def wheel(pos):
-    if pos < 85:
-        return (255 - pos * 3, pos * 3, 0)
-    elif pos < 170:
-        pos -= 85
-        return (0, 255 - pos * 3, pos * 3)
-    else:
-        pos -= 170
-        return (pos * 3, 0, 255 - pos * 3)
-
 # 랜덤 색상 생성 함수
 def random_color():
     return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
-# 스펙트럼 대역을 무지개 색상에 매핑
+# 초기 색상 설정
 COLORS = [random_color() for _ in range(total_bands)]
 
 # 부드러운 무지개 패턴을 표시하는 함수
@@ -53,27 +42,31 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
-# 색상 업데이트 함수
-def update_colors():
-    global COLORS
-    COLORS = [random_color() for _ in range(total_bands)]
-
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
+    global COLORS  # 전역 변수로 선언
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
+
     for i, count in enumerate(band_led_counts):
         if i == 0:
             smoothed_fft[i] = alpha * fft_results[i] + (1 - alpha) * smoothed_fft[i]
             adjusted_fft_result = np.log1p(smoothed_fft[i] * sensitivity_multiplier[i])
         else:
             adjusted_fft_result = np.log1p(fft_results[i] * sensitivity_multiplier[i])
+        
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
+        
         if led_height > 0:
             any_signal = True
-        if led_height == 0 and smoothed_fft[i] > 0:  # 값이 0이 되었을 때 색상을 랜덤으로 변경
-            update_colors()
+        
+        # 이전 LED 높이와 비교하여 줄어들 때 색상 변경
+        if led_height < smoothed_fft[i]:
+            COLORS[i] = random_color()
+
+        smoothed_fft[i] = led_height  # 현재 높이를 저장하여 다음에 비교할 수 있게 함
+        
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
@@ -90,11 +83,14 @@ def control_leds(fft_results):
                 else:
                     strip[led_index + j] = (0, 0, 0)
                     strip[LED_COUNT - 1 - (led_index + j)] = (0, 0, 0)
+        
         led_index += count
+    
     if not any_signal:
         global rainbow_position
         show_rainbow(rainbow_position)
         rainbow_position = (rainbow_position + 1) % 512
+    
     strip.show()
 
 # 오디오 콜백 함수
