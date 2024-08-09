@@ -39,24 +39,12 @@ def wheel(pos):
         pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
-# 그라데이션 색상 적용 함수
-def gradient_color(start_color, end_color, factor):
-    return (
-        int(start_color[0] + (end_color[0] - start_color[0]) * factor),
-        int(start_color[1] + (end_color[1] - start_color[1]) * factor),
-        int(start_color[2] + (end_color[2] - start_color[2]) * factor)
-    )
+# 랜덤 색상 생성 함수
+def random_color():
+    return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
 
-# 스펙트럼 대역을 그라데이션 색상에 매핑
-def generate_gradient_colors():
-    colors = []
-    for i in range(total_bands):
-        start_color = wheel(i * 256 // total_bands)
-        end_color = wheel((i + 1) * 256 // total_bands)
-        colors.append(gradient_color(start_color, end_color, random.random()))
-    return colors
-
-COLORS = generate_gradient_colors()
+# 스펙트럼 대역을 무지개 색상에 매핑
+COLORS = [random_color() for _ in range(total_bands)]
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
@@ -65,23 +53,13 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
-# LED 밝기 조절 함수
-def fade_in_out(strip, start_index, end_index, color, steps=20):
-    for step in range(steps):
-        factor = step / steps
-        for i in range(start_index, end_index):
-            strip[i] = (int(color[0] * factor), int(color[1] * factor), int(color[2] * factor))
-        strip.show()
-        time.sleep(0.02)
-
 # 색상 업데이트 함수
 def update_colors():
     global COLORS
-    COLORS = generate_gradient_colors()
+    COLORS = [random_color() for _ in range(total_bands)]
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    update_colors()  # 색상 업데이트
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
@@ -94,6 +72,8 @@ def control_leds(fft_results):
         led_height = int((adjusted_fft_result / np.log1p(max_fft)) * count)
         if led_height > 0:
             any_signal = True
+        if led_height == 0 and smoothed_fft[i] > 0:  # 값이 0이 되었을 때 색상을 랜덤으로 변경
+            update_colors()
         if i % 2 == 1:  # 두 번째, 네 번째, 여섯 번째 대역 반전
             for j in range(count):
                 if j < led_height:
