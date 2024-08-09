@@ -3,6 +3,7 @@ import board
 import neopixel
 import sounddevice as sd
 import time
+import random
 
 # LED 스트립 설정
 LED_COUNT = 220       # LED 개수
@@ -27,7 +28,7 @@ smoothed_fft = [0] * total_bands
 # NeoPixel 객체 초기화
 strip = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, auto_write=False)
 
-# 그라데이션을 위한 색상 정의
+# 부드러운 색상 변화를 위한 색상 정의
 def wheel(pos):
     if pos < 85:
         return (255 - pos * 3, pos * 3, 0)
@@ -38,22 +39,24 @@ def wheel(pos):
         pos -= 170
         return (pos * 3, 0, 255 - pos * 3)
 
-# 스펙트럼 대역을 무지개 색상에 매핑
-COLORS = [wheel(i * 256 // total_bands) for i in range(total_bands)]
+# 그라데이션 색상 적용 함수
+def gradient_color(start_color, end_color, factor):
+    return (
+        int(start_color[0] + (end_color[0] - start_color[0]) * factor),
+        int(start_color[1] + (end_color[1] - start_color[1]) * factor),
+        int(start_color[2] + (end_color[2] - start_color[2]) * factor)
+    )
 
-# 그라데이션 색상 변화 적용
-def dynamic_color_wheel(pos, intensity=1.0):
-    pos = pos % 256
-    if pos < 85:
-        color = (255 - pos * 3, pos * 3, 0)
-    elif pos < 170:
-        pos -= 85
-        color = (0, 255 - pos * 3, pos * 3)
-    else:
-        pos -= 170
-        color = (pos * 3, 0, 255 - pos * 3)
-    
-    return tuple(int(c * intensity) for c in color)
+# 스펙트럼 대역을 그라데이션 색상에 매핑
+def generate_gradient_colors():
+    colors = []
+    for i in range(total_bands):
+        start_color = wheel(i * 256 // total_bands)
+        end_color = wheel((i + 1) * 256 // total_bands)
+        colors.append(gradient_color(start_color, end_color, random.random()))
+    return colors
+
+COLORS = generate_gradient_colors()
 
 # 부드러운 무지개 패턴을 표시하는 함수
 def show_rainbow(position):
@@ -62,15 +65,23 @@ def show_rainbow(position):
         strip[i] = wheel(pixel_index & 255)
     strip.show()
 
+# LED 밝기 조절 함수
+def fade_in_out(strip, start_index, end_index, color, steps=20):
+    for step in range(steps):
+        factor = step / steps
+        for i in range(start_index, end_index):
+            strip[i] = (int(color[0] * factor), int(color[1] * factor), int(color[2] * factor))
+        strip.show()
+        time.sleep(0.02)
+
 # 색상 업데이트 함수
-def update_colors(fft_results):
+def update_colors():
     global COLORS
-    max_fft = max(fft_results) if max(fft_results) != 0 else 1
-    COLORS = [dynamic_color_wheel(i * 256 // total_bands + rainbow_position, np.log1p(fft_results[i]) / np.log1p(max_fft)) for i in range(total_bands)]
+    COLORS = generate_gradient_colors()
 
 # FFT 결과에 따라 LED 제어하는 함수
 def control_leds(fft_results):
-    update_colors(fft_results)  # 색상 업데이트
+    update_colors()  # 색상 업데이트
     max_fft = max(fft_results) if max(fft_results) != 0 else 1
     led_index = 0
     any_signal = False
